@@ -13,9 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Validates that text follows the PFIF XML Specification at zesty.ca/pfif
+"""Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-"""
+import xml.etree
+
+def validate_xml_or_die(xml_filename):
+  """Returns a python object representing the xml file.  If the XML file is
+  invalid, exits."""
+  xml_file = open(xml_filename, 'r')
+  assert False, "Not Implemented"
+  return None
 
 def main():
   if (!len(sys.argv()) == 2):
