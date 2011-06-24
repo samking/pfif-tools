@@ -16,27 +16,33 @@
 """Tests for pfif-validator.py"""
 
 import unittest
+import StringIO
+
+import os
+import sys
+# TODO(samking): I'm sure that there is a simpler way to do this...
+sys.path.append(os.getcwd() + '/../pfif_validator')
 import pfif_validator
 
 class ValidatorTests(unittest.TestCase):
 
   def test_valid_xml(self):
     """A string of valid XML should be turned into an object"""
-    VALID_XML = cStringIO("""<?xml version="1.0" encoding="UTF-8"?>
+    valid_xml_file = StringIO.StringIO("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person />
 </pfif:pfif>""")
-
-    #TODO(samking): make the python object version of that xml
-    python_object =  []
-    #TODO(samking): run the function to make an #object
-    self.assertEqual(python_object, pfif-valid(VALID_XML))
+    self.assertTrue(pfif_validator.validate_xml_or_die(valid_xml_file))
 
   def test_invalid_xml(self):
-    """A string of invalid XML should print out an error and return none"""
-    INVALID_XML = """<?xml version="1.0" encoding="UTF-8"?>
+    """A string of invalid XML should raise an error"""
+    invalid_xml_file = StringIO.StringIO(
+        """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
-  <pfif:person>"""
+  <pfif:person>""")
+    self.assertRaises(Exception, pfif_validator.validate_xml_or_die,
+                      invalid_xml_file)
+
 
 
 if __name__ == '__main__':

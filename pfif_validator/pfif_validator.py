@@ -15,19 +15,17 @@
 
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-import xml.etree
+import xml.etree.ElementTree as ET
 
-def validate_xml_or_die(xml_filename):
-  """Returns a python object representing the xml file.  If the XML file is
-  invalid, exits."""
-  xml_file = open(xml_filename, 'r')
-  assert False, "Not Implemented"
-  return None
+def validate_xml_or_die(xml_file):
+  """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
+  library will raise an exception."""
+  return ET.parse(xml_file)
 
 def main():
-  if (!len(sys.argv()) == 2):
+  if (not len(sys.argv()) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
-  xml = validate_xml_or_die(sys.argv(1))
+  xml_tree = validate_xml_or_die(sys.argv(1))
   # pfif_version = validate_root_is_pfif_or_die(xml)
   # validate_has_child(xml, pfif_version)
   # validate_has_mandatory_children(xml, pfif_version)
