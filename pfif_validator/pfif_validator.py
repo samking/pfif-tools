@@ -22,11 +22,15 @@ def validate_xml_or_die(xml_file):
   library will raise an exception."""
   return ET.parse(xml_file)
 
+def validate_root_is_pfif_or_die(xml_tree):
+  """Validates that xml_tree refers to a PFIF XML file.  Returns the version.
+  Raises an exception if unsuccessful."""
+
 def main():
   if (not len(sys.argv()) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
   xml_tree = validate_xml_or_die(sys.argv(1))
-  # pfif_version = validate_root_is_pfif_or_die(xml)
+  pfif_version = validate_root_is_pfif_or_die(xml_tree)
   # validate_has_child(xml, pfif_version)
   # validate_has_mandatory_children(xml, pfif_version)
 
