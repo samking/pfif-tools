@@ -59,22 +59,46 @@ class ValidatorTests(unittest.TestCase):
     is not PFIF"""
     random_xml_file = StringIO.StringIO(
         """<?xml version="1.0" encoding="UTF-8"?>
-<html>
-  <body />
-</html>""")
+<pfif:html xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person />
+</pfif:html>""")
     tree = pfif_validator.validate_xml_or_die(random_xml_file)
     self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
                       tree)
+  def test_root_lacks_namespace(self):
+    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    doesn't specify a namespace"""
+    no_namespace_xml_file = StringIO.StringIO(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<pfif>
+  <person />
+</pfif>""")
+    tree = pfif_validator.validate_xml_or_die(no_namespace_xml_file)
+    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
+                      tree)
+
 
   def test_root_is_bad_pfif_version(self):
     """validate_root_is_pfif_or_die should raise an exception if the PFIF
     version is not supported"""
     pfif_9999_xml_file = StringIO.StringIO(
         """<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/999.9">
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/9.9">
   <pfif:person />
 </pfif:pfif>""")
     tree = pfif_validator.validate_xml_or_die(pfif_9999_xml_file)
+    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
+                      tree)
+
+  def test_root_is_bad_pfif_website(self):
+    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    website is wrong"""
+    pfif_website_xml_file = StringIO.StringIO(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.com/pfif/1.2">
+  <pfif:person />
+</pfif:pfif>""")
+    tree = pfif_validator.validate_xml_or_die(pfif_website_xml_file)
     self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
                       tree)
 

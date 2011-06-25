@@ -16,6 +16,7 @@
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
 import xml.etree.ElementTree as ET
+import re
 
 def validate_xml_or_die(xml_file):
   """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
@@ -25,6 +26,24 @@ def validate_xml_or_die(xml_file):
 def validate_root_is_pfif_or_die(xml_tree):
   """Validates that xml_tree refers to a PFIF XML file.  Returns the version.
   Raises an exception if unsuccessful."""
+  root = xml_tree.getroot()
+  tag = root.tag
+  # xml.etree.Element.tag is formatted like: {namespace}tag
+  match = re.match(r'\{(.+)\}(.+)', tag)
+  namespace = match.group(1)
+  tag = match.group(2)
+  assert match, "This XML root node doesn't specify a namespace and tag"
+  assert tag == "pfif", "The root node must be pfif"
+
+  # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION is
+  # 1.1, 1.2, or 1.3
+  match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', namespace)
+  assert match, "The XML namespace specified is not correct.  It should be in" \
+                "the following format: http://zesty.ca/pfif/VERSION"
+  version = float(match.group(1))
+  assert (version >= 1.1 and version <= 1.3), "This validator only supports" \
+                                              "versions 1.1-1.3."
+  return version
 
 def main():
   if (not len(sys.argv()) == 2):
