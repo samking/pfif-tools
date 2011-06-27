@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for pfif-validator.py"""
+"""Tests for pfif_validator.py"""
 
 import unittest
 import StringIO
@@ -31,9 +31,14 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person />
 </pfif:pfif>"""
 
+  def setUp(self):
+    """Some of the tests will run code that prints stuff out.  This prevents it
+    from printing next to the clean dots from the unit tests."""
+    sys.stdout = open(os.devnull, "w")
+
   def set_up_xml_tree(self, xml):
     """Turns xml into a tree.  Does validation that all other tests rely on"""
-    pfif_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
+    pfif_file = StringIO.StringIO(xml)
     tree = pfif_validator.validate_xml_or_die(pfif_file)
     version = pfif_validator.validate_root_is_pfif_or_die(tree)
     pfif_validator.validate_root_has_child_or_die(tree)
