@@ -102,20 +102,21 @@ class ValidatorTests(unittest.TestCase):
                       tree)
 
   def test_root_has_child(self):
-    """validate_root_has_child_or_die should do nothing if the root node has at
-    least one child"""
+    """validate_root_has_child_or_die should return a list of children if the
+    root node has at least one child"""
     pfif_file = StringIO.StringIO(ValidatorTests.VALID_XML_12_SMALL)
     tree = pfif_validator.validate_xml_or_die(pfif_file)
-    pfif_validator.validate_root_has_child_or_die(tree)
-
+    self.assertNotEqual(pfif_validator.validate_root_has_child_or_die(tree),
+                        None)
 
   def test_root_lacks_child(self):
     """validate_root_has_child_or_die should raise an exception if the root node
     does not have at least one child"""
-    pfif_file = StringIO.StringIO(""" <?xml version="1.0" encoding="UTF-8"?>
+    pfif_file = StringIO.StringIO("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />""")
     tree = pfif_validator.validate_xml_or_die(pfif_file)
-    self.assertRaises(pfif_validator.validate_root_has_child_or_die, tree)
+    self.assertRaises(Exception, pfif_validator.validate_root_has_child_or_die,
+                      tree)
 
 if __name__ == '__main__':
   unittest.main()

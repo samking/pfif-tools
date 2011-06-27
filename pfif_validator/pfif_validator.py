@@ -45,6 +45,14 @@ def validate_root_is_pfif_or_die(xml_tree):
                                               "versions 1.1-1.3."
   return version
 
+def validate_root_has_child_or_die(xml_tree):
+  """If there is at least one child, returns a list of children.  Else, raises
+  an exception."""
+  root = xml_tree.getroot()
+  children = root.getchildren()
+  assert len(children) > 0, "There must be at least one child of the root node"
+  return children
+
 def main():
   if (not len(sys.argv()) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
