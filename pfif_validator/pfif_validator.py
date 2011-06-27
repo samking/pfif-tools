@@ -19,15 +19,33 @@ import xml.etree.ElementTree as ET
 import re
 import xml_utils
 
+# a map from version to parent : required-children mappings
+MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'source_date',
+                                       'first_name', 'last_name'],
+                             'note' : ['note_record_id', 'author_name',
+                                       'source_date', 'text']
+                            },
+                      1.2 : {'person' : ['person_record_id', 'source_date',
+                                       'first_name', 'last_name'],
+                             'note' : ['note_record_id', 'author_name',
+                                       'source_date', 'text']
+                            },
+                      1.3 : {'person' : ['person_record_id', 'source_date',
+                                       'full_name'],
+                             'note' : ['note_record_id', 'author_name',
+                                       'source_date', 'text']
+                            }
+                     }
+
 def validate_xml_or_die(xml_file):
   """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
   library will raise an exception."""
   return ET.parse(xml_file)
 
-def validate_root_is_pfif_or_die(xml_tree):
-  """Validates that xml_tree refers to a PFIF XML file.  Returns the version.
+def validate_root_is_pfif_or_die(tree):
+  """Validates that tree refers to a PFIF XML file.  Returns the version.
   Raises an exception if unsuccessful."""
-  root = xml_tree.getroot()
+  root = tree.getroot()
   tag = root.tag
   # xml.etree.Element.tag is formatted like: {namespace}tag
   match = re.match(r'\{(.+)\}(.+)', tag)
@@ -46,10 +64,10 @@ def validate_root_is_pfif_or_die(xml_tree):
                                               "versions 1.1-1.3."
   return version
 
-def validate_root_has_child_or_die(xml_tree):
+def validate_root_has_child_or_die(tree):
   """If there is at least one child, returns a list of children.  Else, raises
   an exception."""
-  root = xml_tree.getroot()
+  root = tree.getroot()
   children = root.getchildren()
   assert len(children) > 0, "There must be at least one child of the root node"
 
@@ -63,7 +81,7 @@ def validate_root_has_mandatory_children(tree, version):
   result = False
   for child in children:
     tag = xml_utils.extract_tag(child.tag)
-    if tag == "person" or (version >= 1.2 and  tag == "note"):
+    if tag == "person" or (version >= 1.2 and tag == "note"):
       result = True
       break
   if not result:
@@ -73,14 +91,21 @@ def validate_root_has_mandatory_children(tree, version):
     print "All children: " + str(children)
   return result
 
+def validate_has_mandatory_children(parent, tree, version):
+  """Validates that every parent node has all mandatory children specified by
+  MANDATORY_CHILDREN.  Returns a list with the names of all missing children.
+  parent should be a string representing the local tag of the node to check."""
 
 def main():
   if (not len(sys.argv()) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
-  xml_tree = validate_xml_or_die(sys.argv(1))
-  pfif_version = validate_root_is_pfif_or_die(xml_tree)
-  validate_root_has_child_or_die(xml_tree)
-  validate_root_has_mandatory_children(xml_tree, pfif_version)
+  tree = validate_xml_or_die(sys.argv(1))
+  version = validate_root_is_pfif_or_die(tree)
+  validate_root_has_child_or_die(tree)
+  validate_root_has_mandatory_children(tree, version)
+  validate_person_has_mandatory_children(tree, version)
+  validate_has_mandatory_children('person', tree, version)
+  validate_has_mandatory_children('note', tree, version)
 
 if __name__ == '__main__':
   main()

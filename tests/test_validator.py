@@ -186,7 +186,9 @@ class ValidatorTests(unittest.TestCase):
   </pfif:note>
 </pfif:pfif>""")
     self.assertEqual(
-        len(validate_has_mandatory_children('note', tree, version)), 0)
+        len(pfif_validator.validate_has_mandatory_children('note', tree,
+                                                           version)),
+        0)
 
   def test_note_has_no_mandatory_children(self):
     """validate_has_mandatory_children should return a list with four missing
@@ -197,7 +199,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note />
 </pfif:pfif>""")
     self.assertEqual(
-        len(validate_has_mandatory_children('note', tree, version)), 4)
+        len(pfif_validator.validate_has_mandatory_children('note', tree,
+                                                           version)),
+        4)
 
   #def test_person_has_mandatory_children_11(self):
   #def test_person_has_mandatory_children_13(self):
