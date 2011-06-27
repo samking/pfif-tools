@@ -51,7 +51,6 @@ def validate_root_has_child_or_die(xml_tree):
   root = xml_tree.getroot()
   children = root.getchildren()
   assert len(children) > 0, "There must be at least one child of the root node"
-  return children
 
 def main():
   if (not len(sys.argv()) == 2):
