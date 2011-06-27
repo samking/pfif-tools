@@ -172,5 +172,37 @@ class ValidatorTests(unittest.TestCase):
     self.assertTrue(
         pfif_validator.validate_root_has_mandatory_children(tree, version))
 
+  def test_note_has_mandatory_children(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a note with all mandatory children"""
+    (tree, version) = self.set_up_xml_tree(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:note_record_id />
+    <pfif:author_name />
+    <pfif:source_date />
+    <pfif:text />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(validate_has_mandatory_children('note', tree, version)), 0)
+
+  def test_note_has_no_mandatory_children(self):
+    """validate_has_mandatory_children should return a list with four missing
+    children when given a note with no children"""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note />
+</pfif:pfif>""")
+    self.assertEqual(
+        len(validate_has_mandatory_children('note', tree, version)), 4)
+
+  #def test_person_has_mandatory_children_11(self):
+  #def test_person_has_mandatory_children_13(self):
+  #def test_person_has_no_mandatory_children_11(self):
+  #def test_person_has_no_mandatory_children_13(self):
+
 if __name__ == '__main__':
   unittest.main()
