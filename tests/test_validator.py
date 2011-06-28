@@ -22,7 +22,7 @@ import os
 import sys
 # TODO(samking): I'm sure that there is a simpler way to do this...
 sys.path.append(os.getcwd() + '/../pfif_validator')
-import pfif_validator
+from pfif_validator import PfifValidator
 
 class ValidatorTests(unittest.TestCase):
 
@@ -33,25 +33,26 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person />
 </pfif:pfif>"""
 
+  PRINT_VALIDATOR_OUTPUT = True
+
   def setUp(self):
     """Some of the tests will run code that prints stuff out.  This prevents it
     from printing next to the clean dots from the unit tests."""
-    sys.stdout = open(os.devnull, "w")
+    if not ValidatorTests.PRINT_VALIDATOR_OUTPUT:
+      sys.stdout = open(os.devnull, "w")
 
-  def set_up_xml_tree(self, xml):
-    """Turns xml into a tree.  Does validation that all other tests rely on"""
+  def set_up_validator(self, xml):
+    """Creates a PFIF validator from XML and initializes it"""
     pfif_file = StringIO.StringIO(xml)
-    tree = pfif_validator.validate_xml_or_die(pfif_file)
-    version = pfif_validator.validate_root_is_pfif_or_die(tree)
-    pfif_validator.validate_root_has_child_or_die(tree)
-    return (tree, version)
+    return PfifValidator(pfif_file, initialize=True)
 
   # validate_xml_or_die
 
   def test_valid_xml(self):
     """validate_xml_or_die should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(pfif_validator.validate_xml_or_die(valid_xml_file))
+    v = PfifValidator(valid_xml_file, initialize=False)
+    self.assertTrue(v.validate_xml_or_die())
 
   def test_invalid_xml(self):
     """validate_xml_or_die should raise an error on a string of invalid XML"""
@@ -59,17 +60,18 @@ class ValidatorTests(unittest.TestCase):
         """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>""")
-    self.assertRaises(Exception, pfif_validator.validate_xml_or_die,
-                      invalid_xml_file)
+    v = PfifValidator(invalid_xml_file, initialize=False)
+    self.assertRaises(Exception, v.validate_xml_or_die)
 
   # validate_root_is_pfif_or_die
 
   def test_root_is_pfif(self):
     """validate_root_is_pfif_or_die should return the PFIF version if the XML
     root is PFIF"""
-    pfif_12_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
-    tree = pfif_validator.validate_xml_or_die(pfif_12_xml_file)
-    self.assertEqual(pfif_validator.validate_root_is_pfif_or_die(tree), 1.1)
+    pfif_11_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
+    v = PfifValidator(pfif_11_xml_file, initialize=False)
+    v.validate_xml_or_die()
+    self.assertEqual(v.validate_root_is_pfif_or_die(), 1.1)
 
   def test_root_is_not_pfif(self):
     """validate_root_is_pfif_or_die should raise an exception if the XML root
@@ -79,9 +81,9 @@ class ValidatorTests(unittest.TestCase):
 <pfif:html xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person />
 </pfif:html>""")
-    tree = pfif_validator.validate_xml_or_die(random_xml_file)
-    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
-                      tree)
+    v = PfifValidator(random_xml_file, initialize=False)
+    v.validate_xml_or_die()
+    self.assertRaises(Exception, v.validate_root_is_pfif_or_die)
 
   def test_root_lacks_namespace(self):
     """validate_root_is_pfif_or_die should raise an exception if the XML root
@@ -91,10 +93,9 @@ class ValidatorTests(unittest.TestCase):
 <pfif>
   <person />
 </pfif>""")
-    tree = pfif_validator.validate_xml_or_die(no_namespace_xml_file)
-    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
-                      tree)
-
+    v = PfifValidator(no_namespace_xml_file, initialize=False)
+    v.validate_xml_or_die()
+    self.assertRaises(Exception, v.validate_root_is_pfif_or_die)
 
   def test_root_is_bad_pfif_version(self):
     """validate_root_is_pfif_or_die should raise an exception if the PFIF
@@ -104,9 +105,9 @@ class ValidatorTests(unittest.TestCase):
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/9.9">
   <pfif:person />
 </pfif:pfif>""")
-    tree = pfif_validator.validate_xml_or_die(pfif_99_xml_file)
-    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
-                      tree)
+    v = PfifValidator(pfif_99_xml_file, initialize=False)
+    v.validate_xml_or_die()
+    self.assertRaises(Exception, v.validate_root_is_pfif_or_die)
 
   def test_root_is_bad_pfif_website(self):
     """validate_root_is_pfif_or_die should raise an exception if the PFIF
@@ -116,79 +117,66 @@ class ValidatorTests(unittest.TestCase):
 <pfif:pfif xmlns:pfif="http://zesty.com/pfif/1.2">
   <pfif:person />
 </pfif:pfif>""")
-    tree = pfif_validator.validate_xml_or_die(pfif_bad_website_xml_file)
-    self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
-                      tree)
+    v = PfifValidator(pfif_bad_website_xml_file, initialize=False)
+    v.validate_xml_or_die()
+    self.assertRaises(Exception, v.validate_root_is_pfif_or_die)
 
-  # validate_root_has_child_or_die
+  # validate_root_has_child
 
   def test_root_has_child(self):
-    """validate_root_has_child_or_die should do nothing if the root node has at
+    """validate_root_has_child should return true if the root node has at
     least one child"""
-    pfif_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
-    tree = pfif_validator.validate_xml_or_die(pfif_file)
-    self.assertEqual(pfif_validator.validate_root_has_child_or_die(tree),
-                        None)
+    v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
+    self.assertTrue(v.validate_root_has_child())
 
   def test_root_lacks_child(self):
-    """validate_root_has_child_or_die should raise an exception if the root node
+    """validate_root_has_child should return false if the root node
     does not have at least one child"""
-    pfif_file = StringIO.StringIO("""<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />""")
-    tree = pfif_validator.validate_xml_or_die(pfif_file)
-    self.assertRaises(Exception, pfif_validator.validate_root_has_child_or_die,
-                      tree)
+    self.assertFalse(v.validate_root_has_child())
 
   # validate_root_has_mandatory_children
 
   def test_root_has_mandatory_children(self):
     """validate_root_has_mandatory_children should return true if one of the
     children is a person"""
-    (tree, version) = self.set_up_xml_tree(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(
-        pfif_validator.validate_root_has_mandatory_children(tree, version))
-
+    v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
+    self.assertTrue(v.validate_root_has_mandatory_children())
 
   def test_root_lacks_mandatory_children(self):
     """validate_root_has_mandatory_children should return false if the only
     children are not notes or persons"""
-    (tree, version) = self.set_up_xml_tree(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:notAPersonOrNote />
 </pfif:pfif>""")
-    self.assertFalse(
-        pfif_validator.validate_root_has_mandatory_children(tree, version))
+    self.assertFalse(v.validate_root_has_mandatory_children())
 
   def test_root_has_note_child_11(self):
     """validate_root_has_mandatory_children should return false if the only
     children are notes and the version is 1.1"""
-    (tree, version) = self.set_up_xml_tree(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:note />
 </pfif:pfif>""")
-    self.assertFalse(
-        pfif_validator.validate_root_has_mandatory_children(tree, version))
+    self.assertFalse(v.validate_root_has_mandatory_children())
 
   def test_root_has_note_child_12(self):
     """validate_root_has_mandatory_children should return true if the only
     children are notes and the version is greater than 1.1"""
-    (tree, version) = self.set_up_xml_tree(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note />
 </pfif:pfif>""")
-    self.assertTrue(
-        pfif_validator.validate_root_has_mandatory_children(tree, version))
+    self.assertTrue(v.validate_root_has_mandatory_children())
 
   # validate_has_mandatory_children
 
   def test_note_has_mandatory_children(self):
     """validate_has_mandatory_children should return an empty list if it is
     given a note with all mandatory children"""
-    (tree, version) = self.set_up_xml_tree(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id />
@@ -197,29 +185,21 @@ class ValidatorTests(unittest.TestCase):
     <pfif:text />
   </pfif:note>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('note', tree,
-                                                           version)),
-        0)
+    self.assertEqual(len(v.validate_note_has_mandatory_children()), 0)
 
   def test_note_has_no_mandatory_children(self):
     """validate_has_mandatory_children should return a list with four missing
     children when given a note with no children"""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('note', tree,
-                                                           version)),
-        4)
+    self.assertEqual(len(v.validate_note_has_mandatory_children()), 4)
 
   def test_person_has_mandatory_children_11(self):
     """validate_has_mandatory_children should return an empty list if it is
     given a version 1.1 person with all mandatory children"""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
@@ -228,16 +208,12 @@ class ValidatorTests(unittest.TestCase):
     <pfif:last_name />
   </pfif:person>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('person', tree,
-                                                           version)),
-        0)
+    self.assertEqual(len(v.validate_person_has_mandatory_children()), 0)
 
   def test_person_has_mandatory_children_13(self):
     """validate_has_mandatory_children should return an empty list if it is
     given a version 1.3 person with all mandatory children"""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id />
@@ -245,32 +221,22 @@ class ValidatorTests(unittest.TestCase):
     <pfif:full_name />
   </pfif:person>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('person', tree,
-                                                           version)),
-        0)
+    self.assertEqual(len(v.validate_person_has_mandatory_children()), 0)
 
   def test_person_has_no_mandatory_children_11(self):
     """validate_has_mandatory_children should return a list with four missing
     children when given a version 1.1 person with no children"""
-    (tree, version) = self.set_up_xml_tree(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('person', tree,
-                                                           version)),
-        4)
+    v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
+    self.assertEqual(len(v.validate_person_has_mandatory_children()), 4)
 
   def test_person_has_no_mandatory_children_13(self):
     """validate_has_mandatory_children should return a list with three missing
     children when given a version 1.3 person with no children"""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person />
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_has_mandatory_children('person', tree,
-                                                           version)),
-        3)
+    self.assertEqual(len(v.validate_person_has_mandatory_children()), 3)
 
   # validate_fields_have_correct_format
 
@@ -278,22 +244,18 @@ class ValidatorTests(unittest.TestCase):
     """validate_fields_have_correct_format should return an empty list when
     passed a tree with no subelements of person or note because no nodes are
     improperly formatted."""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:note />
   </pfif:person>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
-        0)
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
 
   def test_all_11_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
     passed a tree with all 1.1 elements in the correct formats."""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>http://example.org/local-id.3</pfif:person_record_id>
@@ -333,17 +295,14 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
-        0)
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
 
   def test_no_11_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return a list with every
     subnode of person and note when every such subnode is of an incorrect
     format.  This tests all fields in version 1.1 for which incorrect input is
     possible."""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>http://example.org/</pfif:person_record_id>
@@ -372,9 +331,7 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
-    self.assertEqual(
-        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
-        23)
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 23)
 
   #TODO(samking): write tests for 1.2 and 1.3 fields
   #def test_all_12_fields_have_correct_format(self):
