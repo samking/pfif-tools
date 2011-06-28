@@ -37,6 +37,9 @@ MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'source_date',
                             }
                      }
 
+# the xml namespace without the version
+NAMESPACE_BASE = 'http://zesty.ca/pfif/'
+
 def validate_xml_or_die(xml_file):
   """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
   library will raise an exception."""
@@ -91,10 +94,25 @@ def validate_root_has_mandatory_children(tree, version):
     print "All children: " + str(children)
   return result
 
-def validate_has_mandatory_children(parent, tree, version):
+def add_namespace_to_tag(tag, version):
+  """turns a local tag into a fully qualified tag by adding a namespace """
+  return '{' + NAMESPACE_BASE + str(version) + '}' + tag
+
+def validate_has_mandatory_children(parent_tag, tree, version):
   """Validates that every parent node has all mandatory children specified by
-  MANDATORY_CHILDREN.  Returns a list with the names of all missing children.
-  parent should be a string representing the local tag of the node to check."""
+  MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
+  missing from any parent found.
+  parent_tag should be a string of the local tag of the node to check."""
+  mandatory_children = MANDATORY_CHILDREN[version][parent_tag]
+  parents = tree.findall(add_namespace_to_tag(parent_tag, version))
+  missing_children = []
+  for parent in parents:
+    for child_tag in mandatory_children:
+      child = parent.find(add_namespace_to_tag(child_tag, version))
+      if child is None:
+        if not child_tag in missing_children:
+          missing_children.append(child_tag)
+  return missing_children
 
 def main():
   if (not len(sys.argv()) == 2):
