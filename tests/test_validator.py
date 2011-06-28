@@ -253,7 +253,7 @@ class ValidatorTests(unittest.TestCase):
   def test_person_has_no_mandatory_children_11(self):
     """validate_has_mandatory_children should return a list with four missing
     children when given a version 1.1 person with no children"""
-    (tree, version) = self.set_up_xml_tree(VALID_XML_11_SMALL)
+    (tree, version) = self.set_up_xml_tree(ValidatorTests.VALID_XML_11_SMALL)
     self.assertEqual(
         len(pfif_validator.validate_has_mandatory_children('person', tree,
                                                            version)),
@@ -274,19 +274,6 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_fields_have_correct_format
 
-  def test_all_11_fields_have_correct_format(self):
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
-  <pfif:person>
-    <pfif:note />
-  </pfif:person>
-</pfif:pfif>""")
-  def test_all_12_fields_have_correct_format(self):
-  def test_all_13_fields_have_correct_format(self):
-  def test_no_11_fields_have_correct_format(self):
-  def test_no_12_fields_have_correct_format(self):
-  def test_no_13_fields_have_correct_format(self):
   def test_no_fields_exist(self):
     """validate_fields_have_correct_format should return an empty list when
     passed a tree with no subelements of person or note because no nodes are
@@ -301,6 +288,99 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(
         len(pfif_validator.validate_fields_have_correct_format(tree, version)),
         0)
+
+  def test_all_11_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    passed a tree with all 1.1 elements in the correct formats."""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id>http://example.org/local-id.3</pfif:person_record_id>
+    <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
+    <pfif:author_name>author name</pfif:author_name>
+    <pfif:author_email>email@example.org</pfif:author_email>
+    <pfif:author_phone>+12345678901</pfif:author_phone>
+    <pfif:source_name>source name</pfif:source_name>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:source_url>source.u.r/l</pfif:source_url>
+    <pfif:first_name>FIRST NAME</pfif:first_name>
+    <pfif:last_name>LAST NAME</pfif:last_name>
+    <pfif:home_city>HOME CITY</pfif:home_city>
+    <pfif:home_state>CA</pfif:home_state>
+    <pfif:home_neighborhood>HOME NEIGHBORHOOD</pfif:home_neighborhood>
+    <pfif:home_street>HOME STREET</pfif:home_street>
+    <pfif:home_zip>12345</pfif:home_zip>
+    <pfif:photo_url>
+      proto://user:pass@host:999/url_path?var=val#hash
+    </pfif:photo_url>
+    <pfif:other>other text</pfif:other>
+    <pfif:note>
+      <pfif:note_record_id>http://example.org/local-id.4</pfif:note_record_id>
+      <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
+      <pfif:author_name>author name</pfif:author_name>
+      <pfif:author_email>author-email@exmaple.org</pfif:author_email>
+      <pfif:author_phone>123.456.7890</pfif:author_phone>
+      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+      <pfif:found>true</pfif:found>
+      <pfif:email_of_found_person>email@example.org</pfif:email_of_found_person>
+      <pfif:phone_of_found_person>(123)456-7890</pfif:phone_of_found_person>
+      <pfif:last_known_location>last known location</pfif:last_known_location>
+      <pfif:text>large text string</pfif:text>
+    </pfif:note>
+    <pfif:note>
+      <pfif:found>false</pfif:found>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
+        0)
+
+  def test_no_11_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    subnode of person and note when every such subnode is of an incorrect
+    format.  This tests all fields in version 1.1 for which incorrect input is
+    possible."""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id>http://example.org/</pfif:person_record_id>
+    <pfif:entry_date>123456-78T90:12:34Z</pfif:entry_date>
+    <pfif:author_email>@example.org</pfif:author_email>
+    <pfif:author_phone>++12345678901</pfif:author_phone>
+    <pfif:source_date>1234-56-7890:12:34Z</pfif:source_date>
+    <pfif:source_url>!.%^*</pfif:source_url>
+    <pfif:first_name>lowercase first name</pfif:first_name>
+    <pfif:last_name>LOWEr</pfif:last_name>
+    <pfif:home_city>lOWER</pfif:home_city>
+    <pfif:home_state>LONG</pfif:home_state>
+    <pfif:home_neighborhood>lower</pfif:home_neighborhood>
+    <pfif:home_street>loWer</pfif:home_street>
+    <pfif:home_zip>NOT NUMERIC</pfif:home_zip>
+    <pfif:photo_url>bad.port:foo</pfif:photo_url>
+    <pfif:note>
+      <pfif:note_record_id>/local-id.4</pfif:note_record_id>
+      <pfif:entry_date>1234-56-78T90:12:34</pfif:entry_date>
+      <pfif:author_email>author-email</pfif:author_email>
+      <pfif:author_phone>abc-def-ghij</pfif:author_phone>
+      <pfif:source_date>123a-56-78T90:12:34Z</pfif:source_date>
+      <pfif:found>not-true-or-false</pfif:found>
+      <pfif:email_of_found_person>email@</pfif:email_of_found_person>
+      <pfif:phone_of_found_person>(1t3)4s6-7a90</pfif:phone_of_found_person>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
+        23)
+
+  #TODO(samking): write tests for 1.2 and 1.3 fields
+  #def test_all_12_fields_have_correct_format(self):
+  #def test_all_13_fields_have_correct_format(self):
+  #def test_no_12_fields_have_correct_format(self):
+  #def test_no_13_fields_have_correct_format(self):
 
   # validate_unique_id
 
