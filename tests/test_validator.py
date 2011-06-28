@@ -203,10 +203,66 @@ class ValidatorTests(unittest.TestCase):
                                                            version)),
         4)
 
-  #def test_person_has_mandatory_children_11(self):
-  #def test_person_has_mandatory_children_13(self):
-  #def test_person_has_no_mandatory_children_11(self):
-  #def test_person_has_no_mandatory_children_13(self):
+  def test_person_has_mandatory_children_11(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a version 1.1 person with all mandatory children"""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:source_date />
+    <pfif:first_name />
+    <pfif:last_name />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_has_mandatory_children('person', tree,
+                                                           version)),
+        0)
+
+  def test_person_has_mandatory_children_13(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a version 1.3 person with all mandatory children"""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:source_date />
+    <pfif:full_name />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_has_mandatory_children('person', tree,
+                                                           version)),
+        0)
+
+  def test_person_has_no_mandatory_children_11(self):
+    """validate_has_mandatory_children should return a list with four missing
+    children when given a version 1.1 person with no children"""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person />
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_has_mandatory_children('person', tree,
+                                                           version)),
+        4)
+
+  def test_person_has_no_mandatory_children_13(self):
+    """validate_has_mandatory_children should return a list with three missing
+    children when given a version 1.3 person with no children"""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person />
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_has_mandatory_children('person', tree,
+                                                           version)),
+        3)
 
 if __name__ == '__main__':
   unittest.main()
