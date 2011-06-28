@@ -26,6 +26,8 @@ import pfif_validator
 
 class ValidatorTests(unittest.TestCase):
 
+  # Set Up
+
   VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person />
@@ -44,6 +46,8 @@ class ValidatorTests(unittest.TestCase):
     pfif_validator.validate_root_has_child_or_die(tree)
     return (tree, version)
 
+  # validate_xml_or_die
+
   def test_valid_xml(self):
     """validate_xml_or_die should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
@@ -57,6 +61,8 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>""")
     self.assertRaises(Exception, pfif_validator.validate_xml_or_die,
                       invalid_xml_file)
+
+  # validate_root_is_pfif_or_die
 
   def test_root_is_pfif(self):
     """validate_root_is_pfif_or_die should return the PFIF version if the XML
@@ -114,6 +120,8 @@ class ValidatorTests(unittest.TestCase):
     self.assertRaises(Exception, pfif_validator.validate_root_is_pfif_or_die,
                       tree)
 
+  # validate_root_has_child_or_die
+
   def test_root_has_child(self):
     """validate_root_has_child_or_die should do nothing if the root node has at
     least one child"""
@@ -130,6 +138,8 @@ class ValidatorTests(unittest.TestCase):
     tree = pfif_validator.validate_xml_or_die(pfif_file)
     self.assertRaises(Exception, pfif_validator.validate_root_has_child_or_die,
                       tree)
+
+  # validate_root_has_mandatory_children
 
   def test_root_has_mandatory_children(self):
     """validate_root_has_mandatory_children should return true if one of the
@@ -171,6 +181,8 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertTrue(
         pfif_validator.validate_root_has_mandatory_children(tree, version))
+
+  # validate_has_mandatory_children
 
   def test_note_has_mandatory_children(self):
     """validate_has_mandatory_children should return an empty list if it is
@@ -241,11 +253,7 @@ class ValidatorTests(unittest.TestCase):
   def test_person_has_no_mandatory_children_11(self):
     """validate_has_mandatory_children should return a list with four missing
     children when given a version 1.1 person with no children"""
-    (tree, version) = self.set_up_xml_tree(
-         """<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
-  <pfif:person />
-</pfif:pfif>""")
+    (tree, version) = self.set_up_xml_tree(VALID_XML_11_SMALL)
     self.assertEqual(
         len(pfif_validator.validate_has_mandatory_children('person', tree,
                                                            version)),
@@ -263,6 +271,46 @@ class ValidatorTests(unittest.TestCase):
         len(pfif_validator.validate_has_mandatory_children('person', tree,
                                                            version)),
         3)
+
+  # validate_fields_have_correct_format
+
+  def test_all_11_fields_have_correct_format(self):
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:note />
+  </pfif:person>
+</pfif:pfif>""")
+  def test_all_12_fields_have_correct_format(self):
+  def test_all_13_fields_have_correct_format(self):
+  def test_no_11_fields_have_correct_format(self):
+  def test_no_12_fields_have_correct_format(self):
+  def test_no_13_fields_have_correct_format(self):
+  def test_no_fields_exist(self):
+    """validate_fields_have_correct_format should return an empty list when
+    passed a tree with no subelements of person or note because no nodes are
+    improperly formatted."""
+    (tree, version) = self.set_up_xml_tree(
+         """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:note />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(
+        len(pfif_validator.validate_fields_have_correct_format(tree, version)),
+        0)
+
+  # validate_unique_id
+
+  # validate_notes_belong_to_persons
+
+  # validate_field_order
+
+  # validate_expiry
+
+  # validate_extraneous_fields
 
 if __name__ == '__main__':
   unittest.main()

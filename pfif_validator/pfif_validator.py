@@ -114,6 +114,11 @@ def validate_has_mandatory_children(parent_tag, tree, version):
           missing_children.append(child_tag)
   return missing_children
 
+def validate_fields_have_correct_format(tree, version):
+  """Validates that every field in FIELD_FORMATS follows the correct format (ie,
+  that the dates are in yyyy-mm-ddThh:mm:ssZ format).  Returns a list of the
+  fields that have improperly formatted data."""
+
 def main():
   if (not len(sys.argv()) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
@@ -124,6 +129,7 @@ def main():
   validate_person_has_mandatory_children(tree, version)
   validate_has_mandatory_children('person', tree, version)
   validate_has_mandatory_children('note', tree, version)
+  validate_fields_have_correct_format(tree, version)
 
 if __name__ == '__main__':
   main()
