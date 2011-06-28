@@ -37,6 +37,48 @@ MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'source_date',
                             }
                      }
 
+# regular expressions to match acceptable formats for a particular type of field
+RECORD_ID = r'.+/.+' #TODO(samking): make more specific
+DATE = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z'
+TEXT = r'.*' #TODO(samking): do we want to do .+?
+EMAIL = r'.+@.+' #TODO(samking): make more specific
+PHONE = r'[-+()\d]*\d[-+()\d]*' #TODO(samking): make more specific
+URL = r'.+' #TODO(samking): make more specific
+CAPS = r'[A-Z]+'
+STATE = r'[A-Z][A-Z]'
+INTEGER = r'\d+'
+BOOLEAN = r'(true|false)'
+
+# a map from the name of a field to a regular expression matching valid formats
+# for that field
+VALID_FORMATS = {1.1 : {'person_record_id' : RECORD_ID,
+                        'entry_date' : DATE,
+                        'author_name' : TEXT,
+                        'author_email' : EMAIL,
+                        'author_phone' : PHONE,
+                        'source_name' : TEXT,
+                        'source_date' : DATE,
+                        'source_url' : URL,
+                        'first_name' : CAPS,
+                        'last_name' : CAPS,
+                        'home_city' : CAPS,
+                        'home_state' : STATE,
+                        'home_neighborhood' : CAPS,
+                        'home_street' : CAPS,
+                        'home_zip' : INTEGER,
+                        'photo_url' : URL,
+                        'other' : TEXT,
+                        'note_record_id' : RECORD_ID,
+                        'found' : BOOLEAN,
+                        'email_of_found_person' : EMAIL,
+                        'phone_of_found_person' : PHONE,
+                        'last_known_location' : TEXT,
+                        'text' : TEXT
+                      },
+                 1.2 : {},
+                 1.3 : {}
+                }
+
 # the xml namespace without the version
 NAMESPACE_BASE = 'http://zesty.ca/pfif/'
 
