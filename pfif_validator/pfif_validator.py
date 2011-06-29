@@ -366,6 +366,14 @@ class PfifValidator:
   def validate_note_ids_are_unique(self):
     return self.validate_ids_are_unique('note')
 
+  def validate_notes_belong_to_persons(self):
+    """Validates that every note that is at the top level contains a
+    person_record_id and that every note inside a person with a person_record_id
+    matches the id of the parent person.  Returns a list of all unmatched
+    persons"""
+    return []
+
+
 #def main():
 #  if (not len(sys.argv()) == 2):
 #    print "Usage: python pfif-validator.py my-pyif-xml-file"

@@ -535,6 +535,41 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_note_ids_are_unique()), 2)
 
   # validate_notes_belong_to_persons
+  
+  def test_notes_belong_to_people(self):
+    """validate_notes_belong_to_persons should return an empty list if all top
+    level notes have a person_record_id and all notes inside persons have no
+    person_record_id or the same person_record_id as the person."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+  </pfif:note>
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:person_record_id>example.org/1</pfif:person_record_id>
+    </pfif:note>
+    <pfif:note />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_notes_belong_to_persons()), 0)
+
+  def test_notes_do_not_belong_to_people(self):
+    """validate_notes_belong_to_persons should return a list with all top level
+    notes without a person_record_id and person_record_ids for notes that are
+    under a person with a person_record_id that doesn't match the person"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note />
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:person_record_id>example.org/2</pfif:person_record_id>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_notes_belong_to_persons()), 2)
 
   # validate_field_order
 
