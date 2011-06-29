@@ -173,6 +173,7 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_has_mandatory_children
 
+  #TODO(samking): notes that are free floating must have a person record id
   def test_note_has_mandatory_children(self):
     """validate_has_mandatory_children should return an empty list if it is
     given a note with all mandatory children"""
@@ -297,6 +298,7 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
 
+  #TODO(samking): test that non-ascii characters should be rejected
   def test_no_11_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return a list with every
     subnode of person and note when every such subnode is of an incorrect
@@ -336,10 +338,90 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_fields_have_correct_format()), 23)
 
-  #TODO(samking): write tests for 1.2 and 1.3 fields
-  #def test_all_12_fields_have_correct_format(self):
+  def test_all_12_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    presented with a document where all fields have the correct format.  This
+    tests all fields introduced or changed in 1.2; it does not test fields that
+    were unchanged from 1.1."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:sex>male</pfif:sex>
+    <pfif:date_of_birth>1990-09-15</pfif:date_of_birth>
+    <pfif:age>20</pfif:age>
+    <pfif:home_country>US</pfif:home_country>
+    <pfif:home_state>OR</pfif:home_state>
+    <pfif:home_postal_code>94309</pfif:home_postal_code>
+    <pfif:first_name>lowercase first</pfif:first_name>
+    <pfif:last_name>lower last</pfif:last_name>
+    <pfif:home_city>lower city</pfif:home_city>
+    <pfif:home_neighborhood>lower neighborhood</pfif:home_neighborhood>
+    <pfif:home_street>lower street</pfif:home_street>
+    <pfif:note>
+      <pfif:status>information_sought</pfif:status>
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:sex>female</pfif:sex>
+    <pfif:date_of_birth>1990-09</pfif:date_of_birth>
+    <pfif:age>3-100</pfif:age>
+    <pfif:home_state>71</pfif:home_state>
+    <pfif:note>
+      <pfif:status>believed_alive</pfif:status>
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:sex>other</pfif:sex>
+    <pfif:date_of_birth>1990</pfif:date_of_birth>
+    <pfif:home_state>ABC</pfif:home_state>
+    <pfif:note>
+      <pfif:status>believed_dead</pfif:status>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:person_record_id>example.org/local1</pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/id2</pfif:linked_person_record_id>
+    <pfif:status>is_note_author</pfif:status>
+  </pfif:note>
+  <pfif:note>
+    <pfif:status>believed_missing</pfif:status>
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
+
+  def test_no_12_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    element presented to it when all fields have an incorrect format.  This
+    tests all fields introduced or changed in 1.2, except ones that are always
+    accepted; it does not test fields that were unchanged from 1.1."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:sex>not-male-or-female-or-other</pfif:sex>
+    <pfif:date_of_birth>09-15-1990</pfif:date_of_birth>
+    <pfif:age>20.5</pfif:age>
+    <pfif:home_country>abc</pfif:home_country>
+    <pfif:home_state>1234</pfif:home_state>
+    <pfif:home_postal_code>foo</pfif:home_postal_code>
+    <pfif:note>
+      <pfif:status>weird_belief</pfif:status>
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:date_of_birth>September 15, 1990</pfif:date_of_birth>
+    <pfif:age>3,100</pfif:age>
+  </pfif:person>
+  <pfif:person>
+    <pfif:date_of_birth>1900-ab</pfif:date_of_birth>
+  </pfif:person>
+  <pfif:note>
+    <pfif:person_record_id>example.org</pfif:person_record_id>
+    <pfif:linked_person_record_id>/id2</pfif:linked_person_record_id>
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 12)
+
   #def test_all_13_fields_have_correct_format(self):
-  #def test_no_12_fields_have_correct_format(self):
   #def test_no_13_fields_have_correct_format(self):
 
   # validate_unique_id

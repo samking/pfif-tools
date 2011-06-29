@@ -65,9 +65,18 @@ class PfifValidator:
   PHONE = r'^([-\.+() ]*\d[-\.+() ]*)+([#x]\d+)?$'
   URL = "URL"
   CAPS = r'^[A-Z ]+$'
-  STATE = r'^[A-Z][A-Z]$'
+  US_STATE = r'^[A-Z][A-Z]$'
+  ISO31661_COUNTRY = US_STATE
+  ISO31662_STATE = r'^[a-zA-Z0-9]{1,3}$'
   INTEGER = r'^\d+$'
   BOOLEAN = r'^(true|false)$'
+  STATUS = r'^(information_sought|is_note_author|believed_alive|' \
+           r'believed_missing|believed_dead)$'
+  SEX = r'^(male|female|other)$'
+  # YYYY, YYYY-MM, or YYYY-MM-DD
+  DATE_OF_BIRTH = r'^\d{4}(-\d{2}(-\d{2})?)?$'
+  # one integer or a range between two integers
+  AGE = r'^\d+(-\d+)?$'
 
   # a map from field name to a regular expression matching valid formats for
   # that field
@@ -82,7 +91,7 @@ class PfifValidator:
                                 'first_name' : CAPS,
                                 'last_name' : CAPS,
                                 'home_city' : CAPS,
-                                'home_state' : STATE,
+                                'home_state' : US_STATE,
                                 'home_neighborhood' : CAPS,
                                 'home_street' : CAPS,
                                 'home_zip' : INTEGER,
@@ -102,8 +111,43 @@ class PfifValidator:
                               'text' : TEXT
                              }
                    },
-             1.2 : {'person' : {},
-                    'note' : {}
+             1.2 : {'person' : {'person_record_id' : RECORD_ID,
+                                'entry_date' : DATE,
+                                'author_name' : TEXT,
+                                'author_email' : EMAIL,
+                                'author_phone' : PHONE,
+                                'source_name' : TEXT,
+                                'source_date' : DATE,
+                                'source_url' : URL,
+                                'first_name' : TEXT,
+                                'last_name' : TEXT,
+                                'sex' : SEX,
+                                'date_of_birth' : DATE_OF_BIRTH,
+                                'age' : AGE,
+                                'home_street' : TEXT,
+                                'home_city' : TEXT,
+                                'home_neighborhood' : TEXT,
+                                'home_state' : ISO31662_STATE,
+                                'home_postal_code' : INTEGER,
+                                'home_country' : ISO31661_COUNTRY,
+                                'photo_url' : URL,
+                                'other' : TEXT
+                               },
+                    'note' : {'note_record_id' : RECORD_ID,
+                              'person_record_id' : RECORD_ID,
+                              'linked_person_record_id' : RECORD_ID,
+                              'entry_date' : DATE,
+                              'author_name' : TEXT,
+                              'author_email' : EMAIL,
+                              'author_phone' : PHONE,
+                              'source_date' : DATE,
+                              'found' : BOOLEAN,
+                              'status' : STATUS,
+                              'email_of_found_person' : EMAIL,
+                              'phone_of_found_person' : PHONE,
+                              'last_known_location' : TEXT,
+                              'text' : TEXT
+                             }
                    },
              1.3 : {'person' : {},
                     'note' : {}
