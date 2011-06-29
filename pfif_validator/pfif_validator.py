@@ -339,6 +339,33 @@ class PfifValidator:
       print incorrect_format
     return incorrect_formats
 
+  def validate_ids_are_unique(self, id_type):
+    if id_type == 'person':
+      collection = self.get_all_persons()
+      field = 'person_record_id'
+    elif id_type == 'note':
+      collection = self.get_all_notes()
+      field = 'note_record_id'
+    else:
+      print "INTERNAL ERROR: We just tried to validate that a type of ID " \
+            "other than person or note was unique.  We can't do that."
+      return []
+    ids = []
+    duplicate_ids = []
+    for elem in collection:
+      curr_id = elem.find(self.add_namespace_to_tag(field)).text
+      if curr_id in ids and curr_id not in duplicate_ids:
+        duplicate_ids.append(curr_id)
+      elif curr_id not in ids:
+        ids.append(curr_id)
+    return duplicate_ids
+
+  def validate_person_ids_are_unique(self):
+    return self.validate_ids_are_unique('person')
+
+  def validate_note_ids_are_unique(self):
+    return self.validate_ids_are_unique('note')
+
 #def main():
 #  if (not len(sys.argv()) == 2):
 #    print "Usage: python pfif-validator.py my-pyif-xml-file"

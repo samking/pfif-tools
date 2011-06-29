@@ -506,6 +506,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.com/2</pfif:person_record_id>
   </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.com/2</pfif:person_record_id>
+  </pfif:person>
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_person_ids_are_unique()), 2)
 
@@ -536,6 +539,8 @@ class ValidatorTests(unittest.TestCase):
   # validate_field_order
 
   # validate_expiry
+
+  # validate_linked_person_records_are_matched
 
   # validate_extraneous_fields
 
