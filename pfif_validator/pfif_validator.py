@@ -18,6 +18,7 @@
 import xml.etree.ElementTree as ET
 import re
 import xml_utils
+from urlparse import urlparse
 
 class PfifValidator:
 
@@ -40,49 +41,95 @@ class PfifValidator:
                        }
 
   # regular expressions to match valid formats for each field type
-  RECORD_ID = r'.+/.+' #TODO(samking): make more specific
-  DATE = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z'
-  TEXT = r'.*' #TODO(samking): do we want to do .+?
-  EMAIL = r'.+@.+' #TODO(samking): make more specific
-  PHONE = r'[-+()\d]*\d[-+()\d]*' #TODO(samking): make more specific
-  URL = r'.+' #TODO(samking): make more specific
-  CAPS = r'[A-Z]+'
-  STATE = r'[A-Z][A-Z]'
-  INTEGER = r'\d+'
-  BOOLEAN = r'(true|false)'
+  # Domain Name Spec: http://tools.ietf.org/html/rfc1034 (see sections 3.1, 3.5)
+  # A label is a sequence of 1-63 letters, digits, or hyphens that starts with a
+  # letter and ends with a letter or number.  A domain name is any number of
+  # labels, separated by dots, that total up to 255 characters.
+  # We allow the final dot to be optional since pepole usually omit it.
+  # TODO(samking): require domain name to be at most 255 characters
+  DOMAIN_LABEL = r'[a-zA-Z]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?'
+  DOMAIN_NAME = r'(' + DOMAIN_LABEL + r'\.)*' + DOMAIN_LABEL + '\.?'
+  RECORD_ID = r'^' + DOMAIN_NAME + r'/.+$'
+  DATE = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$'
+  TEXT = r'^.*$' #TODO(samking): do we want to do .+?
+  EMAIL = r'^.+@.+$' #TODO(samking): make more specific
+  # Allow there to be any number of delimiters (space, hyphen, dot, plus, and
+  # parentheses) around each digit
+  # Phone numbers can also have an extension if there is an x or pound sign at
+  # the end of the number.
+  # We are permissive about delimiters because validation on a missing person
+  # database could annoy users, and we are permissive about number of digits
+  # allowed because there are multiple standards (ie,
+  # http://tools.ietf.org/html/rfc4933#section-2.5 and
+  # http://en.wikipedia.org/wiki/E.164)
+  PHONE = r'^([-\.+() ]*\d[-\.+() ]*)+([#x]\d+)?$'
+  URL = "URL"
+  CAPS = r'^[A-Z ]+$'
+  STATE = r'^[A-Z][A-Z]$'
+  INTEGER = r'^\d+$'
+  BOOLEAN = r'^(true|false)$'
 
   # a map from field name to a regular expression matching valid formats for
   # that field
-  FORMATS = {1.1 : {'person_record_id' : RECORD_ID,
-                    'entry_date' : DATE,
-                    'author_name' : TEXT,
-                    'author_email' : EMAIL,
-                    'author_phone' : PHONE,
-                    'source_name' : TEXT,
-                    'source_date' : DATE,
-                    'source_url' : URL,
-                    'first_name' : CAPS,
-                    'last_name' : CAPS,
-                    'home_city' : CAPS,
-                    'home_state' : STATE,
-                    'home_neighborhood' : CAPS,
-                    'home_street' : CAPS,
-                    'home_zip' : INTEGER,
-                    'photo_url' : URL,
-                    'other' : TEXT,
-                    'note_record_id' : RECORD_ID,
-                    'found' : BOOLEAN,
-                    'email_of_found_person' : EMAIL,
-                    'phone_of_found_person' : PHONE,
-                    'last_known_location' : TEXT,
-                    'text' : TEXT
-                  },
-             1.2 : {},
-             1.3 : {}
+  FORMATS = {1.1 : {'person' : {'person_record_id' : RECORD_ID,
+                                'entry_date' : DATE,
+                                'author_name' : TEXT,
+                                'author_email' : EMAIL,
+                                'author_phone' : PHONE,
+                                'source_name' : TEXT,
+                                'source_date' : DATE,
+                                'source_url' : URL,
+                                'first_name' : CAPS,
+                                'last_name' : CAPS,
+                                'home_city' : CAPS,
+                                'home_state' : STATE,
+                                'home_neighborhood' : CAPS,
+                                'home_street' : CAPS,
+                                'home_zip' : INTEGER,
+                                'photo_url' : URL,
+                                'other' : TEXT
+                               },
+                    'note' : {'note_record_id' : RECORD_ID,
+                              'entry_date' : DATE,
+                              'author_name' : TEXT,
+                              'author_email' : EMAIL,
+                              'author_phone' : PHONE,
+                              'source_date' : DATE,
+                              'found' : BOOLEAN,
+                              'email_of_found_person' : EMAIL,
+                              'phone_of_found_person' : PHONE,
+                              'last_known_location' : TEXT,
+                              'text' : TEXT
+                             }
+                   },
+             1.2 : {'person' : {},
+                    'note' : {}
+                   },
+             1.3 : {'person' : {},
+                    'note' : {}
+                   }
             }
 
-  #TODO(samking): change to true
-  def __init__(self, xml_file, initialize=False): 
+  # helpers
+
+  def add_namespace_to_tag(self, tag):
+    """turns a local tag into a fully qualified tag by adding a namespace """
+    return '{' + self.namespace + '}' + tag
+
+  def get_all_persons(self):
+    """returns a list of all persons in the tree"""
+    return self.tree.findall(self.add_namespace_to_tag('person'))
+
+  def get_all_notes(self):
+    """returns a list of all notes in the tree"""
+    notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    for person in self.get_all_persons():
+      notes.extend(person.findall(self.add_namespace_to_tag('note')))
+    return notes
+
+  # initialization
+
+  def __init__(self, xml_file, initialize=True):
     self.xml_file = xml_file
     if initialize:
       self.validate_xml_or_die()
@@ -116,6 +163,8 @@ class PfifValidator:
            "This validator only supports versions 1.1-1.3.")
     return self.version
 
+  # validation
+
   def validate_root_has_child(self):
     """If there is at least one child, returns true."""
     root = self.tree.getroot()
@@ -144,10 +193,6 @@ class PfifValidator:
       print "All children: " + str(children)
     return result
 
-  def add_namespace_to_tag(self, tag):
-    """turns a local tag into a fully qualified tag by adding a namespace """
-    return '{' + self.namespace + '}' + tag
-
   def validate_has_mandatory_children(self, parent_tag):
     """Validates that every parent node has all mandatory children specified by
     MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
@@ -175,20 +220,43 @@ class PfifValidator:
     all mandatory children."""
     return self.validate_has_mandatory_children('note')
 
+  def validate_children_have_correct_format(self, parents, formats):
+    """validates that every element in parents has valid text, as per the
+    specification in formats"""
+    failed_matches = []
+    for parent in parents:
+      for field, field_format in formats.items():
+        elements = parent.findall(self.add_namespace_to_tag(field))
+        for element in elements:
+          #TODO(samking): is it correct to strip this string?
+          text = element.text.strip()
+          failed = False
+          if field_format == "URL":
+            url = urlparse(text)
+            if (url.scheme != "http" and url.scheme != "https"):
+              failed = True
+            if url.netloc == "":
+              failed = True
+          else:
+            match = re.match(field_format, text)
+            if match is None:
+              failed = True
+          if failed:
+            failed_matches.append((element.tag, element.text))
+    return failed_matches
+
   def validate_fields_have_correct_format(self):
     """Validates that every field in FORMATS follows the correct format
     (ie, that the dates are in yyyy-mm-ddThh:mm:ssZ format).  Returns a list of
-    the fields that have improperly formatted data."""
-    failed_matches = []
-    for field, field_format in PfifValidator.FORMATS[self.version].items():
-      elements = self.tree.findall(self.add_namespace_to_tag(field))
-      for element in elements:
-        text = element.text
-        match = re.match(field_format, text)
-        if match is None:
-          failed_matches.append((element.tag, element.text))
-    print failed_matches
-    return failed_matches
+    the fields that have improperly formatted data.  Wrapper for
+    validate_children_have_correct_format"""
+    incorrect_formats = self.validate_children_have_correct_format(
+        self.get_all_persons(), PfifValidator.FORMATS[self.version]['person'])
+    incorrect_formats.extend(self.validate_children_have_correct_format(
+        self.get_all_notes(), PfifValidator.FORMATS[self.version]['note']))
+    for incorrect_format in incorrect_formats:
+      print incorrect_format
+    return incorrect_formats
 
 #def main():
 #  if (not len(sys.argv()) == 2):

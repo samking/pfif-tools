@@ -33,7 +33,7 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person />
 </pfif:pfif>"""
 
-  PRINT_VALIDATOR_OUTPUT = True
+  PRINT_VALIDATOR_OUTPUT = False
 
   def setUp(self):
     """Some of the tests will run code that prints stuff out.  This prevents it
@@ -258,14 +258,14 @@ class ValidatorTests(unittest.TestCase):
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
-    <pfif:person_record_id>http://example.org/local-id.3</pfif:person_record_id>
+    <pfif:person_record_id>example.org/local-id.3</pfif:person_record_id>
     <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
     <pfif:author_name>author name</pfif:author_name>
     <pfif:author_email>email@example.org</pfif:author_email>
     <pfif:author_phone>+12345678901</pfif:author_phone>
     <pfif:source_name>source name</pfif:source_name>
     <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
-    <pfif:source_url>source.u.r/l</pfif:source_url>
+    <pfif:source_url>http://source.u.r/l</pfif:source_url>
     <pfif:first_name>FIRST NAME</pfif:first_name>
     <pfif:last_name>LAST NAME</pfif:last_name>
     <pfif:home_city>HOME CITY</pfif:home_city>
@@ -274,11 +274,11 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_street>HOME STREET</pfif:home_street>
     <pfif:home_zip>12345</pfif:home_zip>
     <pfif:photo_url>
-      proto://user:pass@host:999/url_path?var=val#hash
+      https://user:pass@host:999/url_path?var=val#hash
     </pfif:photo_url>
     <pfif:other>other text</pfif:other>
     <pfif:note>
-      <pfif:note_record_id>http://example.org/local-id.4</pfif:note_record_id>
+      <pfif:note_record_id>www.example.org/local-id.4</pfif:note_record_id>
       <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
       <pfif:author_name>author name</pfif:author_name>
       <pfif:author_email>author-email@exmaple.org</pfif:author_email>
@@ -305,10 +305,10 @@ class ValidatorTests(unittest.TestCase):
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
-    <pfif:person_record_id>http://example.org/</pfif:person_record_id>
+    <pfif:person_record_id>example.org/</pfif:person_record_id>
     <pfif:entry_date>123456-78T90:12:34Z</pfif:entry_date>
     <pfif:author_email>@example.org</pfif:author_email>
-    <pfif:author_phone>++12345678901</pfif:author_phone>
+    <pfif:author_phone>123defghi</pfif:author_phone>
     <pfif:source_date>1234-56-7890:12:34Z</pfif:source_date>
     <pfif:source_url>!.%^*</pfif:source_url>
     <pfif:first_name>lowercase first name</pfif:first_name>
@@ -327,7 +327,10 @@ class ValidatorTests(unittest.TestCase):
       <pfif:source_date>123a-56-78T90:12:34Z</pfif:source_date>
       <pfif:found>not-true-or-false</pfif:found>
       <pfif:email_of_found_person>email@</pfif:email_of_found_person>
-      <pfif:phone_of_found_person>(1t3)4s6-7a90</pfif:phone_of_found_person>
+      <pfif:phone_of_found_person>abc1234567</pfif:phone_of_found_person>
+    </pfif:note>
+    <pfif:note>
+      <pfif:note_record_id>http://foo/bar</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
