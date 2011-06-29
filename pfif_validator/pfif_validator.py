@@ -370,8 +370,34 @@ class PfifValidator:
     """Validates that every note that is at the top level contains a
     person_record_id and that every note inside a person with a person_record_id
     matches the id of the parent person.  Returns a list of all unmatched
-    persons"""
-    return []
+    notes"""
+    unassociated_notes = []
+    top_level_notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    for note in top_level_notes:
+      person_id = note.find(self.add_namespace_to_tag('person_record_id'))
+      if person_id == None:
+        note_id = note.find(self.add_namespace_to_tag('note_record_id'))
+        if note_id == None:
+          unassociated_notes.append("A top level note is missing a " \
+                                    "person_record_id.  It also doesn't have " \
+                                    "a note_record_id, so we can't refer to it")
+        else:
+          unassociated_notes.append("The following top level note is missing " \
+                                    "a person_record_id: " + note_id.text)
+    persons = self.get_all_persons()
+    for person in persons:
+      person_id = person.find(self.add_namespace_to_tag('person_record_id'))
+      if person_id != None:
+        notes = person.findall(self.add_namespace_to_tag('note'))
+        for note in notes:
+          note_person_id = note.find(
+              self.add_namespace_to_tag('person_record_id'))
+          if note_person_id != None and note_person_id.text != person_id.text:
+            unassociated_notes.append("Person with ID: " + person_id.text + \
+                                      "\nhas a note with person ID: " + \
+                                      note_person_id.text)
+
+    return unassociated_notes
 
 
 #def main():
