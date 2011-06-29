@@ -23,13 +23,13 @@ from urlparse import urlparse
 class PfifValidator:
 
   # a map from version to parent : required-children mappings
-  MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'source_date',
-                                         'first_name', 'last_name'],
+  MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
+                                           'last_name'],
                                'note' : ['note_record_id', 'author_name',
                                          'source_date', 'text']
                               },
-                        1.2 : {'person' : ['person_record_id', 'source_date',
-                                         'first_name', 'last_name'],
+                        1.2 : {'person' : ['person_record_id', 'first_name',
+                                           'last_name'],
                                'note' : ['note_record_id', 'author_name',
                                          'source_date', 'text']
                               },
@@ -149,8 +149,45 @@ class PfifValidator:
                               'text' : TEXT
                              }
                    },
-             1.3 : {'person' : {},
-                    'note' : {}
+             1.3 : {'person' : {'person_record_id' : RECORD_ID,
+                                'entry_date' : DATE,
+                                'expiry_date' : DATE,
+                                'author_name' : TEXT,
+                                'author_email' : EMAIL,
+                                'author_phone' : PHONE,
+                                'source_name' : TEXT,
+                                'source_date' : DATE,
+                                'source_url' : URL,
+                                'full_name' : TEXT,
+                                'first_name' : TEXT,
+                                'last_name' : TEXT,
+                                'sex' : SEX,
+                                'date_of_birth' : DATE_OF_BIRTH,
+                                'age' : AGE,
+                                'home_street' : TEXT,
+                                'home_city' : TEXT,
+                                'home_neighborhood' : TEXT,
+                                'home_state' : ISO31662_STATE,
+                                'home_postal_code' : INTEGER,
+                                'home_country' : ISO31661_COUNTRY,
+                                'photo_url' : URL,
+                                'other' : TEXT
+                               },
+                    'note' : {'note_record_id' : RECORD_ID,
+                              'person_record_id' : RECORD_ID,
+                              'linked_person_record_id' : RECORD_ID,
+                              'entry_date' : DATE,
+                              'author_name' : TEXT,
+                              'author_email' : EMAIL,
+                              'author_phone' : PHONE,
+                              'source_date' : DATE,
+                              'found' : BOOLEAN,
+                              'status' : STATUS,
+                              'email_of_found_person' : EMAIL,
+                              'phone_of_found_person' : PHONE,
+                              'last_known_location' : TEXT,
+                              'text' : TEXT
+                             }
                    }
             }
 

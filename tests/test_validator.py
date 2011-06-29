@@ -204,7 +204,6 @@ class ValidatorTests(unittest.TestCase):
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
-    <pfif:source_date />
     <pfif:first_name />
     <pfif:last_name />
   </pfif:person>
@@ -225,10 +224,10 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_person_has_mandatory_children()), 0)
 
   def test_person_has_no_mandatory_children_11(self):
-    """validate_has_mandatory_children should return a list with four missing
+    """validate_has_mandatory_children should return a list with three missing
     children when given a version 1.1 person with no children"""
     v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertEqual(len(v.validate_person_has_mandatory_children()), 4)
+    self.assertEqual(len(v.validate_person_has_mandatory_children()), 3)
 
   def test_person_has_no_mandatory_children_13(self):
     """validate_has_mandatory_children should return a list with three missing
@@ -338,6 +337,7 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_fields_have_correct_format()), 23)
 
+  #TODO(samking): test that non-ascii characters are accepted
   def test_all_12_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
     presented with a document where all fields have the correct format.  This
@@ -421,8 +421,32 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_fields_have_correct_format()), 12)
 
-  #def test_all_13_fields_have_correct_format(self):
-  #def test_no_13_fields_have_correct_format(self):
+  def test_all_13_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    presented with a document where all fields have the correct format.  This
+    tests all fields introduced or changed in 1.3; it does not test fields that
+    were unchanged from 1.1 and 1.2."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:full_name>john doe</pfif:full_name>
+    <pfif:expiry_date>1234-56-78T90:12:34Z</pfif:expiry_date>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
+
+  def test_no_13_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    element presented to it when all fields have an incorrect format.  This
+    tests all fields introduced or changed in 1.3, except ones that are always
+    accepted; it does not test fields that were unchanged from 1.1 and 1.2."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:expiry_date>12a4-56-78T90:12:34Z</pfif:expiry_date>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_fields_have_correct_format()), 1)
 
   # validate_unique_id
 
