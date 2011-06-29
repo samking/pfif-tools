@@ -449,6 +449,87 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_fields_have_correct_format()), 1)
 
   # validate_unique_id
+  def test_person_ids_are_unique(self):
+    """validate_person_ids_are_unique should return an empty list when all
+    person ids are unique"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/2</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.com/1</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.com/2</pfif:person_record_id>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_ids_are_unique()), 0)
+
+  def test_note_ids_are_unique(self):
+    """validate_note_ids_are_unique should return an empty list when all note
+    ids are unique"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:note_record_id>example.org/1</pfif:note_record_id>
+  </pfif:note>
+  <pfif:note>
+    <pfif:note_record_id>example.org/2</pfif:note_record_id>
+  </pfif:note>
+  <pfif:note>
+    <pfif:note_record_id>example.com/1</pfif:note_record_id>
+  </pfif:note>
+  <pfif:note>
+    <pfif:note_record_id>example.com/2</pfif:note_record_id>
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_note_ids_are_unique()), 0)
+
+  def test_person_ids_are_not_unique(self):
+    """validate_person_ids_are_unique should return a list with all non-unique
+    person ids when there are non-unique person ids"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.com/2</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.com/2</pfif:person_record_id>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_ids_are_unique()), 2)
+
+  def test_note_ids_are_not_unique(self):
+    """validate_person_ids_are_unique should return a list with all non-unique
+    note ids when there are non-unique note ids"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:note_record_id>example.org/1</pfif:note_record_id>
+  </pfif:note>
+  <pfif:person>
+    <pfif:note>
+      <pfif:note_record_id>example.org/1</pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.com/1</pfif:note_record_id>
+  </pfif:note>
+  <pfif:note>
+    <pfif:note_record_id>example.com/1</pfif:note_record_id>
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_note_ids_are_unique()), 2)
 
   # validate_notes_belong_to_persons
 
