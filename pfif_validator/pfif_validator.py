@@ -193,37 +193,76 @@ class PfifValidator:
                    }
             }
 
-  FIELD_ORDER = {'person' : {'person_record_id' : 1,
-                             'entry_date': 2,
-                             'author_name' : 3,
-                             'author_email' : 4,
-                             'author_phone' : 5,
-                             'source_name' : 6,
-                             'source_date' : 7,
-                             'source_url' : 8,
-                             'first_name' : 9,
-                             'last_name' : 10,
-                             'home_city' : 11,
-                             'home_state' : 12,
-                             'home_neighborhood' : 13,
-                             'home_street' : 14,
-                             'home_zip' : 15,
-                             'photo_url' : 16,
-                             'other' : 17,
-                             'note' : 18
-                            },
-                 'note' : {'note_record_id' : 1,
-                           'entry_date' : 2,
-                           'author_name' : 3,
-                           'author_email' : 4,
-                           'author_phone' : 5,
-                           'source_date' : 6,
-                           'found' : 7,
-                           'email_of_found_person' : 8,
-                           'phone_of_found_person' : 9,
-                           'last_known_location' : 10,
-                           'text' : 11
-                          }
+  FIELD_ORDER = {1.1 : {'person' : {'person_record_id' : 1,
+                                    'entry_date': 2,
+                                    'author_name' : 3,
+                                    'author_email' : 4,
+                                    'author_phone' : 5,
+                                    'source_name' : 6,
+                                    'source_date' : 7,
+                                    'source_url' : 8,
+                                    'first_name' : 9,
+                                    'last_name' : 10,
+                                    'home_city' : 11,
+                                    'home_state' : 12,
+                                    'home_neighborhood' : 13,
+                                    'home_street' : 14,
+                                    'home_zip' : 15,
+                                    'photo_url' : 16,
+                                    'other' : 17,
+                                    'note' : 18
+                                   },
+                        'note' : {'note_record_id' : 1,
+                                  'entry_date' : 2,
+                                  'author_name' : 3,
+                                  'author_email' : 4,
+                                  'author_phone' : 5,
+                                  'source_date' : 6,
+                                  'found' : 7,
+                                  'email_of_found_person' : 8,
+                                  'phone_of_found_person' : 9,
+                                  'last_known_location' : 10,
+                                  'text' : 11
+                                 }
+                       },
+                 1.2 : {'person' : {'person_record_id' : 1,
+                                    'entry_date': 2,
+                                    'author_name' : 2,
+                                    'author_email' : 2,
+                                    'author_phone' : 2,
+                                    'source_name' : 2,
+                                    'source_date' : 2,
+                                    'source_url' : 2,
+                                    'first_name' : 2,
+                                    'last_name' : 2,
+                                    'home_city' : 2,
+                                    'home_state' : 2,
+                                    'home_neighborhood' : 2,
+                                    'home_street' : 2,
+                                    'home_postal_code' : 2,
+                                    'home_country' : 2,
+                                    'sex' : 2,
+                                    'date_of_birth' : 2,
+                                    'age' : 2,
+                                    'photo_url' : 2,
+                                    'other' : 2,
+                                    'note' : 3
+                                   },
+                        'note' : {'note_record_id' : 1,
+                                  'person_record_id' : 2,
+                                  'linked_person_record_id' : 3,
+                                  'entry_date' : 3,
+                                  'author_name' : 3,
+                                  'author_email' : 3,
+                                  'author_phone' : 3,
+                                  'source_date' : 3,
+                                  'found' : 3,
+                                  'email_of_found_person' : 3,
+                                  'phone_of_found_person' : 3,
+                                  'last_known_location' : 3,
+                                  'text' : 3
+                                 }
+                       }
                 }
 
   # helpers
@@ -461,7 +500,7 @@ class PfifValidator:
       curr_max = 0
       for field in parent.getchildren():
         tag = xml_utils.extract_tag(field.tag)
-        tag_order = PfifValidator.FIELD_ORDER[field_type][tag]
+        tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
         if tag_order >= curr_max:
           curr_max = tag_order
         else:

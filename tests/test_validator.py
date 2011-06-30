@@ -28,7 +28,7 @@ class ValidatorTests(unittest.TestCase):
 
   # Set Up
 
-  PRINT_VALIDATOR_OUTPUT = True
+  PRINT_VALIDATOR_OUTPUT = False
 
   VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
