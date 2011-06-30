@@ -21,6 +21,8 @@ import xml_utils
 from urlparse import urlparse
 
 class PfifValidator:
+  # TODO(samking): should I move a lot of this data stuff at the top into an
+  # external file that I would read in?
 
   # a map from version to parent : required-children mappings
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
@@ -190,6 +192,38 @@ class PfifValidator:
                              }
                    }
             }
+FIELD_ORDER = {'person' : {'person_record_id' : 1,
+                           'entry_date': 2,
+                           'author_name' : 3,
+                           'author_email' : 4,
+                           'author_phone' : 5,
+                           'source_name' : 6,
+                           'source_date' : 7,
+                           'source_url' : 8,
+                           'first_name' : 9,
+                           'last_name' : 10,
+                           'home_city' : 11,
+                           'home_state' : 12,
+                           'home_neighborhood' : 13,
+                           'home_street' : 14,
+                           'home_zip' : 15,
+                           'photo_url' : 16,
+                           'other' : 17,
+                           'note' : 18
+                          },
+               'note' : {'note_record_id' : 1,
+                         'entry_date' : 2,
+                         'author_name' : 3,
+                         'author_email' : 4,
+                         'author_phone' : 5,
+                         'source_date' : 6,
+                         'found' : 7,
+                         'email_of_found_person' : 8,
+                         'phone_of_found_person' : 9,
+                         'last_known_location' : 10,
+                         'text' : 11
+                        }
+              }
 
   # helpers
 
@@ -398,6 +432,36 @@ class PfifValidator:
                                       note_person_id.text)
 
     return unassociated_notes
+
+  def validate_field_order(self, field_type):
+    """Validates that all subnodes of field_type (either person or note) are in
+    the correct order.  For version 1.1, this means that all fields must be in
+    the order specified in the spec (the same as the FIELD_ORDER data structure)
+    or omitted.  For version 1.2, person_record_id must appear first and notes
+    must appear last in a person, and note_record_id and person_record_id must
+    appear first in notes"""
+    if field_type == 'person':
+      collection = self.get_all_persons()
+    elif field_type == 'note':
+      collection = self.get_all_notes()
+    else:
+      print "INTERNAL ERROR: tried to validate field order for something " \
+            "other than a person or note"
+    for parent in collection:
+      #TODO(samking): this logic only applies to 1.1
+      for field in parent.getchildren():
+        
+
+
+  def validate_person_field_order(self):
+    """Wrapper for validate_field_order.  Validates that all fields in all
+    persons are in the correct order."""
+    return validate_field_order('person')
+
+  def validate_note_field_order(self):
+    """Wrapper for validate_field_order.  Validates that all fields in all notes
+    are in the correct order."""
+    return validate_field_order('note')
 
 
 #def main():
