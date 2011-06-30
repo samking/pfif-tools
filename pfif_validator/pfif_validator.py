@@ -286,6 +286,9 @@ class PfifValidator:
 
   def __init__(self, xml_file, initialize=True):
     self.xml_file = xml_file
+    self.tree = None
+    self.namespace = None
+    self.version = None
     if initialize:
       self.validate_xml_or_die()
       self.validate_root_is_pfif_or_die()
@@ -414,6 +417,9 @@ class PfifValidator:
     return incorrect_formats
 
   def validate_ids_are_unique(self, id_type):
+    """Validates that all id_type ids are unique.  There should not be two
+    persons with the same person_record_id or two notes with the same
+    note_record_id."""
     if id_type == 'person':
       collection = self.get_all_persons()
       field = 'person_record_id'
@@ -435,9 +441,13 @@ class PfifValidator:
     return duplicate_ids
 
   def validate_person_ids_are_unique(self):
+    """Wrapper for validate_ids_are_unique to validate that person_record_ids
+    are unique"""
     return self.validate_ids_are_unique('person')
 
   def validate_note_ids_are_unique(self):
+    """Wrapper for validate_ids_are_unique to validate that note_record_ids are
+    unique"""
     return self.validate_ids_are_unique('note')
 
   def validate_notes_belong_to_persons(self):
