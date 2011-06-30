@@ -632,6 +632,127 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_person_field_order()), 3)
     self.assertEqual(len(v.validate_note_field_order()), 2)
 
+  def test_correct_field_order_12(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if person_record_id comes first and any notes come last in
+    persons and if note_record_id and person_record_id come first in notes."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:other />
+    <pfif:home_state />
+    <pfif:home_city />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:text />
+      <pfif:found />
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:found />
+      <pfif:source_date />
+    </pfif:note>
+    <pfif:note />
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:home_state />
+    <pfif:home_city />
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id />
+    <pfif:person_record_id />
+    <pfif:text />
+    <pfif:author_name />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_field_order()), 0)
+    self.assertEqual(len(v.validate_note_field_order()), 0)
+
+  def test_incorrect_person_field_order_12(self):
+    """validate_person_field_order should return a list with one entry for every
+    person that does not have notes at the end or that does not have its
+    person_record_id at the start"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note />
+    <pfif:home_city />
+  </pfif:person>
+  <pfif:person>
+    <pfif:home_city />
+    <pfif:person_record_id />
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note />
+    <pfif:home_city />
+    <pfif:note />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_field_order()), 3)
+
+  def test_incorrect_note_field_order_12(self):
+    """validate_note_field_order should return a list with one entry for every
+    note that does not have note_record_id and person_record_id at the start"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:note>
+    <pfif:note_record_id />
+    <pfif:text />
+    <pfif:person_record_id />
+  </pfif:note>
+  <pfif:note>
+    <pfif:text />
+    <pfif:note_record_id />
+    <pfif:person_record_id />
+  </pfif:note>
+  <pfif:note>
+    <pfif:text />
+    <pfif:note_record_id />
+  </pfif:note>
+  <pfif:note>
+    <pfif:text />
+    <pfif:person_record_id />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_note_field_order()), 4)
+
+  def test_field_order_does_not_matter_13(self):
+    """validate_person_field_order and validate_note_field_order should return
+    an empty list if the version is greater than 1.2 because order doesn't
+    matter"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:text />
+      <pfif:found />
+    </pfif:note>
+    <pfif:other />
+  </pfif:person>
+  <pfif:person>
+    <pfif:note>
+      <pfif:text />
+      <pfif:note_record_id />
+    </pfif:note>
+    <pfif:person_record_id />
+  </pfif:person>
+  <pfif:person>
+    <pfif:home_state />
+    <pfif:home_city />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_field_order()), 0)
+    self.assertEqual(len(v.validate_note_field_order()), 0)
+
   # validate_expiry
 
   # validate_linked_person_records_are_matched
