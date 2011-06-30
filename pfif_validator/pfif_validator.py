@@ -467,7 +467,6 @@ class PfifValidator:
         else:
           out_of_order_tags.append(tag)
           break
-    print '******'
     print out_of_order_tags
     return out_of_order_tags
 
