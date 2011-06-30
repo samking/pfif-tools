@@ -28,12 +28,53 @@ class ValidatorTests(unittest.TestCase):
 
   # Set Up
 
+  PRINT_VALIDATOR_OUTPUT = False
+
   VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person />
 </pfif:pfif>"""
 
-  PRINT_VALIDATOR_OUTPUT = False
+  PFIF_XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id>example.org/local-id.3</pfif:person_record_id>
+    <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
+    <pfif:author_name>author name</pfif:author_name>
+    <pfif:author_email>email@example.org</pfif:author_email>
+    <pfif:author_phone>+12345678901</pfif:author_phone>
+    <pfif:source_name>source name</pfif:source_name>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:source_url>http://source.u.r/l</pfif:source_url>
+    <pfif:first_name>FIRST NAME</pfif:first_name>
+    <pfif:last_name>LAST NAME</pfif:last_name>
+    <pfif:home_city>HOME CITY</pfif:home_city>
+    <pfif:home_state>CA</pfif:home_state>
+    <pfif:home_neighborhood>HOME NEIGHBORHOOD</pfif:home_neighborhood>
+    <pfif:home_street>HOME STREET</pfif:home_street>
+    <pfif:home_zip>12345</pfif:home_zip>
+    <pfif:photo_url>
+      https://user:pass@host:999/url_path?var=val#hash
+    </pfif:photo_url>
+    <pfif:other>other text</pfif:other>
+    <pfif:note>
+      <pfif:note_record_id>www.example.org/local-id.4</pfif:note_record_id>
+      <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
+      <pfif:author_name>author name</pfif:author_name>
+      <pfif:author_email>author-email@exmaple.org</pfif:author_email>
+      <pfif:author_phone>123.456.7890</pfif:author_phone>
+      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+      <pfif:found>true</pfif:found>
+      <pfif:email_of_found_person>email@example.org</pfif:email_of_found_person>
+      <pfif:phone_of_found_person>(123)456-7890</pfif:phone_of_found_person>
+      <pfif:last_known_location>last known location</pfif:last_known_location>
+      <pfif:text>large text string</pfif:text>
+    </pfif:note>
+    <pfif:note>
+      <pfif:found>false</pfif:found>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>"""
 
   def setUp(self):
     """Some of the tests will run code that prints stuff out.  This prevents it
@@ -255,46 +296,7 @@ class ValidatorTests(unittest.TestCase):
   def test_all_11_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
     passed a tree with all 1.1 elements in the correct formats."""
-    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
-  <pfif:person>
-    <pfif:person_record_id>example.org/local-id.3</pfif:person_record_id>
-    <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
-    <pfif:author_name>author name</pfif:author_name>
-    <pfif:author_email>email@example.org</pfif:author_email>
-    <pfif:author_phone>+12345678901</pfif:author_phone>
-    <pfif:source_name>source name</pfif:source_name>
-    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
-    <pfif:source_url>http://source.u.r/l</pfif:source_url>
-    <pfif:first_name>FIRST NAME</pfif:first_name>
-    <pfif:last_name>LAST NAME</pfif:last_name>
-    <pfif:home_city>HOME CITY</pfif:home_city>
-    <pfif:home_state>CA</pfif:home_state>
-    <pfif:home_neighborhood>HOME NEIGHBORHOOD</pfif:home_neighborhood>
-    <pfif:home_street>HOME STREET</pfif:home_street>
-    <pfif:home_zip>12345</pfif:home_zip>
-    <pfif:photo_url>
-      https://user:pass@host:999/url_path?var=val#hash
-    </pfif:photo_url>
-    <pfif:other>other text</pfif:other>
-    <pfif:note>
-      <pfif:note_record_id>www.example.org/local-id.4</pfif:note_record_id>
-      <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
-      <pfif:author_name>author name</pfif:author_name>
-      <pfif:author_email>author-email@exmaple.org</pfif:author_email>
-      <pfif:author_phone>123.456.7890</pfif:author_phone>
-      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
-      <pfif:found>true</pfif:found>
-      <pfif:email_of_found_person>email@example.org</pfif:email_of_found_person>
-      <pfif:phone_of_found_person>(123)456-7890</pfif:phone_of_found_person>
-      <pfif:last_known_location>last known location</pfif:last_known_location>
-      <pfif:text>large text string</pfif:text>
-    </pfif:note>
-    <pfif:note>
-      <pfif:found>false</pfif:found>
-    </pfif:note>
-  </pfif:person>
-</pfif:pfif>""")
+    v = self.set_up_validator(ValidatorTests.PFIF_XML_11_FULL)
     self.assertEqual(len(v.validate_fields_have_correct_format()), 0)
 
   #TODO(samking): test that non-ascii characters should be rejected
@@ -572,6 +574,63 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_notes_belong_to_persons()), 2)
 
   # validate_field_order
+  # TODO(samking): do tests for 1.2
+
+  def test_correct_field_order_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if all elements in all persons and notes are in the correct
+    order"""
+    v = self.set_up_validator(ValidatorTests.PFIF_XML_11_FULL)
+    self.assertEqual(len(v.validate_person_field_order()), 0)
+    self.assertEqual(len(v.validate_note_field_order()), 0)
+
+  def test_omitting_fields_is_okay_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if all elements in all persons and notes are in the correct
+    order, even if some elements are omitted (ie, 1,2,4 is in order even though
+    3 is omitted)"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+    <pfif:other>other</pfif:other>
+    <pfif:note>
+      <pfif:note_record_id>example.org/2</pfif:note_record_id>
+      <pfif:text>text</pfif:text>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_field_order()), 0)
+    self.assertEqual(len(v.validate_note_field_order()), 0)
+
+  def test_incorrect_field_order_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    the first element in every person and note that are out of order"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:text />
+      <pfif:found />
+    </pfif:note>
+    <pfif:other />
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:note>
+      <pfif:text />
+      <pfif:note_record_id />
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:home_state />
+    <pfif:home_city />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_person_field_order()), 3)
+    self.assertEqual(len(v.validate_note_field_order()), 2)
 
   # validate_expiry
 
