@@ -192,38 +192,39 @@ class PfifValidator:
                              }
                    }
             }
-FIELD_ORDER = {'person' : {'person_record_id' : 1,
-                           'entry_date': 2,
+
+  FIELD_ORDER = {'person' : {'person_record_id' : 1,
+                             'entry_date': 2,
+                             'author_name' : 3,
+                             'author_email' : 4,
+                             'author_phone' : 5,
+                             'source_name' : 6,
+                             'source_date' : 7,
+                             'source_url' : 8,
+                             'first_name' : 9,
+                             'last_name' : 10,
+                             'home_city' : 11,
+                             'home_state' : 12,
+                             'home_neighborhood' : 13,
+                             'home_street' : 14,
+                             'home_zip' : 15,
+                             'photo_url' : 16,
+                             'other' : 17,
+                             'note' : 18
+                            },
+                 'note' : {'note_record_id' : 1,
+                           'entry_date' : 2,
                            'author_name' : 3,
                            'author_email' : 4,
                            'author_phone' : 5,
-                           'source_name' : 6,
-                           'source_date' : 7,
-                           'source_url' : 8,
-                           'first_name' : 9,
-                           'last_name' : 10,
-                           'home_city' : 11,
-                           'home_state' : 12,
-                           'home_neighborhood' : 13,
-                           'home_street' : 14,
-                           'home_zip' : 15,
-                           'photo_url' : 16,
-                           'other' : 17,
-                           'note' : 18
-                          },
-               'note' : {'note_record_id' : 1,
-                         'entry_date' : 2,
-                         'author_name' : 3,
-                         'author_email' : 4,
-                         'author_phone' : 5,
-                         'source_date' : 6,
-                         'found' : 7,
-                         'email_of_found_person' : 8,
-                         'phone_of_found_person' : 9,
-                         'last_known_location' : 10,
-                         'text' : 11
-                        }
-              }
+                           'source_date' : 6,
+                           'found' : 7,
+                           'email_of_found_person' : 8,
+                           'phone_of_found_person' : 9,
+                           'last_known_location' : 10,
+                           'text' : 11
+                          }
+                }
 
   # helpers
 
@@ -440,6 +441,10 @@ FIELD_ORDER = {'person' : {'person_record_id' : 1,
     or omitted.  For version 1.2, person_record_id must appear first and notes
     must appear last in a person, and note_record_id and person_record_id must
     appear first in notes"""
+    # 1.3 and above don't have order
+    if self.version > 1.2:
+      return []
+
     if field_type == 'person':
       collection = self.get_all_persons()
     elif field_type == 'note':
@@ -447,21 +452,34 @@ FIELD_ORDER = {'person' : {'person_record_id' : 1,
     else:
       print "INTERNAL ERROR: tried to validate field order for something " \
             "other than a person or note"
+
+    out_of_order_tags = []
     for parent in collection:
       #TODO(samking): this logic only applies to 1.1
+      # foreach field, if this field is lower than the current max field, it
+      # represents an invalid order
+      curr_max = 0
       for field in parent.getchildren():
-        
-
+        tag = xml_utils.extract_tag(field.tag)
+        tag_order = PfifValidator.FIELD_ORDER[field_type][tag]
+        if tag_order >= curr_max:
+          curr_max = tag_order
+        else:
+          out_of_order_tags.append(tag)
+          break
+    print '******'
+    print out_of_order_tags
+    return out_of_order_tags
 
   def validate_person_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all
     persons are in the correct order."""
-    return validate_field_order('person')
+    return self.validate_field_order('person')
 
   def validate_note_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all notes
     are in the correct order."""
-    return validate_field_order('note')
+    return self.validate_field_order('note')
 
 
 #def main():

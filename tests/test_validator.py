@@ -28,7 +28,7 @@ class ValidatorTests(unittest.TestCase):
 
   # Set Up
 
-  PRINT_VALIDATOR_OUTPUT = False
+  PRINT_VALIDATOR_OUTPUT = True
 
   VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
@@ -618,11 +618,11 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other />
   </pfif:person>
   <pfif:person>
-    <pfif:person_record_id />
     <pfif:note>
       <pfif:text />
       <pfif:note_record_id />
     </pfif:note>
+    <pfif:person_record_id />
   </pfif:person>
   <pfif:person>
     <pfif:home_state />
