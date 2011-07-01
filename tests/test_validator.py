@@ -917,7 +917,55 @@ class ValidatorTests(unittest.TestCase):
     utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
-  # validate_linked_person_records_are_matched
+  # validate_linked_records_matched
+
+  def test_unlinked_records(self):
+    """validate_linked_records_matched should return an empty list when
+    evaluating unlinked persons"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>example.com/n1<pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
+
+  def test_correctly_linked_records(self):
+    """validate_linked_records_matched should return an empty list when
+    evaluating two persons that each have notes with linked_person_record_ids
+    pointing at each other"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>example.com/n1<pfif:note_record_id>
+      <pfif:linked_person_record_id>example.org/p2<pfif:linked_person_record_id>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.com/n2<pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2<pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1<pfif:linked_person_record_id>
+  </pfif:note>
+</pfif:pfif>""")
+    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
+
+  def test_asymmetrically_linked_records(self):
+    """validate_linked_records_matched should return a list with each
+    note_record_id that has a linked_person_record_id that is not matched"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:note_record_id>example.com/n2<pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2<pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1<pfif:linked_person_record_id>
+  </pfif:note>
+</pfif:pfif>""")
+    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
 
   # validate_extraneous_fields
 
