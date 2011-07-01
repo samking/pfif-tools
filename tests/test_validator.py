@@ -24,6 +24,7 @@ import sys
 sys.path.append(os.getcwd() + '/../pfif_validator')
 from pfif_validator import PfifValidator
 import datetime
+import utils
 
 class ValidatorTests(unittest.TestCase):
 
@@ -775,10 +776,10 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
 </pfif:pfif>""")
     not_expired_1998 = datetime.datetime(1998, 11, 1, 1, 1, 1, 1)
-    set_utcnow_for_test(not_expired_1998)
+    utils.set_utcnow_for_test(not_expired_1998)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
     just_not_expired = datetime.datetime(1999, 2, 4, 4, 5, 5, 0)
-    set_utcnow_for_test(just_not_expired)
+    utils.set_utcnow_for_test(just_not_expired)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_empty_data(self):
@@ -797,7 +798,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other></pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_omissions(self):
@@ -812,7 +813,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_unremoved_data(self):
@@ -831,10 +832,10 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 1)
     just_expired = datetime.datetime(1999, 2, 4, 4, 5, 7)
-    set_utcnow_for_test(just_expired)
+    utils.set_utcnow_for_test(just_expired)
     self.assertEqual(len(v.validate_expired_records_removed()), 1)
 
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
@@ -847,7 +848,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other>data still here</pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 1)
 
   def test_expiration_placeholder_with_bad_source_entry_date(self):
@@ -869,7 +870,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-03-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 2)
 
   def test_no_expiration_before_13(self):
@@ -885,7 +886,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other>data still here</pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test(EXPIRED_TIME)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   # validate_linked_person_records_are_matched

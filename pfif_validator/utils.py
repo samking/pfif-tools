@@ -13,9 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provides XML parsing utilities not provided in the ETree module"""
+"""Utilities for the PFIF Validator"""
 
 import re
+
+# XML Parsing Utilities
 
 def extract_tag(etree_tag):
   """An etree tag comes in the form: {namespace}tag.  This returns the tag"""
@@ -23,3 +25,16 @@ def extract_tag(etree_tag):
   if not match:
     return ""
   return match.group(1)
+
+# Dependency Injection for Time -- from PersonFinder
+_utcnow_for_test = None
+
+def set_utcnow_for_test(now):
+    """Set current time for debug purposes."""
+    global _utcnow_for_test
+    _utcnow_for_test = now
+
+def get_utcnow():
+    """Return current time in utc, or debug value if set."""
+    global _utcnow_for_test
+    return _utcnow_for_test or datetime.utcnow()

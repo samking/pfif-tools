@@ -17,7 +17,7 @@
 
 import xml.etree.ElementTree as ET
 import re
-import xml_utils
+import utils
 from urlparse import urlparse
 
 class PfifValidator:
@@ -341,7 +341,7 @@ class PfifValidator:
     children = self.tree.getroot().getchildren()
     result = False
     for child in children:
-      tag = xml_utils.extract_tag(child.tag)
+      tag = utils.extract_tag(child.tag)
       if tag == "person" or (self.version >= 1.2 and tag == "note"):
         result = True
         break
@@ -504,12 +504,11 @@ class PfifValidator:
 
     out_of_order_tags = []
     for parent in collection:
-      #TODO(samking): this logic only applies to 1.1
       # foreach field, if this field is lower than the current max field, it
       # represents an invalid order
       curr_max = 0
       for field in parent.getchildren():
-        tag = xml_utils.extract_tag(field.tag)
+        tag = utils.extract_tag(field.tag)
         tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
         if tag_order >= curr_max:
           curr_max = tag_order
