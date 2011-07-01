@@ -30,7 +30,7 @@ class ValidatorTests(unittest.TestCase):
 
   # Set Up
 
-  PRINT_VALIDATOR_OUTPUT = False
+  PRINT_VALIDATOR_OUTPUT = True
 
   VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
@@ -881,6 +881,34 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
     <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:other>data still here</pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+  def test_no_expiration_without_date(self):
+    """validate_expired_records_removed should return an empty list when the
+    there isn't an expiry_date"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:other>data still here</pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date></pfif:expiry_date>
     <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>

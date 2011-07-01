@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 import re
 import utils
 from urlparse import urlparse
+import datetime
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -282,6 +283,30 @@ class PfifValidator:
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
     return notes
 
+  def get_expiry_datetime(self, person):
+    """Returns the expiry date associated with a given person, adjusted by one
+    day to reflect the actual date that data must be removed from PFIF XML.
+    Returns None if there is no expiry date."""
+    expiry_date_elem = person.find(self.add_namespace_to_tag('expiry_date'))
+    if expiry_date_elem != None:
+      expiry_date_str = expiry_date_elem.text
+      if expiry_date_str:
+        # Fractional seconds are optionally allowed in the time, which means
+        # that it would be difficult to use datetime.datetime.strptime.
+        # Instead, we manually extract the fields using a regular expression.
+        match = re.match(
+            r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d*)?Z$',
+            expiry_date_str)
+        time_parts = []
+        for i in range(1,7):
+          time_parts.append(int(match.group(i)))
+        expiry_date = datetime.datetime(*time_parts)
+        # Advances the expiry_date one day because the protocol doesn't
+        # require removing data until a day after expiration
+        expiry_date += datetime.timedelta(days=1)
+        return expiry_date
+    return None
+
   # initialization
 
   def __init__(self, xml_file, initialize=True):
@@ -527,6 +552,30 @@ class PfifValidator:
     """Wrapper for validate_field_order.  Validates that all fields in all notes
     are in the correct order."""
     return self.validate_field_order('note')
+
+  def validate_expired_records_removed(self):
+    """Validates that if the current time is at least one day greater than any
+    person's expiry_date, all fields other than person_record_id, expiry_date,
+    source_date, and entry_date must be empty or omitted.  Also, source_date and
+    entry_date must be the time that the placeholder was created.  Returns a
+    list with the person_record_ids of any persons that violate those
+    conditions"""
+    if self.version < 1.3:
+      return []
+    persons = self.get_all_persons()
+    unremoved_expired_records = []
+    for person in persons:
+      expiry_date = self.get_expiry_datetime(person)
+      curr_date = utils.get_utcnow()
+      # if the record is expired
+      if expiry_date != None and expiry_date < curr_date:
+        #if (self.has_personal_data(person) or
+        #    self.placeholder_dates_do_not_match(person)):
+          # TODO(samking): make this (and all other prints / returns) nicer 
+          # and unified.
+          unremoved_expired_records.append('You had an expired record!')
+
+    return unremoved_expired_records
 
 
 #def main():
