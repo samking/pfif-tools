@@ -23,6 +23,7 @@ import sys
 # TODO(samking): I'm sure that there is a simpler way to do this...
 sys.path.append(os.getcwd() + '/../pfif_validator')
 from pfif_validator import PfifValidator
+import datetime
 
 class ValidatorTests(unittest.TestCase):
 
@@ -75,6 +76,8 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
 </pfif:pfif>"""
+
+  EXPIRED_TIME = datetime.datetime(1999, 3, 1)
 
   def setUp(self):
     """Some of the tests will run code that prints stuff out.  This prevents it
@@ -771,9 +774,11 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other>not deleted or omitted</pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test()#TODO: late 1998
+    not_expired_1998 = datetime.datetime(1998, 11, 1, 1, 1, 1, 1)
+    set_utcnow_for_test(not_expired_1998)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
-    set_utcnow_for_test()#TODO: 1999-02-04T04:05:05
+    just_not_expired = datetime.datetime(1999, 2, 4, 4, 5, 5, 0)
+    set_utcnow_for_test(just_not_expired)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_empty_data(self):
@@ -792,7 +797,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other></pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test()#TODO: march 1999
+    set_utcnow_for_test(EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_omissions(self):
@@ -807,7 +812,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test()#TODO: march 1999
+    set_utcnow_for_test(EXPIRED_TIME)
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   def test_expired_records_with_unremoved_data(self):
@@ -826,10 +831,11 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test()#TODO: march 1999
-    self.assertEqual(len(v.validate_expired_records_removed()), 0)
-    set_utcnow_for_test()#TODO: 1999-02-04T04:05:07
-    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+    set_utcnow_for_test(EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 1)
+    just_expired = datetime.datetime(1999, 2, 4, 4, 5, 7)
+    set_utcnow_for_test(just_expired)
+    self.assertEqual(len(v.validate_expired_records_removed()), 1)
 
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
@@ -841,17 +847,47 @@ class ValidatorTests(unittest.TestCase):
     <pfif:other>data still here</pfif:other>
   </pfif:person>
 </pfif:pfif>""")
-    set_utcnow_for_test()#TODO: march 1999
-    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+    set_utcnow_for_test(EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 1)
 
   def test_expiration_placeholder_with_bad_source_entry_date(self):
     """validate_expired_records_removed should return a list with the
     person_record_ids of all expired records whose source_date and entry_date
     are not the same value and are not created within a day after expiration"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1998-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-03-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-03-03T04:05:06Z</pfif:entry_date>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test(EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 2)
 
   def test_no_expiration_before_13(self):
     """validate_expired_records_removed should return an empty list when the
     version is before 1.3"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:other>data still here</pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test(EXPIRED_TIME)
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
   # validate_linked_person_records_are_matched
 
   # validate_extraneous_fields
