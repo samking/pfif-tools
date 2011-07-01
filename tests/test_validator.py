@@ -755,9 +755,108 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_expiry
 
+  def test_unexpired_records(self):
+    """validate_expired_records_removed should return an empty list when no
+    records are expired"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:source_date>1997-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1998-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:note>
+      <pfif:note_record_id>not/deleted</pfif:note_record_id>
+    </pfif:note>
+    <pfif:other>not deleted or omitted</pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test()#TODO: late 1998
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+    set_utcnow_for_test()#TODO: 1999-02-04T04:05:05
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_empty_data(self):
+    """validate_expired_records_removed should return an empty list when all
+    expired records have empty fields instead of real data"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:note>
+      <pfif:note_record_id></pfif:note_record_id>
+    </pfif:note>
+    <pfif:other></pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test()#TODO: march 1999
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_omissions(self):
+    """validate_expired_records_removed should return an empty list when all
+    expired records omit fields instead of exposing real data"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test()#TODO: march 1999
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_unremoved_data(self):
+    """validate_expired_records_removed should return a list with the
+    person_record_ids of all expired records that have data that should be
+    removed"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:note>
+      <pfif:note_record_id>not/deleted</pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test()#TODO: march 1999
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+    set_utcnow_for_test()#TODO: 1999-02-04T04:05:07
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+    <pfif:other>data still here</pfif:other>
+  </pfif:person>
+</pfif:pfif>""")
+    set_utcnow_for_test()#TODO: march 1999
+    self.assertEqual(len(v.validate_expired_records_removed()), 0)
+
+  def test_expiration_placeholder_with_bad_source_entry_date(self):
+    """validate_expired_records_removed should return a list with the
+    person_record_ids of all expired records whose source_date and entry_date
+    are not the same value and are not created within a day after expiration"""
+
+  def test_no_expiration_before_13(self):
+    """validate_expired_records_removed should return an empty list when the
+    version is before 1.3"""
   # validate_linked_person_records_are_matched
 
   # validate_extraneous_fields
+
+  # validate_duplicate_fields
 
 if __name__ == '__main__':
   unittest.main()
