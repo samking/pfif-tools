@@ -266,6 +266,9 @@ class PfifValidator:
                        }
                 }
 
+  PLACEHOLDER_FIELDS = ['person_record_id', 'expiry_date', 'source_date',
+                        'entry_date']
+
   # helpers
 
   def add_namespace_to_tag(self, tag):
@@ -283,6 +286,22 @@ class PfifValidator:
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
     return notes
 
+  def pfif_date_to_py_date(self, date_str):
+    """Converts a date string in the format yyyy-mm-ddThh:mm:ssZ (where there
+    can optionally be a fractional amount of seconds between ss and Z) to a
+    Python datetime object"""
+    # Fractional seconds are optionally allowed in the time, which means
+    # that it would be difficult to use datetime.datetime.strptime.
+    # Instead, we manually extract the fields using a regular expression.
+    match = re.match(
+        r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d*)?Z$',
+        date_str)
+    time_parts = []
+    for i in range(1,7):
+      time_parts.append(int(match.group(i)))
+    date = datetime.datetime(*time_parts)
+    return date
+
   def get_expiry_datetime(self, person):
     """Returns the expiry date associated with a given person, adjusted by one
     day to reflect the actual date that data must be removed from PFIF XML.
@@ -291,20 +310,19 @@ class PfifValidator:
     if expiry_date_elem != None:
       expiry_date_str = expiry_date_elem.text
       if expiry_date_str:
-        # Fractional seconds are optionally allowed in the time, which means
-        # that it would be difficult to use datetime.datetime.strptime.
-        # Instead, we manually extract the fields using a regular expression.
-        match = re.match(
-            r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d*)?Z$',
-            expiry_date_str)
-        time_parts = []
-        for i in range(1,7):
-          time_parts.append(int(match.group(i)))
-        expiry_date = datetime.datetime(*time_parts)
+        expiry_date = self.pfif_date_to_py_date(expiry_date_str)
         # Advances the expiry_date one day because the protocol doesn't
         # require removing data until a day after expiration
         expiry_date += datetime.timedelta(days=1)
         return expiry_date
+    return None
+
+  def get_field_text(self, parent, child_tag):
+    """Returns the text associated with the child node of parent.  Returns none
+    if parent doesn't have that child or if the child doesn't have any text"""
+    child = parent.find(self.add_namespace_to_tag(child_tag))
+    if child != None:
+      return child.text
     return None
 
   # initialization
@@ -553,6 +571,35 @@ class PfifValidator:
     are in the correct order."""
     return self.validate_field_order('note')
 
+  def has_personal_data(self, person):
+    """After expiration, a person can only contain placeholder data, which
+    includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
+    personal data.  Returns true if there is any personal data in person"""
+    children = person.getchildren()
+    for child in children:
+      tag = utils.extract_tag(child.tag)
+      if tag not in PfifValidator.PLACEHOLDER_FIELDS:
+        if child.text:
+          # notes with text are okay as long as none of their children have text
+          if tag == 'note':
+            return self.has_personal_data(child)
+          else:
+            return True
+    return False
+
+  def validate_placeholder_dates(self, person, expiry_date):
+    """Placeholders must be created within one day of expiry, and when they are
+    created, the source_date and entry_date must match.  Returns true if those
+    conditions hold."""
+    source_date = self.get_field_text(person, 'source_date')
+    entry_date = self.get_field_text(person, 'entry_date')
+    if (not source_date) or (source_date != entry_date):
+      return False
+    # If source_date > expiry_date, the placeholder was made more than a day
+    # after expiry; even though the current PFIF XML is not exposing data, it
+    # was exposing data between expiry_date and search_date
+    return self.pfif_date_to_py_date(source_date) < expiry_date
+
   def validate_expired_records_removed(self):
     """Validates that if the current time is at least one day greater than any
     person's expiry_date, all fields other than person_record_id, expiry_date,
@@ -569,9 +616,9 @@ class PfifValidator:
       curr_date = utils.get_utcnow()
       # if the record is expired
       if expiry_date != None and expiry_date < curr_date:
-        #if (self.has_personal_data(person) or
-        #    self.placeholder_dates_do_not_match(person)):
-          # TODO(samking): make this (and all other prints / returns) nicer 
+        if (self.has_personal_data(person) or not
+            self.validate_placeholder_dates(person, expiry_date)):
+          # TODO(samking): make this (and all other prints / returns) nicer
           # and unified.
           unremoved_expired_records.append('You had an expired record!')
 

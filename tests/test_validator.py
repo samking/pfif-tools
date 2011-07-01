@@ -866,8 +866,8 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
     <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
-    <pfif:source_date>1999-03-03T04:05:06Z</pfif:source_date>
-    <pfif:entry_date>1999-03-03T04:05:06Z</pfif:entry_date>
+    <pfif:source_date>1999-04-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-04-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
 </pfif:pfif>""")
     utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
