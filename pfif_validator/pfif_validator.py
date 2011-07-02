@@ -624,6 +624,49 @@ class PfifValidator:
 
     return unremoved_expired_records
 
+  def validate_note_linkage(self, note, person_record_id):
+    """Validates that note is properly linked, as described in
+    validate_linked_records_matched.  Returns true if it is properly linked."""
+    linked_person_id = self.get_field_text(note, 'linked_person_record_id')
+    if linked_person_id == None:
+      return True
+    # The linked person can't point back to this note because there is no way to
+    # identify this note
+    if person_record_id == None:
+      return False
+
+    # Find the person
+    for person in self.get_all_persons():
+      if self.get_field_text(person, 'person_record_id') == linked_person_id:
+        notes = person.findall(self.add_namespace_to_tag('note'))
+        for note in notes:
+          if (self.get_field_text(note, 'linked_person_record_id') ==
+              person_record_id):
+            return True
+    for note in self.tree.findall(self.add_namespace_to_tag('note')):
+      if (self.get_field_text(note, 'person_record_id') == linked_person_id and
+          self.get_field_text(note, 'linked_person_record_id') ==
+          person_record_id):
+        return True
+
+    return False
+
+  def validate_linked_records_matched(self):
+    """Validates that if a note has a linked_person_record_id field, that the
+    person that it points to has a note pointing back.  If A links to B, B
+    should link to A.  Returns a list of any notes that point to nowhere"""
+    unmatched_notes = []
+    for person in self.get_all_persons():
+      person_record_id = self.get_field_text(person, 'person_record_id')
+      for note in person.findall(self.add_namespace_to_tag('note')):
+        if not self.validate_note_linkage(note, person_record_id):
+          unmatched_notes.append(note)
+    top_notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    for note in top_notes:
+      person_record_id = self.get_field_text(note, 'person_record_id')
+      if not self.validate_note_linkage(note, person_record_id):
+        unmatched_notes.append(note)
+    return unmatched_notes
 
 #def main():
 #  if (not len(sys.argv()) == 2):

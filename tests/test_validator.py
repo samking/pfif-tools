@@ -927,11 +927,11 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.org/p1</pfif:person_record_id>
     <pfif:note>
-      <pfif:note_record_id>example.com/n1<pfif:note_record_id>
+      <pfif:note_record_id>example.com/n1</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
 </pfif:pfif>""")
-    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
+    self.assertEqual(len(v.validate_linked_records_matched()), 0)
 
   def test_correctly_linked_records(self):
     """validate_linked_records_matched should return an empty list when
@@ -942,17 +942,17 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.org/p1</pfif:person_record_id>
     <pfif:note>
-      <pfif:note_record_id>example.com/n1<pfif:note_record_id>
-      <pfif:linked_person_record_id>example.org/p2<pfif:linked_person_record_id>
+      <pfif:note_record_id>example.com/n1</pfif:note_record_id>
+      <pfif:linked_person_record_id>example.org/p2</pfif:linked_person_record_id>
     </pfif:note>
   </pfif:person>
   <pfif:note>
-    <pfif:note_record_id>example.com/n2<pfif:note_record_id>
-    <pfif:person_record_id>example.org/p2<pfif:person_record_id>
-    <pfif:linked_person_record_id>example.org/p1<pfif:linked_person_record_id>
+    <pfif:note_record_id>example.com/n2</pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2</pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1</pfif:linked_person_record_id>
   </pfif:note>
 </pfif:pfif>""")
-    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
+    self.assertEqual(len(v.validate_linked_records_matched()), 0)
 
   def test_asymmetrically_linked_records(self):
     """validate_linked_records_matched should return a list with each
@@ -960,12 +960,12 @@ class ValidatorTests(unittest.TestCase):
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
-    <pfif:note_record_id>example.com/n2<pfif:note_record_id>
-    <pfif:person_record_id>example.org/p2<pfif:person_record_id>
-    <pfif:linked_person_record_id>example.org/p1<pfif:linked_person_record_id>
+    <pfif:note_record_id>example.com/n2</pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2</pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1</pfif:linked_person_record_id>
   </pfif:note>
 </pfif:pfif>""")
-    sel.assertEqual(len(v.validate_linked_records_matched()), 0)
+    self.assertEqual(len(v.validate_linked_records_matched()), 1)
 
   # validate_extraneous_fields
 
