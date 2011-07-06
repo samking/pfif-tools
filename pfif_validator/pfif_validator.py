@@ -327,8 +327,10 @@ class PfifValidator:
 
   # initialization
 
-  def __init__(self, xml_file, initialize=True):
+  def __init__(self, xml_file, initialize=True, print_output=True):
     self.xml_file = xml_file
+    self.print_output = print_output
+    self.error_messages = {}
     self.tree = None
     self.namespace = None
     self.version = None
@@ -363,6 +365,55 @@ class PfifValidator:
     assert (self.version >= 1.1 and self.version <= 1.3), (
            "This validator only supports versions 1.1-1.3.")
     return self.version
+
+  # printing error messages
+
+  def set_printing(self, print_output):
+    """Turns printing on if print_output is True"""
+    self.print_output = print_output
+
+  def print_test_start(self, test_name):
+    """Prints out that a test is starting"""
+    if self.print_output:
+      print "****" + test_name + "****"
+
+  def print_arr(self, arr):
+    """Prints out each elem in the arr on its own line"""
+    for elem in arr:
+      print elem
+
+  def get_error_messages(self, test_name):
+    """Returns a list of all error messages for the specified test."""
+    if test_name in self.error_messages:
+      return self.error_messages[test_name]
+    else:
+      return []
+
+  def print_error_messages(self, test_name=None):
+    """Prints out all messages that have been added.  If a test_name is
+    specified, only prints the messages from that test."""
+    if self.print_output:
+      if test_name:
+        self.print_arr(self.error_messages[test_name])
+      else:
+        for name, test in self.error_messages.items():
+          print "TEST: " + name
+          self.print_arr(test)
+          print
+
+  def add_error_message(self, test_name, error_message="", person_record_id="",
+                        note_record_id=""):
+    """Adds a message to the error message list"""
+    message = error_message
+    if person_record_id:
+      message += "\tThe relevant person_record_id: " + person_record_id
+    if note_record_id:
+      message += "\tThe relevant note_record_id: " + note_record_id
+    if test_name not in self.error_messages:
+      test_message_list = []
+      self.error_messages[test_name] = test_message_list
+    test_message_list = self.error_messages[test_name]
+    test_message_list.append(message)
 
   # validation
 
