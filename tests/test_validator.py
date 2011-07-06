@@ -91,6 +91,50 @@ class ValidatorTests(unittest.TestCase):
     pfif_file = StringIO.StringIO(xml)
     return PfifValidator(pfif_file, initialize=True)
 
+  # printing output
+  def test_printing(self):
+    """print_test_start, print_error_message, and add_error_message should
+    generate messages if printing is turned on and should not crash.
+    get_error_messages should return a list of error messages."""
+    v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
+    old_stdout = sys.stdout
+
+    # print_test_start
+    v.set_printing(False)
+    fake_stdout = StringIO.StringIO()
+    sys.stdout = fake_stdout
+
+    v.print_test_start("Test Test")
+    self.assertTrue(fake_stdout.tell() == 0)
+
+    v.set_printing(True)
+    v.print_test_start("Test Test")
+    fake_stdout.seek(0)
+    self.assertEqual(len(fake_stdout.readlines()), 1)
+
+    # add_error_message, get_error_messages, and print_error_messages
+    v.set_printing(False)
+    fake_stdout = StringIO.StringIO()
+    sys.stdout = fake_stdout
+
+    self.assertEqual(len(v.get_error_messages("Test Name")), 0)
+    v.add_error_message("Test Name")
+    v.add_error_message("Test Name", error_message="Error Message",
+                        person_record_id="ID1", note_record_id="ID2")
+    self.assertEqual(len(v.get_error_messages("Test Name")), 2)
+    v.print_error_messages("Test Name")
+    v.print_error_messages()
+    self.assertTrue(fake_stdout.tell() == 0)
+
+    v.set_printing(True)
+    v.print_error_messages("Test Name")
+    position = fake_stdout.tell()
+    self.assertTrue(position > 0)
+    v.print_error_messages()
+    self.assertTrue(fake_stdout.tell() > position)
+
+    sys.stdout = old_stdout
+
   # validate_xml_or_die
 
   def test_valid_xml(self):
