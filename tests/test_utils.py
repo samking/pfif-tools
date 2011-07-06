@@ -13,30 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for xml_utils.py"""
+"""Tests for utils.py"""
 
 import os
 import sys
 # TODO(samking): I'm sure that there is a simpler way to do this...
 sys.path.append(os.getcwd() + '/../pfif_validator')
-import xml_utils
+import utils
 import unittest
 
 class XmlUtilTests(unittest.TestCase):
 
   def test_blank_input(self):
     """extract_tag should return an empty string on blank input"""
-    self.assertEqual(xml_utils.extract_tag(""), "")
+    self.assertEqual(utils.extract_tag(""), "")
 
   def test_tag(self):
     """extract_tag should return the original string when the string does not
     start with a namespace"""
-    self.assertEqual(xml_utils.extract_tag("foo"), "foo")
+    self.assertEqual(utils.extract_tag("foo"), "foo")
 
   def test_tag_and_namespace(self):
     """extract_tag should return the local tag when the string starts with a
     namespace"""
-    self.assertEqual(xml_utils.extract_tag("{foo}bar"), "bar")
+    self.assertEqual(utils.extract_tag("{foo}bar"), "bar")
 
 if __name__ == '__main__':
   unittest.main()
