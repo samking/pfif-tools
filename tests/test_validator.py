@@ -578,7 +578,6 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_notes_belong_to_persons()), 2)
 
   # validate_field_order
-  # TODO(samking): do tests for 1.2
 
   def test_correct_field_order_11(self):
     """validate_person_field_order and validate_note_field_order should return
