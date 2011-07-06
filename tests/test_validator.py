@@ -975,5 +975,23 @@ class ValidatorTests(unittest.TestCase):
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_extraneous_fields()), 3)
 
+  def test_top_level_note_11(self):
+    """validate_extraneous_fields should return a list with every top level note
+    in a PFIF 1.1 document"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:note />
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 2)
+
 if __name__ == '__main__':
   unittest.main()

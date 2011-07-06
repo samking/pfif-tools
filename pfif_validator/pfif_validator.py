@@ -624,6 +624,46 @@ class PfifValidator:
 
     return unremoved_expired_records
 
+  def validate_extraneous_children(self, parents, approved_tags):
+    """For each parent in parents, ensures that every child's tag is in
+    approved_tags and is not a duplicate (except for notes).  Returns a list of
+    all extraneous tags."""
+    extra_fields = []
+    for parent in parents:
+      used_tags = []
+      for child in parent.getchildren():
+        tag = utils.extract_tag(child.tag)
+        if tag in used_tags and tag != 'note':
+          extra_fields.append('Duplicate Tag: ' + tag)
+        elif tag not in approved_tags:
+          extra_fields.append('Extraneous Tag: ' + tag)
+        else:
+          used_tags.append(tag)
+    return extra_fields
+
+  def validate_extraneous_fields(self):
+    """Validates that there all fields present are in the specification.
+    Returns a list with every extraneous or duplicate field.  This includes
+    fields added in a more recent version of the specification."""
+    extra_fields = []
+    for top_level_node in self.tree.getroot().getchildren():
+      tag = utils.extract_tag(top_level_node.tag)
+      # version 1.1 must have only person tags; 1.2+ can also have note tags
+      if tag == 'note' and self.version < 1.2:
+        extra_fields.append("Top level notes aren't allowed until 1.2!")
+      elif not (tag == 'person' or tag == 'note'):
+        extra_fields.append("Extraneous Top Level Tag: " + tag)
+
+    person_fields = PfifValidator.FORMATS[self.version]['person'].keys()
+    person_fields.append('note')
+    extra_fields.extend(self.validate_extraneous_children(
+        self.get_all_persons(), person_fields))
+
+    note_fields = PfifValidator.FORMATS[self.version]['note'].keys()
+    extra_fields.extend(self.validate_extraneous_children(
+        self.get_all_notes(), note_fields))
+
+    return extra_fields
 
 #def main():
 #  if (not len(sys.argv()) == 2):
