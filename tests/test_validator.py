@@ -921,7 +921,59 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_extraneous_fields
 
-  # validate_duplicate_fields
+  def test_no_extra_fields(self):
+    """validate_extraneous_fields should return an empty list when presented
+    with a list that only includes fields in the PFIF spec"""
+    v = self.set_up_validator(ValidatorTests.PFIF_XML_11_FULL)
+    self.assertEqual(len(v.validate_extraneous_fields()), 0)
+
+  def test_gibberish_fields(self):
+    """validate_extraneous_fields should return a list with every field that is
+    not defined anywhere in the PFIF spec.  This includes fields defined in PFIF
+    1.3 when using a 1.2 document."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date />
+    <pfif:field />
+    <pfif:foo />
+    <pfif:note>
+      <pfif:bar />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:bar />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 5)
+
+  def test_duplicate_fields(self):
+    """validate_extraneous_fields should return a list with every duplicated
+    field (except for multiple <pfif:note> fields in one <pfif:person> or fields
+    that are not at the same place in the tree, such as a note and a person with
+    a person_record_id or two different notes)"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date />
+    <pfif:expiry_date />
+    <pfif:expiry_date />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:note_record_id />
+      <pfif:person_record_id />
+    </pfif:note>
+    <pfif:note>
+      <pfif:note_record_id />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 3)
 
 if __name__ == '__main__':
   unittest.main()
