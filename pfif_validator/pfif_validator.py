@@ -372,11 +372,6 @@ class PfifValidator:
     """Turns printing on if print_output is True"""
     self.print_output = print_output
 
-  def print_test_start(self, test_name):
-    """Prints out that a test is starting"""
-    if self.print_output:
-      print "****" + test_name + "****"
-
   def print_arr(self, arr):
     """Prints out each elem in the arr on its own line"""
     for elem in arr:
@@ -389,17 +384,13 @@ class PfifValidator:
     else:
       return []
 
-  def print_error_messages(self, test_name=None):
-    """Prints out all messages that have been added.  If a test_name is
-    specified, only prints the messages from that test."""
+  def print_error_messages(self, test_name):
+    """Prints out all messages from a given test"""
     if self.print_output:
-      if test_name:
+      print "****" + test_name + "****"
+      if test_name in self.error_messages:
         self.print_arr(self.error_messages[test_name])
-      else:
-        for name, test in self.error_messages.items():
-          print "TEST: " + name
-          self.print_arr(test)
-          print
+      print
 
   def add_error_message(self, test_name, error_message="", person_record_id="",
                         note_record_id=""):
@@ -422,7 +413,8 @@ class PfifValidator:
     root = self.tree.getroot()
     children = root.getchildren()
     if not len(children) > 0:
-      print "The root node must have at least one child"
+      self.add_error_message("Validate Root Has Child",
+                             "The root node must have at least one child")
       return False
     return True
 
