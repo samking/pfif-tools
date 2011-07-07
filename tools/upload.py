@@ -30,6 +30,7 @@ against by using the '--rev' option.
 """
 # This code is derived from appcfg.py in the App Engine SDK (open source),
 # and from ASPN recipe #146306.
+# Copied from Google Person Finder: http://code.google.com/p/googlepersonfinder
 
 import ConfigParser
 import cookielib
