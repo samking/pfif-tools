@@ -636,13 +636,20 @@ class PfifValidator:
       return False
 
     # Find the person
+    # Notes contained inside of persons might not have a person_record_id field,
+    # so we need to get that from the person that owns the note rather than just
+    # using self.get_all_notes
     for person in self.get_all_persons():
       if self.get_field_text(person, 'person_record_id') == linked_person_id:
         notes = person.findall(self.add_namespace_to_tag('note'))
+        #TODO(samking): note shadows the parameter
         for note in notes:
           if (self.get_field_text(note, 'linked_person_record_id') ==
               person_record_id):
             return True
+    # Top level notes are required to have their person_record_id, so we can
+    # just iterate over them
+    #TODO(samking): note shadows the parameter
     for note in self.tree.findall(self.add_namespace_to_tag('note')):
       if (self.get_field_text(note, 'person_record_id') == linked_person_id and
           self.get_field_text(note, 'linked_person_record_id') ==
@@ -656,6 +663,8 @@ class PfifValidator:
     person that it points to has a note pointing back.  If A links to B, B
     should link to A.  Returns a list of any notes that point to nowhere"""
     unmatched_notes = []
+    # TODO: algo is now n^2.  Make a map from person_record_id to array of
+    # linked_person_record_ids
     for person in self.get_all_persons():
       person_record_id = self.get_field_text(person, 'person_record_id')
       for note in person.findall(self.add_namespace_to_tag('note')):
