@@ -918,6 +918,7 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_expired_records_removed()), 0)
 
   # validate_linked_records_matched
+  #TODO(samking): define the XML in constants at the top
 
   def test_unlinked_records(self):
     """validate_linked_records_matched should return an empty list when
