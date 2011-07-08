@@ -20,6 +20,7 @@ import re
 import utils
 from urlparse import urlparse
 import datetime
+from sets import Set
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -624,57 +625,47 @@ class PfifValidator:
 
     return unremoved_expired_records
 
-  def validate_note_linkage(self, note, person_record_id):
-    """Validates that note is properly linked, as described in
-    validate_linked_records_matched.  Returns true if it is properly linked."""
-    linked_person_id = self.get_field_text(note, 'linked_person_record_id')
-    if linked_person_id == None:
-      return True
-    # The linked person can't point back to this note because there is no way to
-    # identify this note
-    if person_record_id == None:
-      return False
+  def get_linked_record_from_note(self, person_record_id, note, linked_records):
+    """Adds a mapping from person_record_id to the note's
+    linked_person_record_id in the linked_records map if the note contains a
+    linked_record"""
+    linked_id = self.get_field_text(note, 'linked_person_record_id')
+    if linked_id != None and person_record_id != None:
+      if person_record_id not in linked_records:
+        linked_records[person_record_id] = Set()
+      linked_records[person_record_id].add(linked_id)
 
-    # Find the person
+  def get_linked_records(self):
+    """Returns a map from person_record_id to a set of
+    linked_person_record_ids."""
+    linked_records = {}
     # Notes contained inside of persons might not have a person_record_id field,
     # so we need to get that from the person that owns the note rather than just
     # using self.get_all_notes
     for person in self.get_all_persons():
-      if self.get_field_text(person, 'person_record_id') == linked_person_id:
-        notes = person.findall(self.add_namespace_to_tag('note'))
-        #TODO(samking): note shadows the parameter
-        for note in notes:
-          if (self.get_field_text(note, 'linked_person_record_id') ==
-              person_record_id):
-            return True
+      person_record_id = self.get_field_text(person, 'person_record_id')
+      for note in person.findall(self.add_namespace_to_tag('note')):
+        self.get_linked_record_from_note(person_record_id, note, linked_records)
     # Top level notes are required to have their person_record_id, so we can
     # just iterate over them
-    #TODO(samking): note shadows the parameter
     for note in self.tree.findall(self.add_namespace_to_tag('note')):
-      if (self.get_field_text(note, 'person_record_id') == linked_person_id and
-          self.get_field_text(note, 'linked_person_record_id') ==
-          person_record_id):
-        return True
-
-    return False
+      person_record_id = self.get_field_text(note, 'person_record_id')
+      self.get_linked_record_from_note(person_record_id, note, linked_records)
+    return linked_records
 
   def validate_linked_records_matched(self):
     """Validates that if a note has a linked_person_record_id field, that the
     person that it points to has a note pointing back.  If A links to B, B
     should link to A.  Returns a list of any notes that point to nowhere"""
     unmatched_notes = []
-    # TODO: algo is now n^2.  Make a map from person_record_id to array of
-    # linked_person_record_ids
-    for person in self.get_all_persons():
-      person_record_id = self.get_field_text(person, 'person_record_id')
-      for note in person.findall(self.add_namespace_to_tag('note')):
-        if not self.validate_note_linkage(note, person_record_id):
-          unmatched_notes.append(note)
-    top_notes = self.tree.findall(self.add_namespace_to_tag('note'))
-    for note in top_notes:
-      person_record_id = self.get_field_text(note, 'person_record_id')
-      if not self.validate_note_linkage(note, person_record_id):
-        unmatched_notes.append(note)
+    linked_records = self.get_linked_records()
+    for person_record_id, linked_ids in linked_records.items():
+      for linked_id in linked_ids:
+        # if B doesn't exist or B doesn't point to A, then A points to nowhere
+        if (linked_id not in linked_records or
+            person_record_id not in linked_records[linked_id]):
+          #TODO(samking): use pretty printing method
+          unmatched_notes.append(person_record_id)
     return unmatched_notes
 
 #def main():
