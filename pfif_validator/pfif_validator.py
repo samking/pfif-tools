@@ -20,7 +20,6 @@ import re
 import utils
 from urlparse import urlparse
 import datetime
-from sets import Set
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -632,7 +631,7 @@ class PfifValidator:
     linked_id = self.get_field_text(note, 'linked_person_record_id')
     if linked_id != None and person_record_id != None:
       if person_record_id not in linked_records:
-        linked_records[person_record_id] = Set()
+        linked_records[person_record_id] = set()
       linked_records[person_record_id].add(linked_id)
 
   def get_linked_records(self):
