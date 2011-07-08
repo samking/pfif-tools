@@ -89,7 +89,7 @@ class ValidatorTests(unittest.TestCase):
   def set_up_validator(self, xml):
     """Creates a PFIF validator from XML and initializes it"""
     pfif_file = StringIO.StringIO(xml)
-    return PfifValidator(pfif_file, initialize=True)
+    return PfifValidator(pfif_file, initialize=True, print_output=True)
 
   # printing output
   def test_printing(self):
@@ -104,22 +104,28 @@ class ValidatorTests(unittest.TestCase):
     fake_stdout = StringIO.StringIO()
     sys.stdout = fake_stdout
 
+    # I can't do anything without setting the test name
+    self.assertRaises(Exception, v.add_error_message, "Error Message")
+    self.assertRaises(Exception, v.print_error_messages)
+    self.assertRaises(Exception, v.get_error_messages)
+
     # start out with no errors
-    self.assertEqual(len(v.get_error_messages("Test Name")), 0)
+    v.set_current_test("Printing Test")
+    self.assertEqual(len(v.get_error_messages()), 0)
 
     # I can add errors and get the back
-    v.add_error_message("Test Name")
-    v.add_error_message("Test Name", error_message="Error Message",
-                        person_record_id="ID1", note_record_id="ID2")
-    self.assertEqual(len(v.get_error_messages("Test Name")), 2)
+    v.add_error_message("Error Message")
+    v.add_error_message("Error Message", person_record_id="ID1",
+                        note_record_id="ID2")
+    self.assertEqual(len(v.get_error_messages()), 2)
 
     # printing doesn't do anything when set_printing is off
-    v.print_error_messages("Test Name")
+    v.print_error_messages()
     self.assertTrue(fake_stdout.tell() == 0)
 
     # printing does something when set_printing is on
     v.set_printing(True)
-    v.print_error_messages("Test Name")
+    v.print_error_messages()
     self.assertTrue(fake_stdout.tell() > 0)
 
     sys.stdout = old_stdout
@@ -545,9 +551,6 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.com/2</pfif:person_record_id>
   </pfif:person>
-  <pfif:person>
-    <pfif:person_record_id>example.com/2</pfif:person_record_id>
-  </pfif:person>
 </pfif:pfif>""")
     self.assertEqual(len(v.validate_person_ids_are_unique()), 2)
 
@@ -574,7 +577,7 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(v.validate_note_ids_are_unique()), 2)
 
   # validate_notes_belong_to_persons
-  
+
   def test_notes_belong_to_people(self):
     """validate_notes_belong_to_persons should return an empty list if all top
     level notes have a person_record_id and all notes inside persons have no
