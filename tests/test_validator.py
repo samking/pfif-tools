@@ -89,7 +89,7 @@ class ValidatorTests(unittest.TestCase):
   def set_up_validator(self, xml):
     """Creates a PFIF validator from XML and initializes it"""
     pfif_file = StringIO.StringIO(xml)
-    return PfifValidator(pfif_file, initialize=True, print_output=True)
+    return PfifValidator(pfif_file, initialize=True, print_output=False)
 
   # printing output
   def test_printing(self):
