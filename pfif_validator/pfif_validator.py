@@ -449,8 +449,8 @@ class PfifValidator:
         success = True
         break
     if not success:
-      self.add_error_message("Having a person tag (or a note tag in PFIF 1.2+)"
-                             "as one of the children of the root node is"
+      self.add_error_message("Having a person tag (or a note tag in PFIF 1.2+) "
+                             "as one of the children of the root node is "
                              "mandatory.")
     self.print_error_messages()
     return success
@@ -468,7 +468,7 @@ class PfifValidator:
         child = parent.find(self.add_namespace_to_tag(child_tag))
         if child is None:
           self.add_error_message(
-              "You don't have all mandatory children.  You were missing the"
+              "You don't have all mandatory children.  You were missing the "
               "following tag: " + child_tag, record=parent)
     self.print_error_messages()
     return self.get_error_messages()
@@ -507,7 +507,7 @@ class PfifValidator:
               failed = True
           if failed:
             self.add_error_message(
-                "The text in one of your fields doesn't match the requirement"
+                "The text in one of your fields doesn't match the requirement "
                 "in the specification.  The field: " + field + ".  The text: " +
                 element.text, record=parent)
 
@@ -564,7 +564,8 @@ class PfifValidator:
       if person_id == None:
         note_id = note.find(self.add_namespace_to_tag('note_record_id'))
         self.add_error_message(
-            "A top level note is missing a person_record_id.", record=note)
+            "A top level note (a note not contained within a person) is "
+            "missing a person_record_id.", record=note)
     persons = self.get_all_persons()
     for person in persons:
       person_id = person.find(self.add_namespace_to_tag('person_record_id'))
@@ -575,7 +576,7 @@ class PfifValidator:
               self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
             self.add_error_message(
-                "You have a note that has a person_record_id that does not"
+                "You have a note that has a person_record_id that does not "
                 "match the person_record_id of the person that owns the note.",
                 person_record_id=self.get_field_text(person,
                                                      'person_record_id'),
@@ -629,14 +630,14 @@ class PfifValidator:
     source_date = self.get_field_text(person, 'source_date')
     entry_date = self.get_field_text(person, 'entry_date')
     if (not source_date) or (source_date != entry_date):
-      self.add_error_message("An expired record has a source date that doesn't"
+      self.add_error_message("An expired record has a source date that doesn't "
                              "match the entry date.", record=person)
     # If source_date > expiry_date, the placeholder was made more than a day
     # after expiry; even though the current PFIF XML is not exposing data, it
     # was exposing data between expiry_date and search_date
     if self.pfif_date_to_py_date(source_date) > expiry_date:
       self.add_error_message("The placeholder for an expired record was created"
-                             "more than a day after the record expired.",
+                             " more than a day after the record expired.",
                              record=person)
 
   def validate_personal_data_removed(self, record):
@@ -653,7 +654,7 @@ class PfifValidator:
           if tag == 'note':
             self.validate_personal_data_removed(child)
           else:
-            self.add_error_message("An expired record still has personal data",
+            self.add_error_message("An expired record still has personal data.",
                                    record=record)
 
   def validate_expired_records_removed(self):
