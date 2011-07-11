@@ -17,7 +17,7 @@
 
 import xml.etree.ElementTree as ET
 import re
-import utils
+from . import utils
 from urlparse import urlparse
 import datetime
 import sys
