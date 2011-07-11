@@ -23,6 +23,7 @@ import datetime
 import sys
 
 class PfifValidator:
+  """A validator that can run tests on a PFIF XML file."""
   # TODO(samking): should I move a lot of this data stuff at the top into an
   # external file that I would read in?
 
