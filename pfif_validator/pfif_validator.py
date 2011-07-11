@@ -20,6 +20,7 @@ import re
 import utils
 from urlparse import urlparse
 import datetime
+import sys
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -625,17 +626,21 @@ class PfifValidator:
     return unremoved_expired_records
 
 
-#def main():
-#  if (not len(sys.argv()) == 2):
-#    print "Usage: python pfif-validator.py my-pyif-xml-file"
-#  v = PfifValidator(sys.argv(1))
-#  v.validate_xml_or_die(sys.argv(1))
-#  v.validate_root_is_pfif_or_die()
-#  validate_root_has_child_or_die()
-#  validate_root_has_mandatory_children()
-#  validate_person_has_mandatory_children()
-#  validate_note_has_mandatory_children()
-#  validate_fields_have_correct_format()
-#
-#if __name__ == '__main__':
-#  main()
+def main():
+  if (not len(sys.argv) == 2):
+    print "Usage: python pfif-validator.py my-pyif-xml-file"
+  v = PfifValidator(sys.argv[1])
+  v.validate_root_has_child()
+  v.validate_root_has_mandatory_children()
+  v.validate_person_has_mandatory_children()
+  v.validate_note_has_mandatory_children()
+  v.validate_fields_have_correct_format()
+  v.validate_person_ids_are_unique()
+  v.validate_note_ids_are_unique()
+  v.validate_notes_belong_to_persons()
+  v.validate_person_field_order()
+  v.validate_note_field_order()
+  v.validate_expired_records_removed()
+
+if __name__ == '__main__':
+  main()
