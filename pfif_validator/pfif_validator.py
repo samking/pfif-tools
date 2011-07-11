@@ -288,7 +288,8 @@ class PfifValidator:
       notes.extend(person.findall(self.__add_namespace_to_tag('note')))
     return notes
 
-  def __pfif_date_to_py_date(self, date_str):
+  @staticmethod
+  def __pfif_date_to_py_date(date_str):
     """Converts a date string in the format yyyy-mm-ddThh:mm:ssZ (where there
     can optionally be a fractional amount of seconds between ss and Z) to a
     Python datetime object"""
@@ -312,7 +313,7 @@ class PfifValidator:
     if expiry_date_elem != None:
       expiry_date_str = expiry_date_elem.text
       if expiry_date_str:
-        expiry_date = self.__pfif_date_to_py_date(expiry_date_str)
+        expiry_date = PfifValidator.__pfif_date_to_py_date(expiry_date_str)
         # Advances the expiry_date one day because the protocol doesn't
         # require removing data until a day after expiration
         expiry_date += datetime.timedelta(days=1)
