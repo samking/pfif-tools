@@ -437,9 +437,11 @@ class PfifValidator:
           failed = False
           if field_format == "URL":
             url = urlparse(text)
+            # pylint: disable=E1101
             if (url.scheme != "http" and url.scheme != "https"):
               failed = True
             if url.netloc == "":
+              # pylint: enable=E1101
               failed = True
           else:
             match = re.match(field_format, text)
