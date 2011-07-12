@@ -600,14 +600,15 @@ class PfifValidator:
         curr_max = 0
         for field in record.getchildren():
           tag = utils.extract_tag(field.tag)
-          field_order_num = field_order[tag]
-          if field_order_num >= curr_max:
-            curr_max = field_order_num
-          else:
-            self.add_error_message(
-                "One of your fields was out of order.  The field: " + tag,
-                record=record)
-            break
+          if tag in field_order:
+            field_order_num = field_order[tag]
+            if field_order_num >= curr_max:
+              curr_max = field_order_num
+            else:
+              self.add_error_message(
+                  "One of your fields was out of order.  The field: " + tag,
+                  record=record)
+              break
     self.print_error_messages()
     return self.get_error_messages()
 
