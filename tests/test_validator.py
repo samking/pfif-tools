@@ -20,8 +20,8 @@ import StringIO
 
 import os
 import sys
-# TODO(samking): I'm sure that there is a simpler way to do this...
-sys.path.append(os.getcwd() + '/../pfif_validator')
+# TODO(samking): is there a better way to do this without using an extra script?
+sys.path.append(sys.path[0] + '/../pfif_validator')
 from pfif_validator import PfifValidator
 import datetime
 import utils
