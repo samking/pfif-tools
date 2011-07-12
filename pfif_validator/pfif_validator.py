@@ -17,7 +17,7 @@
 
 import xml.etree.ElementTree as ET
 import re
-from . import utils
+import utils
 from urlparse import urlparse
 import datetime
 import sys
@@ -303,8 +303,7 @@ class PfifValidator:
     for i in range(1, 7):
       time_parts.append(int(match.group(i)))
     date = datetime.datetime(time_parts[0], time_parts[1], time_parts[2],
-                             time_parts[3], time_parts[4], time_parts[5],
-                             time_parts[6])
+                             time_parts[3], time_parts[4], time_parts[5])
     return date
 
   def __get_expiry_datetime(self, person):
