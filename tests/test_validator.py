@@ -638,6 +638,19 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(len(validator.validate_person_field_order()), 3)
     self.assertEqual(len(validator.validate_note_field_order()), 2)
 
+  def test_nonexistent_field(self):
+    """validate_person_field_order and validate_note_field_order should ignore
+    any fields that are not in the spec"""
+    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:person>
+    <pfif:person_record_id />
+    <pfif:foo />
+    <pfif:other />
+  </pfif:person>
+</pfif:pfif>""")
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+
   def test_correct_field_order_12(self):
     """validate_person_field_order and validate_note_field_order should return
     a empty lists if person_record_id comes first and any notes come last in

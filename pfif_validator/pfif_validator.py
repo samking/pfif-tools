@@ -560,12 +560,13 @@ class PfifValidator:
       curr_max = 0
       for field in parent.getchildren():
         tag = utils.extract_tag(field.tag)
-        tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
-        if tag_order >= curr_max:
-          curr_max = tag_order
-        else:
-          out_of_order_tags.append(tag)
-          break
+        if tag in PfifValidator.FIELD_ORDER[self.version][field_type]:
+          tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
+          if tag_order >= curr_max:
+            curr_max = tag_order
+          else:
+            out_of_order_tags.append(tag)
+            break
     print out_of_order_tags
     return out_of_order_tags
 
