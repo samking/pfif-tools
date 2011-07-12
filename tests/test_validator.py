@@ -81,13 +81,14 @@ class ValidatorTests(unittest.TestCase):
 
   EXPIRED_TIME = datetime.datetime(1999, 3, 1)
 
-  def setUp(self):
+  def setUp(self): # pylint: disable=C0103
     """Some of the tests will run code that prints stuff out.  This prevents it
     from printing next to the clean dots from the unit tests."""
     if not ValidatorTests.PRINT_VALIDATOR_OUTPUT:
       sys.stdout = open(os.devnull, "w")
 
-  def set_up_validator(self, xml):
+  @staticmethod
+  def set_up_validator(xml):
     """Creates a PFIF validator from XML and initializes it"""
     pfif_file = StringIO.StringIO(xml)
     return PfifValidator(pfif_file, initialize=True)
