@@ -91,45 +91,6 @@ class ValidatorTests(unittest.TestCase):
     pfif_file = StringIO.StringIO(xml)
     return PfifValidator(pfif_file, initialize=True, print_output=False)
 
-  # printing output
-  def test_printing(self):
-    """print_test_start, print_error_message, and add_error_message should
-    generate messages if printing is turned on and should not crash.
-    get_error_messages should return a list of error messages."""
-    v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    old_stdout = sys.stdout
-
-    # mock stdout so that we can tell what gets printed
-    v.set_printing(False)
-    fake_stdout = StringIO.StringIO()
-    sys.stdout = fake_stdout
-
-    # I can't do anything without setting the test name
-    self.assertRaises(Exception, v.add_error_message, "Error Message")
-    self.assertRaises(Exception, v.print_error_messages)
-    self.assertRaises(Exception, v.get_error_messages)
-
-    # start out with no errors
-    v.set_current_test("Printing Test")
-    self.assertEqual(len(v.get_error_messages()), 0)
-
-    # I can add errors and get the back
-    v.add_error_message("Error Message")
-    v.add_error_message("Error Message", person_record_id="ID1",
-                        note_record_id="ID2")
-    self.assertEqual(len(v.get_error_messages()), 2)
-
-    # printing doesn't do anything when set_printing is off
-    v.print_error_messages()
-    self.assertTrue(fake_stdout.tell() == 0)
-
-    # printing does something when set_printing is on
-    v.set_printing(True)
-    v.print_error_messages()
-    self.assertTrue(fake_stdout.tell() > 0)
-
-    sys.stdout = old_stdout
-
   # validate_xml_or_die
 
   def test_valid_xml(self):
