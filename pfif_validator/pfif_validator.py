@@ -433,23 +433,25 @@ class PfifValidator:
       for field, field_format in formats.items():
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
-          #TODO(samking): is it correct to strip this string?
-          text = element.text.strip()
-          failed = False
-          if field_format == "URL":
-            url = urlparse(text)
-            # pylint: disable=E1101
-            if (url.scheme != "http" and url.scheme != "https"):
-              failed = True
-            if url.netloc == "":
-              # pylint: enable=E1101
-              failed = True
-          else:
-            match = re.match(field_format, text)
-            if match is None:
-              failed = True
-          if failed:
-            failed_matches.append((element.tag, element.text))
+          #TODO(samking): is an empty node failure or success?
+          if element.text:
+            #TODO(samking): is it correct to strip this string?
+            text = element.text.strip()
+            failed = False
+            if field_format == "URL":
+              url = urlparse(text)
+              # pylint: disable=E1101
+              if (url.scheme != "http" and url.scheme != "https"):
+                failed = True
+              if url.netloc == "":
+                # pylint: enable=E1101
+                failed = True
+            else:
+              match = re.match(field_format, text)
+              if match is None:
+                failed = True
+            if failed:
+              failed_matches.append((element.tag, element.text))
     return failed_matches
 
   def validate_fields_have_correct_format(self):
