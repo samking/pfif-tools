@@ -371,6 +371,7 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
   <pfif:person>
     <pfif:sex>female</pfif:sex>
+    <pfif:home_street></pfif:home_street>
     <pfif:date_of_birth>1990-09</pfif:date_of_birth>
     <pfif:age>3-100</pfif:age>
     <pfif:home_state>71</pfif:home_state>
