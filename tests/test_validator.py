@@ -27,6 +27,7 @@ import datetime
 import utils
 
 class ValidatorTests(unittest.TestCase):
+  """Tests each validation function in pfif_validator.py"""
 
   # Set Up
 

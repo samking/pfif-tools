@@ -22,7 +22,8 @@ sys.path.append(os.getcwd() + '/../pfif_validator')
 import utils
 import unittest
 
-class XmlUtilTests(unittest.TestCase):
+class UtilTests(unittest.TestCase):
+  """Defines tests for utils.py"""
 
   def test_blank_input(self):
     """extract_tag should return an empty string on blank input"""
