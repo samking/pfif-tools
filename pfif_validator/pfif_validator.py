@@ -273,23 +273,23 @@ class PfifValidator:
 
   # helpers
 
-  def __add_namespace_to_tag(self, tag):
+  def add_namespace_to_tag(self, tag):
     """turns a local tag into a fully qualified tag by adding a namespace """
     return '{' + self.namespace + '}' + tag
 
-  def __get_all_persons(self):
+  def get_all_persons(self):
     """returns a list of all persons in the tree"""
-    return self.tree.findall(self.__add_namespace_to_tag('person'))
+    return self.tree.findall(self.add_namespace_to_tag('person'))
 
-  def __get_all_notes(self):
+  def get_all_notes(self):
     """returns a list of all notes in the tree"""
-    notes = self.tree.findall(self.__add_namespace_to_tag('note'))
-    for person in self.__get_all_persons():
-      notes.extend(person.findall(self.__add_namespace_to_tag('note')))
+    notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    for person in self.get_all_persons():
+      notes.extend(person.findall(self.add_namespace_to_tag('note')))
     return notes
 
   @staticmethod
-  def __pfif_date_to_py_date(date_str):
+  def pfif_date_to_py_date(date_str):
     """Converts a date string in the format yyyy-mm-ddThh:mm:ssZ (where there
     can optionally be a fractional amount of seconds between ss and Z) to a
     Python datetime object"""
@@ -306,25 +306,25 @@ class PfifValidator:
                              time_parts[3], time_parts[4], time_parts[5])
     return date
 
-  def __get_expiry_datetime(self, person):
+  def get_expiry_datetime(self, person):
     """Returns the expiry date associated with a given person, adjusted by one
     day to reflect the actual date that data must be removed from PFIF XML.
     Returns None if there is no expiry date."""
-    expiry_date_elem = person.find(self.__add_namespace_to_tag('expiry_date'))
+    expiry_date_elem = person.find(self.add_namespace_to_tag('expiry_date'))
     if expiry_date_elem != None:
       expiry_date_str = expiry_date_elem.text
       if expiry_date_str:
-        expiry_date = PfifValidator.__pfif_date_to_py_date(expiry_date_str)
+        expiry_date = PfifValidator.pfif_date_to_py_date(expiry_date_str)
         # Advances the expiry_date one day because the protocol doesn't
         # require removing data until a day after expiration
         expiry_date += datetime.timedelta(days=1)
         return expiry_date
     return None
 
-  def __get_field_text(self, parent, child_tag):
+  def get_field_text(self, parent, child_tag):
     """Returns the text associated with the child node of parent.  Returns none
     if parent doesn't have that child or if the child doesn't have any text"""
-    child = parent.find(self.__add_namespace_to_tag(child_tag))
+    child = parent.find(self.add_namespace_to_tag(child_tag))
     if child != None:
       return child.text
     return None
@@ -398,18 +398,18 @@ class PfifValidator:
       print "All children: " + str(children)
     return result
 
-  def __validate_has_mandatory_children(self, parent_tag):
+  def validate_has_mandatory_children(self, parent_tag):
     """Validates that every parent node has all mandatory children specified by
     MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
     missing from any parent found.
     parent_tag should be a string of the local tag of the node to check."""
     mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]
     mandatory_children = mandatory_children[parent_tag]
-    parents = self.tree.findall(self.__add_namespace_to_tag(parent_tag))
+    parents = self.tree.findall(self.add_namespace_to_tag(parent_tag))
     missing_children = []
     for parent in parents:
       for child_tag in mandatory_children:
-        child = parent.find(self.__add_namespace_to_tag(child_tag))
+        child = parent.find(self.add_namespace_to_tag(child_tag))
         if child is None:
           if not child_tag in missing_children:
             missing_children.append(child_tag)
@@ -418,20 +418,20 @@ class PfifValidator:
   def validate_person_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that persons have
     all mandatory children."""
-    return self.__validate_has_mandatory_children('person')
+    return self.validate_has_mandatory_children('person')
 
   def validate_note_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that notes have
     all mandatory children."""
-    return self.__validate_has_mandatory_children('note')
+    return self.validate_has_mandatory_children('note')
 
-  def __validate_children_have_correct_format(self, parents, formats):
+  def validate_children_have_correct_format(self, parents, formats):
     """validates that every element in parents has valid text, as per the
     specification in formats"""
     failed_matches = []
     for parent in parents:
       for field, field_format in formats.items():
-        elements = parent.findall(self.__add_namespace_to_tag(field))
+        elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
           #TODO(samking): is it correct to strip this string?
           text = element.text.strip()
@@ -457,23 +457,23 @@ class PfifValidator:
     (ie, that the dates are in yyyy-mm-ddThh:mm:ssZ format).  Returns a list of
     the fields that have improperly formatted data.  Wrapper for
     validate_children_have_correct_format"""
-    incorrect_formats = self.__validate_children_have_correct_format(
-        self.__get_all_persons(), PfifValidator.FORMATS[self.version]['person'])
-    incorrect_formats.extend(self.__validate_children_have_correct_format(
-        self.__get_all_notes(), PfifValidator.FORMATS[self.version]['note']))
+    incorrect_formats = self.validate_children_have_correct_format(
+        self.get_all_persons(), PfifValidator.FORMATS[self.version]['person'])
+    incorrect_formats.extend(self.validate_children_have_correct_format(
+        self.get_all_notes(), PfifValidator.FORMATS[self.version]['note']))
     for incorrect_format in incorrect_formats:
       print incorrect_format
     return incorrect_formats
 
-  def __validate_ids_are_unique(self, id_type):
+  def validate_ids_are_unique(self, id_type):
     """Validates that all id_type ids are unique.  There should not be two
     persons with the same person_record_id or two notes with the same
     note_record_id."""
     if id_type == 'person':
-      collection = self.__get_all_persons()
+      collection = self.get_all_persons()
       field = 'person_record_id'
     elif id_type == 'note':
-      collection = self.__get_all_notes()
+      collection = self.get_all_notes()
       field = 'note_record_id'
     else:
       print "INTERNAL ERROR: We just tried to validate that a type of ID " \
@@ -482,7 +482,7 @@ class PfifValidator:
     ids = []
     duplicate_ids = []
     for elem in collection:
-      curr_id = elem.find(self.__add_namespace_to_tag(field)).text
+      curr_id = elem.find(self.add_namespace_to_tag(field)).text
       if curr_id in ids and curr_id not in duplicate_ids:
         duplicate_ids.append(curr_id)
       elif curr_id not in ids:
@@ -492,12 +492,12 @@ class PfifValidator:
   def validate_person_ids_are_unique(self):
     """Wrapper for validate_ids_are_unique to validate that person_record_ids
     are unique"""
-    return self.__validate_ids_are_unique('person')
+    return self.validate_ids_are_unique('person')
 
   def validate_note_ids_are_unique(self):
     """Wrapper for validate_ids_are_unique to validate that note_record_ids are
     unique"""
-    return self.__validate_ids_are_unique('note')
+    return self.validate_ids_are_unique('note')
 
   def validate_notes_belong_to_persons(self):
     """Validates that every note that is at the top level contains a
@@ -505,11 +505,11 @@ class PfifValidator:
     matches the id of the parent person.  Returns a list of all unmatched
     notes"""
     unassociated_notes = []
-    top_level_notes = self.tree.findall(self.__add_namespace_to_tag('note'))
+    top_level_notes = self.tree.findall(self.add_namespace_to_tag('note'))
     for note in top_level_notes:
-      person_id = note.find(self.__add_namespace_to_tag('person_record_id'))
+      person_id = note.find(self.add_namespace_to_tag('person_record_id'))
       if person_id == None:
-        note_id = note.find(self.__add_namespace_to_tag('note_record_id'))
+        note_id = note.find(self.add_namespace_to_tag('note_record_id'))
         if note_id == None:
           unassociated_notes.append("A top level note is missing a " \
                                     "person_record_id.  It also doesn't have " \
@@ -517,14 +517,14 @@ class PfifValidator:
         else:
           unassociated_notes.append("The following top level note is missing " \
                                     "a person_record_id: " + note_id.text)
-    persons = self.__get_all_persons()
+    persons = self.get_all_persons()
     for person in persons:
-      person_id = person.find(self.__add_namespace_to_tag('person_record_id'))
+      person_id = person.find(self.add_namespace_to_tag('person_record_id'))
       if person_id != None:
-        notes = person.findall(self.__add_namespace_to_tag('note'))
+        notes = person.findall(self.add_namespace_to_tag('note'))
         for note in notes:
           note_person_id = note.find(
-              self.__add_namespace_to_tag('person_record_id'))
+              self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
             unassociated_notes.append("Person with ID: " + person_id.text + \
                                       "\nhas a note with person ID: " + \
@@ -532,7 +532,7 @@ class PfifValidator:
 
     return unassociated_notes
 
-  def __validate_field_order(self, field_type):
+  def validate_field_order(self, field_type):
     """Validates that all subnodes of field_type (either person or note) are in
     the correct order.  For version 1.1, this means that all fields must be in
     the order specified in the spec (the same as the FIELD_ORDER data structure)
@@ -544,9 +544,9 @@ class PfifValidator:
       return []
 
     if field_type == 'person':
-      collection = self.__get_all_persons()
+      collection = self.get_all_persons()
     elif field_type == 'note':
-      collection = self.__get_all_notes()
+      collection = self.get_all_notes()
     else:
       print "INTERNAL ERROR: tried to validate field order for something " \
             "other than a person or note"
@@ -570,14 +570,14 @@ class PfifValidator:
   def validate_person_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all
     persons are in the correct order."""
-    return self.__validate_field_order('person')
+    return self.validate_field_order('person')
 
   def validate_note_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all notes
     are in the correct order."""
-    return self.__validate_field_order('note')
+    return self.validate_field_order('note')
 
-  def __has_personal_data(self, person):
+  def has_personal_data(self, person):
     """After expiration, a person can only contain placeholder data, which
     includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
     personal data.  Returns true if there is any personal data in person"""
@@ -588,23 +588,23 @@ class PfifValidator:
         if child.text:
           # notes with text are okay as long as none of their children have text
           if tag == 'note':
-            return self.__has_personal_data(child)
+            return self.has_personal_data(child)
           else:
             return True
     return False
 
-  def __validate_placeholder_dates(self, person, expiry_date):
+  def validate_placeholder_dates(self, person, expiry_date):
     """Placeholders must be created within one day of expiry, and when they are
     created, the source_date and entry_date must match.  Returns true if those
     conditions hold."""
-    source_date = self.__get_field_text(person, 'source_date')
-    entry_date = self.__get_field_text(person, 'entry_date')
+    source_date = self.get_field_text(person, 'source_date')
+    entry_date = self.get_field_text(person, 'entry_date')
     if (not source_date) or (source_date != entry_date):
       return False
     # If source_date > expiry_date, the placeholder was made more than a day
     # after expiry; even though the current PFIF XML is not exposing data, it
     # was exposing data between expiry_date and search_date
-    return self.__pfif_date_to_py_date(source_date) < expiry_date
+    return self.pfif_date_to_py_date(source_date) < expiry_date
 
   def validate_expired_records_removed(self):
     """Validates that if the current time is at least one day greater than any
@@ -615,15 +615,15 @@ class PfifValidator:
     conditions"""
     if self.version < 1.3:
       return []
-    persons = self.__get_all_persons()
+    persons = self.get_all_persons()
     unremoved_expired_records = []
     for person in persons:
-      expiry_date = self.__get_expiry_datetime(person)
+      expiry_date = self.get_expiry_datetime(person)
       curr_date = utils.get_utcnow()
       # if the record is expired
       if expiry_date != None and expiry_date < curr_date:
-        if (self.__has_personal_data(person) or not
-            self.__validate_placeholder_dates(person, expiry_date)):
+        if (self.has_personal_data(person) or not
+            self.validate_placeholder_dates(person, expiry_date)):
           # TODO(samking): make this (and all other prints / returns) nicer
           # and unified.
           unremoved_expired_records.append('You had an expired record!')
