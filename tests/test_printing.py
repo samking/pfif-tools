@@ -21,11 +21,13 @@ import unittest
 import StringIO
 import sys
 sys.path.append(sys.path[0] + '/../pfif_validator')
-from error_printer import ErrorPrinter
+from error_printer import ErrorPrinter, Error
 
 class PrintingTests(unittest.TestCase):
   """Tests the ErrorPrinter class methods"""
 
+  # TODO(samking): update and modularize test to reflect new, fine grained
+  # printing interface
   def test_printing(self):
     """print_test_start, print_error_message, and add_error_message should
     generate messages if printing is turned on and should not crash.
@@ -34,32 +36,32 @@ class PrintingTests(unittest.TestCase):
     printer = ErrorPrinter()
 
     # mock stdout so that we can tell what gets printed
-    printer.set_printing(False)
+    printer.set_printing_options(print_output=False)
     fake_stdout = StringIO.StringIO()
     sys.stdout = fake_stdout
 
     # I can't do anything without setting the test name
-    self.assertRaises(Exception, printer.add_error_message, "Error Message")
-    self.assertRaises(Exception, printer.print_error_messages)
-    self.assertRaises(Exception, printer.get_error_messages)
+    self.assertRaises(Exception, printer.add_error, Error("Error Message"))
+    self.assertRaises(Exception, printer.print_errors)
+    self.assertRaises(Exception, printer.get_errors)
 
     # start out with no errors
     printer.set_current_test("Printing Test")
-    self.assertEqual(len(printer.get_error_messages()), 0)
+    self.assertEqual(len(printer.get_errors()), 0)
 
     # I can add errors and get the back
-    printer.add_error_message("Error Message")
-    printer.add_error_message("Error Message", person_record_id="ID1",
-                              note_record_id="ID2")
-    self.assertEqual(len(printer.get_error_messages()), 2)
+    printer.add_error(Error("Error Message"))
+    printer.add_error(Error("Error Message", person_record_id="ID1",
+                            note_record_id="ID2"))
+    self.assertEqual(len(printer.get_errors()), 2)
 
     # printing doesn't do anything when set_printing is off
-    printer.print_error_messages()
+    printer.print_errors()
     self.assertTrue(fake_stdout.tell() == 0)
 
     # printing does something when set_printing is on
-    printer.set_printing(True)
-    printer.print_error_messages()
+    printer.set_printing_options(print_output=True)
+    printer.print_errors()
     self.assertTrue(fake_stdout.tell() > 0)
 
     sys.stdout = old_stdout
