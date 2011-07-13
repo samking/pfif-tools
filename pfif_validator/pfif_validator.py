@@ -347,7 +347,8 @@ class PfifValidator:
 
   def __init__(self, xml_file, initialize=True, print_output=True):
     self.xml_file = xml_file
-    self.error_printer = ErrorPrinter(print_output)
+    self.error_printer = ErrorPrinter()
+    # TODO(samking): pass stuff like print_output to error_printer.set_options
     self.tree = None
     self.namespace = None
     self.version = None
