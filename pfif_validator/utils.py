@@ -16,6 +16,7 @@
 """Utilities for the PFIF Validator"""
 
 import re
+from datetime import datetime
 
 # XML Parsing Utilities
 
@@ -27,14 +28,13 @@ def extract_tag(etree_tag):
   return match.group(1)
 
 # Dependency Injection for Time -- from PersonFinder
-_utcnow_for_test = None
+_utcnow_for_test = None # pylint: disable=c0103
 
 def set_utcnow_for_test(now):
-    """Set current time for debug purposes."""
-    global _utcnow_for_test
-    _utcnow_for_test = now
+  """Set current time for debug purposes."""
+  global _utcnow_for_test # pylint: disable=w0603
+  _utcnow_for_test = now
 
 def get_utcnow():
-    """Return current time in utc, or debug value if set."""
-    global _utcnow_for_test
-    return _utcnow_for_test or datetime.utcnow()
+  """Return current time in utc, or debug value if set."""
+  return _utcnow_for_test or datetime.utcnow()

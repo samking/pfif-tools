@@ -20,8 +20,10 @@ import re
 import utils
 from urlparse import urlparse
 import datetime
+import sys
 
 class PfifValidator:
+  """A validator that can run tests on a PFIF XML file."""
   # TODO(samking): should I move a lot of this data stuff at the top into an
   # external file that I would read in?
 
@@ -286,7 +288,8 @@ class PfifValidator:
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
     return notes
 
-  def pfif_date_to_py_date(self, date_str):
+  @staticmethod
+  def pfif_date_to_py_date(date_str):
     """Converts a date string in the format yyyy-mm-ddThh:mm:ssZ (where there
     can optionally be a fractional amount of seconds between ss and Z) to a
     Python datetime object"""
@@ -297,9 +300,10 @@ class PfifValidator:
         r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d*)?Z$',
         date_str)
     time_parts = []
-    for i in range(1,7):
+    for i in range(1, 7):
       time_parts.append(int(match.group(i)))
-    date = datetime.datetime(*time_parts)
+    date = datetime.datetime(time_parts[0], time_parts[1], time_parts[2],
+                             time_parts[3], time_parts[4], time_parts[5])
     return date
 
   def get_expiry_datetime(self, person):
@@ -310,7 +314,7 @@ class PfifValidator:
     if expiry_date_elem != None:
       expiry_date_str = expiry_date_elem.text
       if expiry_date_str:
-        expiry_date = self.pfif_date_to_py_date(expiry_date_str)
+        expiry_date = PfifValidator.pfif_date_to_py_date(expiry_date_str)
         # Advances the expiry_date one day because the protocol doesn't
         # require removing data until a day after expiration
         expiry_date += datetime.timedelta(days=1)
@@ -429,21 +433,25 @@ class PfifValidator:
       for field, field_format in formats.items():
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
-          #TODO(samking): is it correct to strip this string?
-          text = element.text.strip()
-          failed = False
-          if field_format == "URL":
-            url = urlparse(text)
-            if (url.scheme != "http" and url.scheme != "https"):
-              failed = True
-            if url.netloc == "":
-              failed = True
-          else:
-            match = re.match(field_format, text)
-            if match is None:
-              failed = True
-          if failed:
-            failed_matches.append((element.tag, element.text))
+          #TODO(samking): is an empty node failure or success?
+          if element.text:
+            #TODO(samking): is it correct to strip this string?
+            text = element.text.strip()
+            failed = False
+            if field_format == "URL":
+              url = urlparse(text)
+              # pylint: disable=E1101
+              if (url.scheme != "http" and url.scheme != "https"):
+                failed = True
+              if url.netloc == "":
+                # pylint: enable=E1101
+                failed = True
+            else:
+              match = re.match(field_format, text)
+              if match is None:
+                failed = True
+            if failed:
+              failed_matches.append((element.tag, element.text))
     return failed_matches
 
   def validate_fields_have_correct_format(self):
@@ -552,12 +560,13 @@ class PfifValidator:
       curr_max = 0
       for field in parent.getchildren():
         tag = utils.extract_tag(field.tag)
-        tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
-        if tag_order >= curr_max:
-          curr_max = tag_order
-        else:
-          out_of_order_tags.append(tag)
-          break
+        if tag in PfifValidator.FIELD_ORDER[self.version][field_type]:
+          tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
+          if tag_order >= curr_max:
+            curr_max = tag_order
+          else:
+            out_of_order_tags.append(tag)
+            break
     print out_of_order_tags
     return out_of_order_tags
 
@@ -625,17 +634,22 @@ class PfifValidator:
     return unremoved_expired_records
 
 
-#def main():
-#  if (not len(sys.argv()) == 2):
-#    print "Usage: python pfif-validator.py my-pyif-xml-file"
-#  v = PfifValidator(sys.argv(1))
-#  v.validate_xml_or_die(sys.argv(1))
-#  v.validate_root_is_pfif_or_die()
-#  validate_root_has_child_or_die()
-#  validate_root_has_mandatory_children()
-#  validate_person_has_mandatory_children()
-#  validate_note_has_mandatory_children()
-#  validate_fields_have_correct_format()
-#
-#if __name__ == '__main__':
-#  main()
+def main():
+  """Runs all validations on the provided PFIF XML file"""
+  if (not len(sys.argv) == 2):
+    print "Usage: python pfif-validator.py my-pyif-xml-file"
+  validator = PfifValidator(sys.argv[1])
+  validator.validate_root_has_child()
+  validator.validate_root_has_mandatory_children()
+  validator.validate_person_has_mandatory_children()
+  validator.validate_note_has_mandatory_children()
+  validator.validate_fields_have_correct_format()
+  validator.validate_person_ids_are_unique()
+  validator.validate_note_ids_are_unique()
+  validator.validate_notes_belong_to_persons()
+  validator.validate_person_field_order()
+  validator.validate_note_field_order()
+  validator.validate_expired_records_removed()
+
+if __name__ == '__main__':
+  main()
