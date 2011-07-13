@@ -15,12 +15,12 @@
 
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 import re
 import utils
 from urlparse import urlparse
 import datetime
-from error_printer import ErrorPrinter
+from error_printer import Error, ErrorPrinter
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -326,14 +326,22 @@ class PfifValidator:
       return child.text
     return None
 
-  def add_error_record(self, error_message, record):
-    """Wrapper for ErrorPrinter.add_error_message that extracts the
-    person_record_id and note_record_id, if present, from a record"""
+  def add_error_record(self, error_message, record, element=None,
+                       is_error=True):
+    """Wrapper for ErrorPrinter.add_error that extracts the
+    person_record_id and note_record_id, if present, from a record and the text
+    and line number from an element"""
     person_record_id = self.get_field_text(record, 'person_record_id')
     note_record_id = self.get_field_text(record, 'note_record_id')
-    self.error_printer.add_error_message(error_message,
-                                         person_record_id=person_record_id,
-                                         note_record_id=note_record_id)
+    line = None
+    text = None
+    if element != None:
+      text = element.text
+      line = element.sourceline
+    error = Error(error_message, is_error=is_error, xml_line_number=line,
+                  xml_element_text=text, person_record_id=person_record_id,
+                  note_record_id=note_record_id)
+    self.error_printer.add_error(error)
 
   # initialization
 
@@ -384,10 +392,10 @@ class PfifValidator:
     children = root.getchildren()
     success = True
     if not len(children) > 0:
-      self.error_printer.add_error_message(
-          "The root node must have at least one child")
+      self.error_printer.add_error(
+          Error("The root node must have at least one child"))
       success = False
-    self.error_printer.print_error_messages()
+    self.error_printer.print_errors()
     return success
 
   def validate_root_has_mandatory_children(self):
@@ -405,10 +413,10 @@ class PfifValidator:
         success = True
         break
     if not success:
-      self.error_printer.add_error_message(
-          "Having a person tag (or a note tag in PFIF 1.2+) as one of the "
-          "children of the root node is mandatory.")
-    self.error_printer.print_error_messages()
+      self.error_printer.add_error(
+          Error("Having a person tag (or a note tag in PFIF 1.2+) as one of "
+                "the children of the root node is mandatory."))
+    self.error_printer.print_errors()
     return success
 
   def validate_has_mandatory_children(self, parent_tag):
@@ -426,8 +434,8 @@ class PfifValidator:
           self.add_error_record(
               "You don't have all mandatory children.  You were missing the "
               "following tag: " + child_tag, record=parent)
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
   def validate_person_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that persons have
@@ -465,7 +473,7 @@ class PfifValidator:
             self.add_error_record(
                 "The text in one of your fields doesn't match the requirement "
                 "in the specification.  The field: " + field + ".  The text: " +
-                element.text, record=parent)
+                element.text, record=parent, element=element)
 
   def validate_fields_have_correct_format(self):
     """Validates that every field in FORMATS follows the correct format
@@ -477,8 +485,8 @@ class PfifValidator:
         self.get_all_persons(), PfifValidator.FORMATS[self.version]['person'])
     self.validate_children_have_correct_format(
         self.get_all_notes(), PfifValidator.FORMATS[self.version]['note'])
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
   def validate_ids_are_unique(self, records, field):
     """Validates that all record ids in records are unique.  There should not be
@@ -489,11 +497,12 @@ class PfifValidator:
     for record in records:
       curr_id = record.find(self.add_namespace_to_tag(field)).text
       if curr_id in ids:
-        self.add_error_record("You had a duplicate id.", record=record)
+        self.add_error_record("You had a duplicate id.", record=record,
+                              element=record)
       elif curr_id not in ids:
         ids.append(curr_id)
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
   def validate_person_ids_are_unique(self):
     """Wrapper for validate_ids_are_unique to validate that person_record_ids
@@ -521,7 +530,7 @@ class PfifValidator:
         note_id = note.find(self.add_namespace_to_tag('note_record_id'))
         self.add_error_record(
             "A top level note (a note not contained within a person) is "
-            "missing a person_record_id.", record=note)
+            "missing a person_record_id.", record=note, element=note)
     persons = self.get_all_persons()
     for person in persons:
       person_id = person.find(self.add_namespace_to_tag('person_record_id'))
@@ -531,14 +540,17 @@ class PfifValidator:
           note_person_id = note.find(
               self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
-            self.error_printer.add_error_message(
+            error = Error(
                 "You have a note that has a person_record_id that does not "
                 "match the person_record_id of the person that owns the note.",
+                xml_line_number=note_person_id.sourceline,
+                xml_element_text=note_person_id.text,
                 person_record_id=self.get_field_text(person,
                                                      'person_record_id'),
                 note_record_id=self.get_field_text(note, 'note_record_id'))
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+            self.error_printer.add_error(error)
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
   def validate_field_order(self, records, field_type):
     """Validates that all subnodes of field_type (either person or note) are in
@@ -562,10 +574,11 @@ class PfifValidator:
               curr_max = field_order_num
             else:
               self.add_error_record("One of your fields was out of order.  The "
-                                    "field: " + tag, record=record)
+                                    "field: " + tag, record=record,
+                                    element=field)
               break
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
   def validate_person_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all
@@ -587,14 +600,16 @@ class PfifValidator:
     entry_date = self.get_field_text(person, 'entry_date')
     if (not source_date) or (source_date != entry_date):
       self.add_error_record("An expired record has a source date that doesn't "
-                            "match the entry date.", record=person)
+                            "match the entry date.", record=person,
+                            element=person)
     # If source_date > expiry_date, the placeholder was made more than a day
     # after expiry; even though the current PFIF XML is not exposing data, it
     # was exposing data between expiry_date and search_date
     if self.pfif_date_to_py_date(source_date) > expiry_date:
+      source_element = person.find(self.add_namespace_to_tag('source_date'))
       self.add_error_record("The placeholder for an expired record was created"
                             " more than a day after the record expired.",
-                            record=person)
+                            record=person, element=source_element)
 
   def validate_personal_data_removed(self, record):
     """After expiration, a person can only contain placeholder data, which
@@ -611,7 +626,7 @@ class PfifValidator:
             self.validate_personal_data_removed(child)
           else:
             self.add_error_record("An expired record still has personal data.",
-                                  record=record)
+                                  record=record, element=child)
 
   def validate_expired_records_removed(self):
     """Validates that if the current time is at least one day greater than any
@@ -625,7 +640,7 @@ class PfifValidator:
     self.error_printer.set_current_test(
         "Expired Records Must Have All Personal Data Removed")
     if self.version < 1.3:
-      return self.error_printer.get_error_messages()
+      return self.error_printer.get_errors()
     persons = self.get_all_persons()
     for person in persons:
       expiry_date = self.get_expiry_datetime(person)
@@ -634,8 +649,8 @@ class PfifValidator:
       if expiry_date != None and expiry_date < curr_date:
         self.validate_personal_data_removed(person)
         self.validate_placeholder_dates(person, expiry_date)
-    self.error_printer.print_error_messages()
-    return self.error_printer.get_error_messages()
+    self.error_printer.print_errors()
+    return self.error_printer.get_errors()
 
 #def main():
 #  if (not len(sys.argv()) == 2):
