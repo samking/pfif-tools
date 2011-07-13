@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = 'samking@google.com (Sam King)'
-
 """Provides a unified interface for collecting and printing errors."""
+
+__author__ = 'samking@google.com (Sam King)'
 
 class Error:
   """A container for information about an error or warning"""
