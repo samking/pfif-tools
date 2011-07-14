@@ -652,18 +652,3 @@ class PfifValidator:
         self.validate_placeholder_dates(person, expiry_date)
     self.error_printer.print_errors()
     return self.error_printer.get_errors()
-
-#def main():
-#  if (not len(sys.argv()) == 2):
-#    print "Usage: python pfif-validator.py my-pyif-xml-file"
-#  v = PfifValidator(sys.argv(1))
-#  v.validate_xml_or_die(sys.argv(1))
-#  v.validate_root_is_pfif_or_die()
-#  validate_root_has_child_or_die()
-#  validate_root_has_mandatory_children()
-#  validate_person_has_mandatory_children()
-#  validate_note_has_mandatory_children()
-#  validate_fields_have_correct_format()
-#
-#if __name__ == '__main__':
-#  main()

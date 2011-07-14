@@ -84,17 +84,12 @@ class ErrorPrinter:
   def get_errors(self):
     """Returns a list of all errors for the current test."""
     assert self.test_name
-    if self.test_name in self.error_messages:
-      return self.error_messages[self.test_name]
-    else:
-      return []
+    return self.error_messages.get(self.test_name, [])
 
   def add_error(self, error):
     """Adds an error to the list"""
     assert self.test_name
-    if self.test_name not in self.error_messages:
-      test_error_list = []
-      self.error_messages[self.test_name] = test_error_list
+    test_error_list = self.error_messages.setdefault(self.test_name, [])
     test_error_list = self.error_messages[self.test_name]
     test_error_list.append(error)
 
@@ -109,24 +104,24 @@ class ErrorPrinter:
         for error in errors:
           if (error.is_error and self.print_properties["errors"]) or (
               not error.is_error and self.print_properties["warnings"]):
-            message = ""
+            message = []
             if error.is_error:
-              message += "ERROR: "
+              message.append("ERROR: ")
             else:
-              message += "WARNING: "
-            message += error.message + " "
+              message.append("WARNING: ")
+            message.append(error.message + " ")
             if (self.print_properties["xml_line_numbers"] and
                 error.xml_line_number != None):
-              message += "XML Line " + str(error.xml_line_number) + ". "
+              message.append("XML Line " + str(error.xml_line_number) + ". ")
             if self.print_properties["record_ids"]:
               if error.person_record_id != None:
-                message += ("The relevant person_record_id is: " +
-                            error.person_record_id)
+                message.append("The relevant person_record_id is: " +
+                               error.person_record_id)
               if error.note_record_id != None:
-                message += ("The relevant note_record_id is: " +
-                            error.note_record_id)
+                message.append("The relevant note_record_id is: " +
+                               error.note_record_id)
             if self.print_properties["xml_text"] and error.xml_element_text:
-              message += ("The text of the relevant PFIF XML node: " +
-                          error.xml_element_text)
-            print message
+              message.append("The text of the relevant PFIF XML node: " +
+                             error.xml_element_text)
+            print ''.join(message)
       print
