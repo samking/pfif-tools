@@ -266,6 +266,73 @@ class PfifValidator:
                        }
                 }
 
+  # version : parent : children that will not be marked as extraneous
+  ALLOWED_CHILDREN = {1.1 : {'person' : set(['person_record_id', 'entry_date',
+                                             'author_name', 'author_email' ,
+                                             'author_phone', 'source_name',
+                                             'source_date', 'source_url',
+                                             'first_name', 'last_name',
+                                             'home_city', 'home_state',
+                                             'home_neighborhood', 'home_street',
+                                             'home_zip', 'photo_url', 'other',
+                                             'note'
+                                            ]),
+                             'note' : set(['note_record_id', 'entry_date',
+                                           'author_name', 'author_email',
+                                           'author_phone', 'source_date',
+                                           'found', 'email_of_found_person',
+                                           'phone_of_found_person',
+                                           'last_known_location', 'text'
+                                          ]),
+                             'pfif' : set(['person'])
+                            },
+                      1.2 : {'person' : set(['person_record_id', 'entry_date',
+                                             'author_name', 'author_email',
+                                             'author_phone', 'source_name',
+                                             'source_date', 'source_url',
+                                             'first_name', 'last_name',
+                                             'home_city', 'home_state',
+                                             'home_neighborhood', 'home_street',
+                                             'home_postal_code', 'home_country',
+                                             'sex', 'date_of_birth', 'age',
+                                             'photo_url', 'other', 'note'
+                                            ]),
+                             'note' : set(['note_record_id', 'person_record_id',
+                                           'linked_person_record_id',
+                                           'entry_date', 'author_name',
+                                           'author_email', 'author_phone',
+                                           'source_date', 'found',
+                                           'email_of_found_person',
+                                           'phone_of_found_person',
+                                           'last_known_location', 'text'
+                                          ]),
+                             'pfif' : set(['person', 'note'])
+                            },
+                      1.3 : {'person' : set(['person_record_id', 'entry_date',
+                                             'expiry_date', 'author_name',
+                                             'author_email', 'author_phone',
+                                             'source_name', 'source_date',
+                                             'source_url', 'full_name',
+                                             'first_name', 'last_name', 'sex',
+                                             'date_of_birth', 'age',
+                                             'home_street', 'home_city',
+                                             'home_neighborhood', 'home_state',
+                                             'home_postal_code', 'home_country',
+                                             'photo_url', 'other', 'note'
+                                            ]),
+                             'note' : set(['note_record_id', 'person_record_id',
+                                           'linked_person_record_id',
+                                           'entry_date', 'author_name',
+                                           'author_email', 'author_phone',
+                                           'source_date', 'found', 'status',
+                                           'email_of_found_person',
+                                           'phone_of_found_person',
+                                           'last_known_location', 'text'
+                                          ]),
+                             'pfif' : set(['person', 'note'])
+                            }
+                     }
+
   PLACEHOLDER_FIELDS = ['person_record_id', 'expiry_date', 'source_date',
                         'entry_date']
 
@@ -626,14 +693,14 @@ class PfifValidator:
 
   def validate_extraneous_children(self, parents, approved_tags):
     """For each parent in parents, ensures that every child's tag is in
-    approved_tags and is not a duplicate (except for notes).  Returns a list of
-    all extraneous tags."""
+    approved_tags and is not a duplicate (except for notes and persons).
+    Returns a list of all extraneous tags."""
     extra_fields = []
     for parent in parents:
       used_tags = []
       for child in parent.getchildren():
         tag = utils.extract_tag(child.tag)
-        if tag in used_tags and tag != 'note':
+        if tag in used_tags and tag != 'note' and tag != 'person':
           extra_fields.append('Duplicate Tag: ' + tag)
         elif tag not in approved_tags:
           extra_fields.append('Extraneous Tag: ' + tag)
@@ -646,16 +713,12 @@ class PfifValidator:
     list with every extraneous or duplicate field.  This includes fields added
     in a more recent version of the specification."""
     extra_fields = []
-    for top_level_node in self.tree.getroot().getchildren():
-      tag = utils.extract_tag(top_level_node.tag)
-      # version 1.1 must have only person tags; 1.2+ can also have note tags
-      if tag == 'note' and self.version < 1.2:
-        extra_fields.append("Top level notes aren't allowed until 1.2!")
-      elif not (tag == 'person' or tag == 'note'):
-        extra_fields.append("Extraneous Top Level Tag: " + tag)
 
-    person_fields = PfifValidator.FORMATS[self.version]['person'].keys()
-    person_fields.append('note')
+    pfif_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['pfif']
+    extra_fields.extend(self.validate_extraneous_children(
+        [self.tree.getroot()], pfif_fields))
+
+    person_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['person']
     extra_fields.extend(self.validate_extraneous_children(
         self.get_all_persons(), person_fields))
 
