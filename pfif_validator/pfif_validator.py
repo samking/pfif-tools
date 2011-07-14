@@ -20,7 +20,7 @@ import re
 import utils
 from urlparse import urlparse
 import datetime
-from error_printer import Error, ErrorPrinter
+from error_printer import Message, ErrorPrinter
 
 class PfifValidator:
   # TODO(samking): should I move a lot of this data stuff at the top into an
@@ -338,9 +338,9 @@ class PfifValidator:
     if element != None:
       text = element.text
       line = element.sourceline
-    error = Error(error_message, is_error=is_error, xml_line_number=line,
-                  xml_element_text=text, person_record_id=person_record_id,
-                  note_record_id=note_record_id)
+    error = Message(error_message, is_error=is_error, xml_line_number=line,
+                    xml_element_text=text, person_record_id=person_record_id,
+                    note_record_id=note_record_id)
     self.error_printer.add_error(error)
 
   # initialization
@@ -394,7 +394,7 @@ class PfifValidator:
     success = True
     if not len(children) > 0:
       self.error_printer.add_error(
-          Error("The root node must have at least one child"))
+          Message("The root node must have at least one child"))
       success = False
     self.error_printer.print_errors()
     return success
@@ -415,8 +415,8 @@ class PfifValidator:
         break
     if not success:
       self.error_printer.add_error(
-          Error("Having a person tag (or a note tag in PFIF 1.2+) as one of "
-                "the children of the root node is mandatory."))
+          Message("Having a person tag (or a note tag in PFIF 1.2+) as one of "
+                  "the children of the root node is mandatory."))
     self.error_printer.print_errors()
     return success
 
@@ -541,7 +541,7 @@ class PfifValidator:
           note_person_id = note.find(
               self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
-            error = Error(
+            error = Message(
                 "You have a note that has a person_record_id that does not "
                 "match the person_record_id of the person that owns the note.",
                 xml_line_number=note_person_id.sourceline,
