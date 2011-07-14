@@ -642,9 +642,9 @@ class PfifValidator:
     return extra_fields
 
   def validate_extraneous_fields(self):
-    """Validates that there all fields present are in the specification.
-    Returns a list with every extraneous or duplicate field.  This includes
-    fields added in a more recent version of the specification."""
+    """Validates that all fields present are in the specification.  Returns a
+    list with every extraneous or duplicate field.  This includes fields added
+    in a more recent version of the specification."""
     extra_fields = []
     for top_level_node in self.tree.getroot().getchildren():
       tag = utils.extract_tag(top_level_node.tag)
