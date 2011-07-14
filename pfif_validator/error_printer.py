@@ -17,8 +17,8 @@
 
 __author__ = 'samking@google.com (Sam King)'
 
-class Error:
-  """A container for information about an error or warning"""
+class Message:
+  """A container for information about an error or warning message"""
 
   def __init__(self, message, is_error=True, xml_line_number=None,
                xml_element_text=None, person_record_id=None,
@@ -33,9 +33,9 @@ class Error:
 class ErrorPrinter:
   """Collects and prints errors.
 
-  Contains a map, error_messages, from test_name to an array of Errors.  This
+  Contains a map, error_messages, from test_name to an array of Messages.  This
   array is reinitialized every time set_current_test is called for a given test.
-  Each Error will contain as much information as possible, and each
+  Each Message will contain as much information as possible, and each
   print_error_messages call will print as much as set_printing_options
   specifies."""
 
@@ -52,8 +52,8 @@ class ErrorPrinter:
     """Changes printing options for any specified options.
 
     output: if False, will print nothing
-    errors: if False, will not print any Error for which is_error is true
-    warnings: if False, will not print any Error for which is_error is
+    errors: if False, will not print any Messages for which is_error is true
+    warnings: if False, will not print any Messages for which is_error is
         false
     xml_line_numbers: if True, will print the source line in the XML where
         the error occurred

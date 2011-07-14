@@ -21,7 +21,7 @@ import unittest
 import StringIO
 import sys
 sys.path.append(sys.path[0] + '/../pfif_validator')
-from error_printer import ErrorPrinter, Error
+from error_printer import ErrorPrinter, Message
 
 class PrintingTests(unittest.TestCase):
   """Tests the ErrorPrinter class methods"""
@@ -37,9 +37,9 @@ class PrintingTests(unittest.TestCase):
     printer = ErrorPrinter()
     printer.set_current_test("Test")
     self.assertEqual(len(printer.get_errors()), 0)
-    printer.add_error(Error("Message"))
-    printer.add_error(Error("More Message"))
-    printer.add_error(Error("Hey"))
+    printer.add_error(Message("Message"))
+    printer.add_error(Message("More Message"))
+    printer.add_error(Message("Hey"))
     self.assertEqual(len(printer.get_errors()), 3)
     self.assertEqual(printer.get_errors()[2].message, "Hey")
 
@@ -47,7 +47,7 @@ class PrintingTests(unittest.TestCase):
     """If set_current_test is not called, add_error, get_errors, and
     print_errors should raise exceptions"""
     printer = ErrorPrinter()
-    self.assertRaises(Exception, printer.add_error, Error("Message"))
+    self.assertRaises(Exception, printer.add_error, Message("Message"))
     self.assertRaises(Exception, printer.print_errors)
     self.assertRaises(Exception, printer.get_errors)
 
@@ -56,9 +56,9 @@ class PrintingTests(unittest.TestCase):
     stored between the first and second call should be deleted"""
     printer = ErrorPrinter()
     printer.set_current_test("Test")
-    printer.add_error(Error("Old"))
+    printer.add_error(Message("Old"))
     printer.set_current_test("Test")
-    printer.add_error(Error("New"))
+    printer.add_error(Message("New"))
     self.assertEqual(len(printer.get_errors()), 1)
     self.assertEqual(printer.get_errors()[0].message, "New")
 
@@ -74,11 +74,11 @@ class PrintingTests(unittest.TestCase):
 
     # set up the printer with errors
     printer.set_current_test("Test")
-    printer.add_error(Error( "Message 1", is_error=True, xml_line_number=333,
-                            xml_element_text="Text", person_record_id="Person",
-                            note_record_id="Note"))
-    printer.add_error(Error("Message 2", is_error=False))
-    printer.add_error(Error("Message 3"))
+    printer.add_error(Message("Message 1", is_error=True, xml_line_number=333,
+                              xml_element_text="Text",
+                              person_record_id="Person", note_record_id="Note"))
+    printer.add_error(Message("Message 2", is_error=False))
+    printer.add_error(Message("Message 3"))
     printer.set_printing_options(output=False, errors=False, warnings=False,
                                  xml_line_numbers=False, xml_text=False,
                                  record_ids=False)
