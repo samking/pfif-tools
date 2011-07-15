@@ -29,16 +29,12 @@ import utils
 class ValidatorTests(unittest.TestCase):
   """Tests each validation function in pfif_validator.py"""
 
-  # Set Up
-
-  PRINT_VALIDATOR_OUTPUT = True
-
-  VALID_XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person />
 </pfif:pfif>"""
 
-  PFIF_XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/local-id.3</pfif:person_record_id>
@@ -79,152 +75,45 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
 </pfif:pfif>"""
 
-  EXPIRED_TIME = datetime.datetime(1999, 3, 1)
-
-  def setUp(self): # pylint: disable=C0103
-    """Some of the tests will run code that prints stuff out.  This prevents it
-    from printing next to the clean dots from the unit tests."""
-    if not ValidatorTests.PRINT_VALIDATOR_OUTPUT:
-      sys.stdout = open(os.devnull, "w")
-
-  @staticmethod
-  def set_up_validator(xml):
-    """Creates a PFIF validator from XML and initializes it"""
-    pfif_file = StringIO.StringIO(xml)
-    return PfifValidator(pfif_file, initialize=True)
-
-  # validate_xml_or_die
-
-  def test_valid_xml(self):
-    """validate_xml_or_die should turn a string of valid XML into an object"""
-    valid_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
-    validator = PfifValidator(valid_xml_file, initialize=False)
-    self.assertTrue(validator.validate_xml_or_die())
-
-  def test_invalid_xml(self):
-    """validate_xml_or_die should raise an error on a string of invalid XML"""
-    invalid_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
-  <pfif:person>""")
-    validator = PfifValidator(invalid_xml_file, initialize=False)
-    self.assertRaises(Exception, validator.validate_xml_or_die)
-
-  # validate_root_is_pfif_or_die
-
-  def test_root_is_pfif(self):
-    """validate_root_is_pfif_or_die should return the PFIF version if the XML
-    root is PFIF"""
-    pfif_11_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
-    validator = PfifValidator(pfif_11_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertEqual(validator.validate_root_is_pfif_or_die(), 1.1)
-
-  def test_root_is_not_pfif(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
-    is not PFIF"""
-    random_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NON_PFIF_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:html xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person />
-</pfif:html>""")
-    validator = PfifValidator(random_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+</pfif:html>"""
 
-  def test_root_lacks_namespace(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
-    doesn't specify a namespace"""
-    no_namespace_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NO_NAMESPACE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif>
   <person />
-</pfif>""")
-    validator = PfifValidator(no_namespace_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+</pfif>"""
 
-  def test_root_is_bad_pfif_version(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
-    version is not supported"""
-    pfif_99_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  XML_BAD_PFIF_VERSION = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/9.9">
   <pfif:person />
-</pfif:pfif>""")
-    validator = PfifValidator(pfif_99_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+</pfif:pfif>"""
 
-  def test_root_is_bad_pfif_website(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
-    website is wrong"""
-    pfif_bad_website_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  XML_BAD_PFIF_WEBSITE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.com/pfif/1.2">
   <pfif:person />
-</pfif:pfif>""")
-    validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+</pfif:pfif>"""
 
-  # validate_root_has_child
+  XML_ROOT_LACKS_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />"""
 
-  def test_root_has_child(self):
-    """validate_root_has_child should return true if the root node has at
-    least one child"""
-    validator = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(validator.validate_root_has_child())
-
-  def test_root_lacks_child(self):
-    """validate_root_has_child should return false if the root node
-    does not have at least one child"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />""")
-    self.assertFalse(validator.validate_root_has_child())
-
-  # validate_root_has_mandatory_children
-
-  def test_root_has_mandatory_children(self):
-    """validate_root_has_mandatory_children should return true if one of the
-    children is a person"""
-    validator = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(validator.validate_root_has_mandatory_children())
-
-  def test_root_lacks_mandatory_children(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are not notes or persons"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_ROOT_HAS_BAD_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:notAPersonOrNote />
-</pfif:pfif>""")
-    self.assertFalse(validator.validate_root_has_mandatory_children())
+</pfif:pfif>"""
 
-  def test_root_has_note_child_11(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are notes and the version is 1.1"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_TOP_LEVEL_NOTE_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:note />
-</pfif:pfif>""")
-    self.assertFalse(validator.validate_root_has_mandatory_children())
+</pfif:pfif>"""
 
-  def test_root_has_note_child_12(self):
-    """validate_root_has_mandatory_children should return true if the only
-    children are notes and the version is greater than 1.1"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_TOP_LEVEL_NOTE_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note />
-</pfif:pfif>""")
-    self.assertTrue(validator.validate_root_has_mandatory_children())
+</pfif:pfif>"""
 
-  # validate_has_mandatory_children
-
-  #TODO(samking): notes that are free floating must have a person record id
-  def test_note_has_mandatory_children(self):
-    """validate_has_mandatory_children should return an empty list if it is
-    given a note with all mandatory children"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTE_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id />
@@ -232,86 +121,37 @@ class ValidatorTests(unittest.TestCase):
     <pfif:source_date />
     <pfif:text />
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 0)
+</pfif:pfif>"""
 
-  def test_note_has_no_mandatory_children(self):
-    """validate_has_mandatory_children should return a list with four missing
-    children when given a note with no children"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTE_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 4)
+</pfif:pfif>"""
 
-  def test_person_has_mandatory_children_11(self):
-    """validate_has_mandatory_children should return an empty list if it is
-    given a version 1.1 person with all mandatory children"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_PERSON_WITH_CHILDREN_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
     <pfif:first_name />
     <pfif:last_name />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 0)
+</pfif:pfif>"""
 
-  def test_person_has_mandatory_children_13(self):
-    """validate_has_mandatory_children should return an empty list if it is
-    given a version 1.3 person with all mandatory children"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_PERSON_WITH_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id />
     <pfif:source_date />
     <pfif:full_name />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 0)
+</pfif:pfif>"""
 
-  def test_person_has_no_mandatory_children_11(self):
-    """validate_has_mandatory_children should return a list with three missing
-    children when given a version 1.1 person with no children"""
-    validator = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 3)
-
-  def test_person_has_no_mandatory_children_13(self):
-    """validate_has_mandatory_children should return a list with three missing
-    children when given a version 1.3 person with no children"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_PERSON_NO_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person />
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 3)
+</pfif:pfif>"""
 
-  # validate_fields_have_correct_format
-
-  def test_no_fields_exist(self):
-    """validate_fields_have_correct_format should return an empty list when
-    passed a tree with no subelements of person or note because no nodes are
-    improperly formatted."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
-  <pfif:person>
-    <pfif:note />
-  </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
-
-  def test_all_11_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return an empty list when
-    passed a tree with all 1.1 elements in the correct formats."""
-    validator = self.set_up_validator(ValidatorTests.PFIF_XML_11_FULL)
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
-
-  #TODO(samking): test that non-ascii characters should be rejected
-  def test_no_11_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return a list with every
-    subnode of person and note when every such subnode is of an incorrect
-    format.  This tests all fields in version 1.1 for which incorrect input is
-    possible."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_FORMAT_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/</pfif:person_record_id>
@@ -342,16 +182,9 @@ class ValidatorTests(unittest.TestCase):
       <pfif:note_record_id>http://foo/bar</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 23)
+</pfif:pfif>"""
 
-  #TODO(samking): test that non-ascii characters are accepted
-  def test_all_12_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return an empty list when
-    presented with a document where all fields have the correct format.  This
-    tests all fields introduced or changed in 1.2; it does not test fields that
-    were unchanged from 1.1."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:sex>male</pfif:sex>
@@ -395,15 +228,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note>
     <pfif:status>believed_missing</pfif:status>
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+</pfif:pfif>"""
 
-  def test_no_12_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return a list with every
-    element presented to it when all fields have an incorrect format.  This
-    tests all fields introduced or changed in 1.2, except ones that are always
-    accepted; it does not test fields that were unchanged from 1.1."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_FORMAT_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:sex>not-male-or-female-or-other</pfif:sex>
@@ -427,41 +254,24 @@ class ValidatorTests(unittest.TestCase):
     <pfif:person_record_id>example.org</pfif:person_record_id>
     <pfif:linked_person_record_id>/id2</pfif:linked_person_record_id>
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 12)
+</pfif:pfif>"""
 
-  def test_all_13_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return an empty list when
-    presented with a document where all fields have the correct format.  This
-    tests all fields introduced or changed in 1.3; it does not test fields that
-    were unchanged from 1.1 and 1.2."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_CORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:full_name>john doe</pfif:full_name>
     <pfif:expiry_date>1234-56-78T90:12:34Z</pfif:expiry_date>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+</pfif:pfif>"""
 
-  def test_no_13_fields_have_correct_format(self):
-    """validate_fields_have_correct_format should return a list with every
-    element presented to it when all fields have an incorrect format.  This
-    tests all fields introduced or changed in 1.3, except ones that are always
-    accepted; it does not test fields that were unchanged from 1.1 and 1.2."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:expiry_date>12a4-56-78T90:12:34Z</pfif:expiry_date>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 1)
+</pfif:pfif>"""
 
-  # validate_unique_id
-  def test_person_ids_are_unique(self):
-    """validate_person_ids_are_unique should return an empty list when all
-    person ids are unique"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_UNIQUE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -475,13 +285,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.com/2</pfif:person_record_id>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_ids_are_unique()), 0)
+</pfif:pfif>"""
 
-  def test_note_ids_are_unique(self):
-    """validate_note_ids_are_unique should return an empty list when all note
-    ids are unique"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_UNIQUE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id>example.org/1</pfif:note_record_id>
@@ -495,13 +301,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note>
     <pfif:note_record_id>example.com/2</pfif:note_record_id>
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_note_ids_are_unique()), 0)
+</pfif:pfif>"""
 
-  def test_person_ids_are_not_unique(self):
-    """validate_person_ids_are_unique should return a list with all non-unique
-    person ids when there are non-unique person ids"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_DUPLICATE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -518,13 +320,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:person>
     <pfif:person_record_id>example.com/2</pfif:person_record_id>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_ids_are_unique()), 2)
+</pfif:pfif>"""
 
-  def test_note_ids_are_not_unique(self):
-    """validate_person_ids_are_unique should return a list with all non-unique
-    note ids when there are non-unique note ids"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_DUPLICATE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id>example.org/1</pfif:note_record_id>
@@ -540,16 +338,9 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note>
     <pfif:note_record_id>example.com/1</pfif:note_record_id>
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_note_ids_are_unique()), 2)
+</pfif:pfif>"""
 
-  # validate_notes_belong_to_persons
-
-  def test_notes_belong_to_people(self):
-    """validate_notes_belong_to_persons should return an empty list if all top
-    level notes have a person_record_id and all notes inside persons have no
-    person_record_id or the same person_record_id as the person."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_BELONG_TO_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -561,14 +352,9 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
     <pfif:note />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_notes_belong_to_persons()), 0)
+</pfif:pfif>"""
 
-  def test_notes_do_not_belong_to_people(self):
-    """validate_notes_belong_to_persons should return a list with all top level
-    notes without a person_record_id and person_record_ids for notes that are
-    under a person with a person_record_id that doesn't match the person"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_WITHOUT_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
   <pfif:person>
@@ -577,25 +363,9 @@ class ValidatorTests(unittest.TestCase):
       <pfif:person_record_id>example.org/2</pfif:person_record_id>
     </pfif:note>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_notes_belong_to_persons()), 2)
+</pfif:pfif>"""
 
-  # validate_field_order
-
-  def test_correct_field_order_11(self):
-    """validate_person_field_order and validate_note_field_order should return
-    a empty lists if all elements in all persons and notes are in the correct
-    order"""
-    validator = self.set_up_validator(ValidatorTests.PFIF_XML_11_FULL)
-    self.assertEqual(len(validator.validate_person_field_order()), 0)
-    self.assertEqual(len(validator.validate_note_field_order()), 0)
-
-  def test_omitting_fields_is_okay_11(self):
-    """validate_person_field_order and validate_note_field_order should return
-    a empty lists if all elements in all persons and notes are in the correct
-    order, even if some elements are omitted (ie, 1,2,4 is in order even though
-    3 is omitted)"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_MISSING_FIELDS_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -605,14 +375,9 @@ class ValidatorTests(unittest.TestCase):
       <pfif:text>text</pfif:text>
     </pfif:note>
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 0)
-    self.assertEqual(len(validator.validate_note_field_order()), 0)
+</pfif:pfif>"""
 
-  def test_incorrect_field_order_11(self):
-    """validate_person_field_order and validate_note_field_order should return
-    the first element in every person and note that are out of order"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_FIELD_ORDER_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
@@ -634,28 +399,18 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_state />
     <pfif:home_city />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 3)
-    self.assertEqual(len(validator.validate_note_field_order()), 2)
+</pfif:pfif>"""
 
-  def test_nonexistent_field(self):
-    """validate_person_field_order and validate_note_field_order should ignore
-    any fields that are not in the spec"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXTRANEOUS_FIELD_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
     <pfif:foo />
     <pfif:other />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 0)
+</pfif:pfif>"""
 
-  def test_correct_field_order_12(self):
-    """validate_person_field_order and validate_note_field_order should return
-    a empty lists if person_record_id comes first and any notes come last in
-    persons and if note_record_id and person_record_id come first in notes."""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_CORRECT_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id />
@@ -688,15 +443,10 @@ class ValidatorTests(unittest.TestCase):
     <pfif:text />
     <pfif:author_name />
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 0)
-    self.assertEqual(len(validator.validate_note_field_order()), 0)
+</pfif:pfif>"""
 
-  def test_incorrect_person_field_order_12(self):
-    """validate_person_field_order should return a list with one entry for every
-    person that does not have notes at the end or that does not have its
-    person_record_id at the start"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_PERSON_FIELD_ORDER_12 = """<?xml version="1.0"
+  encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id />
@@ -713,13 +463,9 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_city />
     <pfif:note />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 3)
+</pfif:pfif>"""
 
-  def test_incorrect_note_field_order_12(self):
-    """validate_note_field_order should return a list with one entry for every
-    note that does not have note_record_id and person_record_id at the start"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_INCORRECT_NOTE_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note>
     <pfif:note_record_id />
@@ -739,14 +485,9 @@ class ValidatorTests(unittest.TestCase):
     <pfif:text />
     <pfif:person_record_id />
   </pfif:note>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_note_field_order()), 4)
+</pfif:pfif>"""
 
-  def test_field_order_does_not_matter_13(self):
-    """validate_person_field_order and validate_note_field_order should return
-    an empty list if the version is greater than 1.2 because order doesn't
-    matter"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_ODD_ORDER_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id />
@@ -768,16 +509,10 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_state />
     <pfif:home_city />
   </pfif:person>
-</pfif:pfif>""")
-    self.assertEqual(len(validator.validate_person_field_order()), 0)
-    self.assertEqual(len(validator.validate_note_field_order()), 0)
+</pfif:pfif>"""
 
-  # validate_expiry
-
-  def test_unexpired_records(self):
-    """validate_expired_records_removed should return an empty list when no
-    records are expired"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_HAS_DATA_NONSYNCED_DATES = """<?xml version="1.0"
+  encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -789,18 +524,9 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
     <pfif:other>not deleted or omitted</pfif:other>
   </pfif:person>
-</pfif:pfif>""")
-    not_expired_1998 = datetime.datetime(1998, 11, 1, 1, 1, 1, 1)
-    utils.set_utcnow_for_test(not_expired_1998)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
-    just_not_expired = datetime.datetime(1999, 2, 4, 4, 5, 5, 0)
-    utils.set_utcnow_for_test(just_not_expired)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+</pfif:pfif>"""
 
-  def test_expired_records_with_empty_data(self):
-    """validate_expired_records_removed should return an empty list when all
-    expired records have empty fields instead of real data"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_EMPTY_DATA = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -812,14 +538,9 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
     <pfif:other></pfif:other>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+</pfif:pfif>"""
 
-  def test_expired_records_with_omissions(self):
-    """validate_expired_records_removed should return an empty list when all
-    expired records omit fields instead of exposing real data"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_NO_DATA = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -827,15 +548,10 @@ class ValidatorTests(unittest.TestCase):
     <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+</pfif:pfif>"""
 
-  def test_expired_records_with_unremoved_data(self):
-    """validate_expired_records_removed should return a list with the
-    person_record_ids of all expired records that have data that should be
-    removed"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_HAS_NOTE_SYNCED_DATES = """<?xml version="1.0"
+  encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -846,14 +562,10 @@ class ValidatorTests(unittest.TestCase):
       <pfif:note_record_id>not/deleted</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
-    just_expired = datetime.datetime(1999, 2, 4, 4, 5, 7)
-    utils.set_utcnow_for_test(just_expired)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+</pfif:pfif>"""
 
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_HAS_DATA_SYNCED_DATES = """<?xml version="1.0"
+  encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -862,15 +574,10 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+</pfif:pfif>"""
 
-  def test_expiration_placeholder_with_bad_source_entry_date(self):
-    """validate_expired_records_removed should return a list with the
-    person_record_ids of all expired records whose source_date and entry_date
-    are not the same value and are not created within a day after expiration"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_NO_DATA_NONSYNCED_DATES = """<?xml version="1.0"
+  encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -884,14 +591,9 @@ class ValidatorTests(unittest.TestCase):
     <pfif:source_date>1999-04-03T04:05:06Z</pfif:source_date>
     <pfif:entry_date>1999-04-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 2)
+</pfif:pfif>"""
 
-  def test_no_expiration_before_13(self):
-    """validate_expired_records_removed should return an empty list when the
-    version is before 1.3"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EXPIRE_99_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -900,14 +602,9 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+</pfif:pfif>"""
 
-  def test_no_expiration_without_date(self):
-    """validate_expired_records_removed should return an empty list when the
-    there isn't an expiry_date"""
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_NO_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -915,11 +612,9 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>
   </pfif:person>
-</pfif:pfif>""")
-    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
-    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+</pfif:pfif>"""
 
-    validator = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+  XML_EMPTY_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -928,7 +623,400 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>
   </pfif:person>
-</pfif:pfif>""")
+</pfif:pfif>"""
+
+  PRINT_VALIDATOR_OUTPUT = True
+
+  EXPIRED_TIME = datetime.datetime(1999, 3, 1)
+
+  # Set Up
+
+  def setUp(self): # pylint: disable=C0103
+    """Some of the tests will run code that prints stuff out.  This prevents it
+    from printing next to the clean dots from the unit tests."""
+    if not ValidatorTests.PRINT_VALIDATOR_OUTPUT:
+      sys.stdout = open(os.devnull, "w")
+
+  @staticmethod
+  def set_up_validator(xml):
+    """Creates a PFIF validator from XML and initializes it"""
+    pfif_file = StringIO.StringIO(xml)
+    return PfifValidator(pfif_file, initialize=True)
+
+  # validate_xml_or_die
+
+  def test_valid_xml(self):
+    """validate_xml_or_die should turn a string of valid XML into an object"""
+    valid_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
+    validator = PfifValidator(valid_xml_file, initialize=False)
+    self.assertTrue(validator.validate_xml_or_die())
+
+  def test_invalid_xml(self):
+    """validate_xml_or_die should raise an error on a string of invalid XML"""
+    invalid_xml_file = StringIO.StringIO(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>""")
+    validator = PfifValidator(invalid_xml_file, initialize=False)
+    self.assertRaises(Exception, validator.validate_xml_or_die)
+
+  # validate_root_is_pfif_or_die
+
+  def test_root_is_pfif(self):
+    """validate_root_is_pfif_or_die should return the PFIF version if the XML
+    root is PFIF"""
+    pfif_11_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
+    validator = PfifValidator(pfif_11_xml_file, initialize=False)
+    validator.validate_xml_or_die()
+    self.assertEqual(validator.validate_root_is_pfif_or_die(), 1.1)
+
+  def test_root_is_not_pfif(self):
+    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    is not PFIF"""
+    random_xml_file = StringIO.StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
+    validator = PfifValidator(random_xml_file, initialize=False)
+    validator.validate_xml_or_die()
+    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+
+  def test_root_lacks_namespace(self):
+    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    doesn't specify a namespace"""
+    no_namespace_xml_file = StringIO.StringIO(ValidatorTests.XML_NO_NAMESPACE)
+    validator = PfifValidator(no_namespace_xml_file, initialize=False)
+    validator.validate_xml_or_die()
+    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+
+  def test_root_is_bad_pfif_version(self):
+    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    version is not supported"""
+    pfif_99_xml_file = StringIO.StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
+    validator = PfifValidator(pfif_99_xml_file, initialize=False)
+    validator.validate_xml_or_die()
+    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+
+  def test_root_is_bad_pfif_website(self):
+    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    website is wrong"""
+    pfif_bad_website_xml_file = StringIO.StringIO(
+        ValidatorTests.XML_BAD_PFIF_WEBSITE)
+    validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
+    validator.validate_xml_or_die()
+    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+
+  # validate_root_has_child
+
+  def test_root_has_child(self):
+    """validate_root_has_child should return true if the root node has at
+    least one child"""
+    validator = self.set_up_validator(ValidatorTests.XML_11_SMALL)
+    self.assertTrue(validator.validate_root_has_child())
+
+  def test_root_lacks_child(self):
+    """validate_root_has_child should return false if the root node
+    does not have at least one child"""
+    validator = self.set_up_validator(ValidatorTests.XML_ROOT_LACKS_CHILD)
+    self.assertFalse(validator.validate_root_has_child())
+
+  # validate_root_has_mandatory_children
+
+  def test_root_has_mandatory_children(self):
+    """validate_root_has_mandatory_children should return true if one of the
+    children is a person"""
+    validator = self.set_up_validator(ValidatorTests.XML_11_SMALL)
+    self.assertTrue(validator.validate_root_has_mandatory_children())
+
+  def test_root_lacks_mandatory_children(self):
+    """validate_root_has_mandatory_children should return false if the only
+    children are not notes or persons"""
+    validator = self.set_up_validator(ValidatorTests.XML_ROOT_HAS_BAD_CHILD)
+    self.assertFalse(validator.validate_root_has_mandatory_children())
+
+  def test_root_has_note_child_11(self):
+    """validate_root_has_mandatory_children should return false if the only
+    children are notes and the version is 1.1"""
+    validator = self.set_up_validator(ValidatorTests.XML_TOP_LEVEL_NOTE_11)
+    self.assertFalse(validator.validate_root_has_mandatory_children())
+
+  def test_root_has_note_child_12(self):
+    """validate_root_has_mandatory_children should return true if the only
+    children are notes and the version is greater than 1.1"""
+    validator = self.set_up_validator(ValidatorTests.XML_TOP_LEVEL_NOTE_12)
+    self.assertTrue(validator.validate_root_has_mandatory_children())
+
+  # validate_has_mandatory_children
+
+  #TODO(samking): notes that are free floating must have a person record id
+  def test_note_has_mandatory_children(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a note with all mandatory children"""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTE_WITH_CHILDREN)
+    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 0)
+
+  def test_note_has_no_mandatory_children(self):
+    """validate_has_mandatory_children should return a list with four missing
+    children when given a note with no children"""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
+    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 4)
+
+  def test_person_has_mandatory_children_11(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a version 1.1 person with all mandatory children"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_PERSON_WITH_CHILDREN_11)
+    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 0)
+
+  def test_person_has_mandatory_children_13(self):
+    """validate_has_mandatory_children should return an empty list if it is
+    given a version 1.3 person with all mandatory children"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_PERSON_WITH_CHILDREN_13)
+    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 0)
+
+  def test_person_has_no_mandatory_children_11(self):
+    """validate_has_mandatory_children should return a list with three missing
+    children when given a version 1.1 person with no children"""
+    validator = self.set_up_validator(ValidatorTests.XML_11_SMALL)
+    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 3)
+
+  def test_person_has_no_mandatory_children_13(self):
+    """validate_has_mandatory_children should return a list with three missing
+    children when given a version 1.3 person with no children"""
+    validator = self.set_up_validator(ValidatorTests.XML_PERSON_NO_CHILDREN_13)
+    self.assertEqual(len(validator.validate_person_has_mandatory_children()), 3)
+
+  # validate_fields_have_correct_format
+
+  def test_no_fields_exist(self):
+    """validate_fields_have_correct_format should return an empty list when
+    passed a tree with no subelements of person or note because no nodes are
+    improperly formatted."""
+    validator = self.set_up_validator(ValidatorTests.XML_PERSON_NO_CHILDREN_13)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+
+  def test_all_11_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    passed a tree with all 1.1 elements in the correct formats."""
+    validator = self.set_up_validator(ValidatorTests.XML_11_FULL)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+
+  #TODO(samking): test that non-ascii characters should be rejected
+  def test_no_11_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    subnode of person and note when every such subnode is of an incorrect
+    format.  This tests all fields in version 1.1 for which incorrect input is
+    possible."""
+    validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_11)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 23)
+
+  #TODO(samking): test that non-ascii characters are accepted
+  def test_all_12_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    presented with a document where all fields have the correct format.  This
+    tests all fields introduced or changed in 1.2; it does not test fields that
+    were unchanged from 1.1."""
+    validator = self.set_up_validator(ValidatorTests.XML_FULL_12)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+
+  def test_no_12_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    element presented to it when all fields have an incorrect format.  This
+    tests all fields introduced or changed in 1.2, except ones that are always
+    accepted; it does not test fields that were unchanged from 1.1."""
+    validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_12)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 12)
+
+  def test_all_13_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return an empty list when
+    presented with a document where all fields have the correct format.  This
+    tests all fields introduced or changed in 1.3; it does not test fields that
+    were unchanged from 1.1 and 1.2."""
+    validator = self.set_up_validator(ValidatorTests.XML_CORRECT_FORMAT_13)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
+
+  def test_no_13_fields_have_correct_format(self):
+    """validate_fields_have_correct_format should return a list with every
+    element presented to it when all fields have an incorrect format.  This
+    tests all fields introduced or changed in 1.3, except ones that are always
+    accepted; it does not test fields that were unchanged from 1.1 and 1.2."""
+    validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_13)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 1)
+
+  # validate_unique_id
+  def test_person_ids_are_unique(self):
+    """validate_person_ids_are_unique should return an empty list when all
+    person ids are unique"""
+    validator = self.set_up_validator(ValidatorTests.XML_UNIQUE_PERSON_IDS)
+    self.assertEqual(len(validator.validate_person_ids_are_unique()), 0)
+
+  def test_note_ids_are_unique(self):
+    """validate_note_ids_are_unique should return an empty list when all note
+    ids are unique"""
+    validator = self.set_up_validator(ValidatorTests.XML_UNIQUE_NOTE_IDS)
+    self.assertEqual(len(validator.validate_note_ids_are_unique()), 0)
+
+  def test_person_ids_are_not_unique(self):
+    """validate_person_ids_are_unique should return a list with all non-unique
+    person ids when there are non-unique person ids"""
+    validator = self.set_up_validator(ValidatorTests.XML_DUPLICATE_PERSON_IDS)
+    self.assertEqual(len(validator.validate_person_ids_are_unique()), 2)
+
+  def test_note_ids_are_not_unique(self):
+    """validate_person_ids_are_unique should return a list with all non-unique
+    note ids when there are non-unique note ids"""
+    validator = self.set_up_validator(ValidatorTests.XML_DUPLICATE_NOTE_IDS)
+    self.assertEqual(len(validator.validate_note_ids_are_unique()), 2)
+
+  # validate_notes_belong_to_persons
+
+  def test_notes_belong_to_people(self):
+    """validate_notes_belong_to_persons should return an empty list if all top
+    level notes have a person_record_id and all notes inside persons have no
+    person_record_id or the same person_record_id as the person."""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_BELONG_TO_PEOPLE)
+    self.assertEqual(len(validator.validate_notes_belong_to_persons()), 0)
+
+  def test_notes_do_not_belong_to_people(self):
+    """validate_notes_belong_to_persons should return a list with all top level
+    notes without a person_record_id and person_record_ids for notes that are
+    under a person with a person_record_id that doesn't match the person"""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_WITHOUT_PEOPLE)
+    self.assertEqual(len(validator.validate_notes_belong_to_persons()), 2)
+
+  # validate_field_order
+
+  def test_correct_field_order_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if all elements in all persons and notes are in the correct
+    order"""
+    validator = self.set_up_validator(ValidatorTests.XML_11_FULL)
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+    self.assertEqual(len(validator.validate_note_field_order()), 0)
+
+  def test_omitting_fields_is_okay_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if all elements in all persons and notes are in the correct
+    order, even if some elements are omitted (ie, 1,2,4 is in order even though
+    3 is omitted)"""
+    validator = self.set_up_validator(ValidatorTests.XML_MISSING_FIELDS_11)
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+    self.assertEqual(len(validator.validate_note_field_order()), 0)
+
+  def test_incorrect_field_order_11(self):
+    """validate_person_field_order and validate_note_field_order should return
+    the first element in every person and note that are out of order"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_INCORRECT_FIELD_ORDER_11)
+    self.assertEqual(len(validator.validate_person_field_order()), 3)
+    self.assertEqual(len(validator.validate_note_field_order()), 2)
+
+  def test_nonexistent_field(self):
+    """validate_person_field_order and validate_note_field_order should ignore
+    any fields that are not in the spec"""
+    validator = self.set_up_validator(ValidatorTests.XML_EXTRANEOUS_FIELD_11)
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+
+  def test_correct_field_order_12(self):
+    """validate_person_field_order and validate_note_field_order should return
+    a empty lists if person_record_id comes first and any notes come last in
+    persons and if note_record_id and person_record_id come first in notes."""
+    validator = self.set_up_validator(ValidatorTests.XML_CORRECT_FIELD_ORDER_12)
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+    self.assertEqual(len(validator.validate_note_field_order()), 0)
+
+  def test_incorrect_person_field_order_12(self):
+    """validate_person_field_order should return a list with one entry for every
+    person that does not have notes at the end or that does not have its
+    person_record_id at the start"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_INCORRECT_PERSON_FIELD_ORDER_12)
+    self.assertEqual(len(validator.validate_person_field_order()), 3)
+
+  def test_incorrect_note_field_order_12(self):
+    """validate_note_field_order should return a list with one entry for every
+    note that does not have note_record_id and person_record_id at the start"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_INCORRECT_NOTE_FIELD_ORDER_12)
+    self.assertEqual(len(validator.validate_note_field_order()), 4)
+
+  def test_field_order_does_not_matter_13(self):
+    """validate_person_field_order and validate_note_field_order should return
+    an empty list if the version is greater than 1.2 because order doesn't
+    matter"""
+    validator = self.set_up_validator(ValidatorTests.XML_ODD_ORDER_13)
+    self.assertEqual(len(validator.validate_person_field_order()), 0)
+    self.assertEqual(len(validator.validate_note_field_order()), 0)
+
+  # validate_expiry
+
+  def test_unexpired_records(self):
+    """validate_expired_records_removed should return an empty list when no
+    records are expired"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_EXPIRE_99_HAS_DATA_NONSYNCED_DATES)
+    not_expired_1998 = datetime.datetime(1998, 11, 1, 1, 1, 1, 1)
+    utils.set_utcnow_for_test(not_expired_1998)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+    just_not_expired = datetime.datetime(1999, 2, 4, 4, 5, 5, 0)
+    utils.set_utcnow_for_test(just_not_expired)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_empty_data(self):
+    """validate_expired_records_removed should return an empty list when all
+    expired records have empty fields instead of real data"""
+    validator = self.set_up_validator(ValidatorTests.XML_EXPIRE_99_EMPTY_DATA)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_omissions(self):
+    """validate_expired_records_removed should return an empty list when all
+    expired records omit fields instead of exposing real data"""
+    validator = self.set_up_validator(ValidatorTests.XML_EXPIRE_99_NO_DATA)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+
+  def test_expired_records_with_unremoved_data(self):
+    """validate_expired_records_removed should return a list with the
+    person_record_ids of all expired records that have data that should be
+    removed"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_EXPIRE_99_HAS_NOTE_SYNCED_DATES)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+    just_expired = datetime.datetime(1999, 2, 4, 4, 5, 7)
+    utils.set_utcnow_for_test(just_expired)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+
+    validator = self.set_up_validator(
+        ValidatorTests.XML_EXPIRE_99_HAS_DATA_SYNCED_DATES)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+
+  def test_expiration_placeholder_with_bad_source_entry_date(self):
+    """validate_expired_records_removed should return a list with the
+    person_record_ids of all expired records whose source_date and entry_date
+    are not the same value and are not created within a day after expiration"""
+    validator = self.set_up_validator(
+        ValidatorTests.XML_EXPIRE_99_NO_DATA_NONSYNCED_DATES)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 2)
+
+  def test_no_expiration_before_13(self):
+    """validate_expired_records_removed should return an empty list when the
+    version is before 1.3"""
+    validator = self.set_up_validator(ValidatorTests.XML_EXPIRE_99_12)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+
+  def test_no_expiration_without_date(self):
+    """validate_expired_records_removed should return an empty list when the
+    there isn't an expiry_date"""
+    validator = self.set_up_validator(ValidatorTests.XML_NO_EXPIRY_DATE)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 0)
+
+    validator = self.set_up_validator(ValidatorTests.XML_EMPTY_EXPIRY_DATE)
     utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(validator.validate_expired_records_removed()), 0)
 
