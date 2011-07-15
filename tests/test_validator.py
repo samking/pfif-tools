@@ -22,7 +22,7 @@ import os
 import sys
 # TODO(samking): I'm sure that there is a simpler way to do this...
 sys.path.append(os.getcwd() + '/../pfif_validator')
-from pfif_validator import PfifValidator
+from pfif_validator import PfifValidator, Message
 import datetime
 import utils
 
@@ -89,7 +89,70 @@ class ValidatorTests(unittest.TestCase):
   def set_up_validator(self, xml):
     """Creates a PFIF validator from XML and initializes it"""
     pfif_file = StringIO.StringIO(xml)
-    return PfifValidator(pfif_file, initialize=True, print_output=False)
+    return PfifValidator(pfif_file, initialize=True)
+
+  # printing
+
+  def test_printing(self):
+    """Tests that each of the printing options in set_printing_options changes
+    the behavior of print_errors"""
+    # mock stdout so that we can tell what gets printed
+    old_stdout = sys.stdout
+    fake_stdout = StringIO.StringIO()
+    sys.stdout = fake_stdout
+
+    # set up the messages to be printed
+    messages = []
+    messages.append(Message("Message 1", is_error=True, xml_line_number=333,
+                            xml_element_text="Text", person_record_id="Person",
+                            note_record_id="Note"))
+    messages.append(Message("Message 2", is_error=False))
+    messages.append(Message("Message 3"))
+
+    # With no test name, errors, or warnings, nothing should print
+    PfifValidator.print_messages(messages, show_errors=False,
+                                 show_warnings=False)
+    self.assertEqual(fake_stdout.tell(), 0)
+
+    # with errors and warnings off, only test names should print
+    PfifValidator.print_messages(messages, test_name="Test", show_errors=False,
+                                 show_warnings=False)
+    self.assertEqual(fake_stdout.getvalue().find("Message"), -1)
+    self.assertNotEqual(fake_stdout.getvalue().find("Test"), -1)
+
+    # with only errors on, only errors should print
+    PfifValidator.print_messages(messages, show_warnings=False,
+                                 show_line_numbers=False, show_record_ids=False,
+                                 show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 1"), -1)
+    self.assertEqual(fake_stdout.getvalue().find("Message 2"), -1)
+    # the default value of is_error should be True, so Message 3 should print
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 3"), -1)
+
+    # with warnings on, warnings should print
+    PfifValidator.print_messages(messages, show_line_numbers=False,
+                                 show_record_ids=False, show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 2"), -1)
+
+    # line numbers, xml text, and record IDs should not print with them off and
+    # should print with them on
+    self.assertEqual(fake_stdout.getvalue().find("333"), -1)
+    PfifValidator.print_messages(messages, show_line_numbers=True,
+                                 show_record_ids=False, show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("333"), -1)
+
+    self.assertEqual(fake_stdout.getvalue().find("Text"), -1)
+    PfifValidator.print_messages(messages, show_record_ids=False,
+                                 show_xml_text=True)
+    self.assertNotEqual(fake_stdout.getvalue().find("Text"), -1)
+
+    self.assertEqual(fake_stdout.getvalue().find("Person"), -1)
+    self.assertEqual(fake_stdout.getvalue().find("Note"), -1)
+    PfifValidator.print_messages(messages, show_record_ids=True)
+    self.assertNotEqual(fake_stdout.getvalue().find("Person"), -1)
+    self.assertNotEqual(fake_stdout.getvalue().find("Note"), -1)
+
+    sys.stdout = old_stdout
 
   # validate_xml_or_die
 
@@ -97,7 +160,7 @@ class ValidatorTests(unittest.TestCase):
     """validate_xml_or_die should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
     v = PfifValidator(valid_xml_file, initialize=False)
-    self.assertTrue(v.validate_xml_or_die())
+    self.assertEqual(len(v.validate_xml_or_die()), 0)
 
   def test_invalid_xml(self):
     """validate_xml_or_die should raise an error on a string of invalid XML"""
@@ -111,12 +174,12 @@ class ValidatorTests(unittest.TestCase):
   # validate_root_is_pfif_or_die
 
   def test_root_is_pfif(self):
-    """validate_root_is_pfif_or_die should return the PFIF version if the XML
-    root is PFIF"""
+    """validate_root_is_pfif_or_die should return an empty list if the XML root
+    is PFIF"""
     pfif_11_xml_file = StringIO.StringIO(ValidatorTests.VALID_XML_11_SMALL)
     v = PfifValidator(pfif_11_xml_file, initialize=False)
     v.validate_xml_or_die()
-    self.assertEqual(v.validate_root_is_pfif_or_die(), 1.1)
+    self.assertEqual(len(v.validate_root_is_pfif_or_die()), 0)
 
   def test_root_is_not_pfif(self):
     """validate_root_is_pfif_or_die should raise an exception if the XML root
@@ -169,52 +232,52 @@ class ValidatorTests(unittest.TestCase):
   # validate_root_has_child
 
   def test_root_has_child(self):
-    """validate_root_has_child should return true if the root node has at
-    least one child"""
+    """validate_root_has_child should return an empty list if the root node has
+    at least one child"""
     v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(v.validate_root_has_child())
+    self.assertEqual(len(v.validate_root_has_child()), 0)
 
   def test_root_lacks_child(self):
-    """validate_root_has_child should return false if the root node
-    does not have at least one child"""
+    """validate_root_has_child should return a list with a message if the root
+    node does not have at least one child"""
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />""")
-    self.assertFalse(v.validate_root_has_child())
+    self.assertNotEqual(len(v.validate_root_has_child()), 0)
 
   # validate_root_has_mandatory_children
 
   def test_root_has_mandatory_children(self):
-    """validate_root_has_mandatory_children should return true if one of the
-    children is a person"""
+    """validate_root_has_mandatory_children should return an empty list if one
+    of the children is a person"""
     v = self.set_up_validator(ValidatorTests.VALID_XML_11_SMALL)
-    self.assertTrue(v.validate_root_has_mandatory_children())
+    self.assertEqual(len(v.validate_root_has_mandatory_children()), 0)
 
   def test_root_lacks_mandatory_children(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are not notes or persons"""
+    """validate_root_has_mandatory_children should return a list with a message
+    if the only children are not notes or persons"""
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:notAPersonOrNote />
 </pfif:pfif>""")
-    self.assertFalse(v.validate_root_has_mandatory_children())
+    self.assertNotEqual(len(v.validate_root_has_mandatory_children()), 0)
 
   def test_root_has_note_child_11(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are notes and the version is 1.1"""
+    """validate_root_has_mandatory_children should return a list with a message
+    if the only children are notes and the version is 1.1"""
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:note />
 </pfif:pfif>""")
-    self.assertFalse(v.validate_root_has_mandatory_children())
+    self.assertNotEqual(len(v.validate_root_has_mandatory_children()), 0)
 
   def test_root_has_note_child_12(self):
-    """validate_root_has_mandatory_children should return true if the only
-    children are notes and the version is greater than 1.1"""
+    """validate_root_has_mandatory_children should return an empty list if the
+    only children are notes and the version is greater than 1.1"""
     v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note />
 </pfif:pfif>""")
-    self.assertTrue(v.validate_root_has_mandatory_children())
+    self.assertEqual(len(v.validate_root_has_mandatory_children()), 0)
 
   # validate_has_mandatory_children
 
