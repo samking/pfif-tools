@@ -17,6 +17,8 @@ DISABLE="R0904"
 DISABLE="${DISABLE},R0903"
 # It's okay to have lots of arguments
 DISABLE="${DISABLE},R0913"
+# It's okay to have long files
+DISABLE="${DISABLE},C0302"
 
 if [ -z "$LINT" ]; then
   echo "pylint not found, please install."
