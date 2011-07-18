@@ -624,6 +624,47 @@ class PfifValidator:
 
     return unremoved_expired_records
 
+  def add_linked_record_mapping(self, person_record_id, note, linked_records):
+    """Adds a mapping from person_record_id to the note's
+    linked_person_record_id in the linked_records map if the note contains a
+    linked_record"""
+    linked_id = self.get_field_text(note, 'linked_person_record_id')
+    if linked_id != None and person_record_id != None:
+      linked_set = linked_records.setdefault(person_record_id, set())
+      linked_set.add(linked_id)
+
+  def get_linked_records(self):
+    """Returns a map from person_record_id to a set of
+    linked_person_record_ids."""
+    linked_records = {}
+    # Notes contained inside of persons might not have a person_record_id field,
+    # so we need to get that from the person that owns the note rather than just
+    # using self.get_all_notes
+    for person in self.get_all_persons():
+      person_record_id = self.get_field_text(person, 'person_record_id')
+      for note in person.findall(self.add_namespace_to_tag('note')):
+        self.add_linked_record_mapping(person_record_id, note, linked_records)
+    # Top level notes are required to have their person_record_id, so we can
+    # just iterate over them
+    for note in self.tree.findall(self.add_namespace_to_tag('note')):
+      person_record_id = self.get_field_text(note, 'person_record_id')
+      self.add_linked_record_mapping(person_record_id, note, linked_records)
+    return linked_records
+
+  def validate_linked_records_matched(self):
+    """Validates that if a note has a linked_person_record_id field, that the
+    person that it points to has a note pointing back.  If A links to B, B
+    should link to A.  Returns a list of any notes that point to nowhere"""
+    unmatched_notes = []
+    linked_records = self.get_linked_records()
+    for person_record_id, linked_ids in linked_records.items():
+      for linked_id in linked_ids:
+        # if B doesn't exist or B doesn't point to A, then A points to nowhere
+        if (linked_id not in linked_records or
+            person_record_id not in linked_records[linked_id]):
+          #TODO(samking): use pretty printing method
+          unmatched_notes.append(person_record_id)
+    return unmatched_notes
 
 #def main():
 #  if (not len(sys.argv()) == 2):
