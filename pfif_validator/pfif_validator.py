@@ -353,9 +353,9 @@ class PfifValidator:
     tag = root.tag
     # xml.etree.Element.tag is formatted like: {namespace}tag
     match = re.match(r'\{(.+)\}(.+)', tag)
+    assert match, "This XML root node doesn't specify a namespace and tag"
     self.namespace = match.group(1)
     tag = match.group(2)
-    assert match, "This XML root node doesn't specify a namespace and tag"
     assert tag == "pfif", "The root node must be pfif"
 
     # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
@@ -630,9 +630,7 @@ class PfifValidator:
           # TODO(samking): make this (and all other prints / returns) nicer
           # and unified.
           unremoved_expired_records.append('You had an expired record!')
-
     return unremoved_expired_records
-
 
 def main():
   """Runs all validations on the provided PFIF XML file"""
