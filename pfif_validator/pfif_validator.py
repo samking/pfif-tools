@@ -349,10 +349,9 @@ class PfifValidator:
     if element != None:
       text = element.text
       line = element.sourceline
-    message = Message(error_message, is_error=is_error, xml_line_number=line,
-                      xml_element_text=text, person_record_id=person_record_id,
-                      note_record_id=note_record_id)
-    return message
+    return Message(error_message, is_error=is_error, xml_line_number=line,
+                   xml_element_text=text, person_record_id=person_record_id,
+                   note_record_id=note_record_id)
 
   # initialization
 
@@ -435,7 +434,7 @@ class PfifValidator:
     list with an error message."""
     root = self.tree.getroot()
     children = root.getchildren()
-    if not len(children) > 0:
+    if not children:
       return [Message("The root node must have at least one child")]
     return []
 
@@ -557,7 +556,6 @@ class PfifValidator:
     for note in top_level_notes:
       person_id = note.find(self.add_namespace_to_tag('person_record_id'))
       if person_id == None:
-        note_id = note.find(self.add_namespace_to_tag('note_record_id'))
         messages.append(self.make_message(
             "A top level note (a note not contained within a person) is "
             "missing a person_record_id.", record=note, element=note))
