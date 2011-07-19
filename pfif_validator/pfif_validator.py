@@ -435,19 +435,15 @@ class PfifValidator:
           if element.text:
             #TODO(samking): is it correct to strip this string?
             text = element.text.strip()
-            failed = False
             if field_format == "URL":
               url = urlparse(text)
               # pylint: disable=E1101
-              if (url.scheme != "http" and url.scheme != "https"):
-                failed = True
-              if url.netloc == "":
-                # pylint: enable=E1101
-                failed = True
+              failed = (url.scheme != "http" and url.scheme != "https") or (
+                  url.netloc == "")
+              # pylint: enable=E1101
             else:
               match = re.match(field_format, text)
-              if match is None:
-                failed = True
+              failed = (match is None)
             if failed:
               failed_matches.append((element.tag, element.text))
     return failed_matches
