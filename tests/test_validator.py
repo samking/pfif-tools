@@ -625,9 +625,46 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
 </pfif:pfif>"""
 
-  PRINT_VALIDATOR_OUTPUT = True
+  XML_UNLINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>example.com/n1</pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
+</pfif:pfif>"""
+
+  XML_CORRECTLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>example.com/n1</pfif:note_record_id>
+      <pfif:linked_person_record_id>example.org/p2</pfif:linked_person_record_id>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.com/n2</pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2</pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1</pfif:linked_person_record_id>
+  </pfif:note>
+</pfif:pfif>"""
+
+  XML_ASYMMETRICALLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:note>
+    <pfif:note_record_id>example.com/n2</pfif:note_record_id>
+    <pfif:person_record_id>example.org/p2</pfif:person_record_id>
+    <pfif:linked_person_record_id>example.org/p1</pfif:linked_person_record_id>
+  </pfif:note>
+</pfif:pfif>"""
+
+  #TODO(samking): define all of the XML in constants at the top
 
   EXPIRED_TIME = datetime.datetime(1999, 3, 1)
+
+  PRINT_VALIDATOR_OUTPUT = True
 
   # Set Up
 
@@ -1022,9 +1059,98 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_linked_person_records_are_matched
 
+  def test_unlinked_records(self):
+    """validate_linked_records_matched should return an empty list when
+    evaluating unlinked persons"""
+    v = self.set_up_validator(ValidatorTests.XML_UNLINKED_RECORDS)
+    self.assertEqual(len(v.validate_linked_records_matched()), 0)
+
+  def test_correctly_linked_records(self):
+    """validate_linked_records_matched should return an empty list when
+    evaluating two persons that each have notes with linked_person_record_ids
+    pointing at each other"""
+    v = self.set_up_validator(ValidatorTests.XML_CORRECTLY_LINKED_RECORDS)
+    self.assertEqual(len(v.validate_linked_records_matched()), 0)
+
+  def test_asymmetrically_linked_records(self):
+    """validate_linked_records_matched should return a list with each
+    note_record_id that has a linked_person_record_id that is not matched"""
+    v = self.set_up_validator(ValidatorTests.XML_ASYMMETRICALLY_LINKED_RECORDS)
+    self.assertEqual(len(v.validate_linked_records_matched()), 1)
+
   # validate_extraneous_fields
 
-  # validate_duplicate_fields
+  def test_no_extra_fields(self):
+    """validate_extraneous_fields should return an empty list when presented
+    with a list that only includes fields in the PFIF spec"""
+    v = self.set_up_validator(ValidatorTests.XML_11_FULL)
+    self.assertEqual(len(v.validate_extraneous_fields()), 0)
+
+  def test_gibberish_fields(self):
+    """validate_extraneous_fields should return a list with every field that is
+    not defined anywhere in the PFIF spec.  This includes fields defined in PFIF
+    1.3 when using a 1.2 document."""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date />
+    <pfif:field />
+    <pfif:foo />
+    <pfif:note>
+      <pfif:bar />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:bar />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 5)
+
+  def test_duplicate_fields(self):
+    """validate_extraneous_fields should return a list with every duplicated
+    field (except for multiple <pfif:note> fields in one <pfif:person> or fields
+    that are not at the same place in the tree, such as a note and a person with
+    a person_record_id or two different notes)"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:expiry_date />
+    <pfif:expiry_date />
+    <pfif:expiry_date />
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:note_record_id />
+      <pfif:person_record_id />
+    </pfif:note>
+    <pfif:note>
+      <pfif:note_record_id />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 3)
+
+  def test_top_level_note_11(self):
+    """validate_extraneous_fields should return a list with every top level note
+    in a PFIF 1.1 document"""
+    v = self.set_up_validator("""<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:note />
+  <pfif:person>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id />
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id />
+  </pfif:note>
+</pfif:pfif>""")
+    self.assertEqual(len(v.validate_extraneous_fields()), 2)
 
   # run_validations
 
