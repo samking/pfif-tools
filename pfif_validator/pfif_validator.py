@@ -306,7 +306,7 @@ class PfifValidator:
     # that it would be difficult to use datetime.datetime.strptime.
     # Instead, we manually extract the fields using a regular expression.
     match = re.match(
-        r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d*)?Z$',
+        r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)?Z$',
         date_str)
     time_parts = []
     for i in range(1, 7):
