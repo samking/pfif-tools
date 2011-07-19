@@ -630,7 +630,8 @@ class PfifValidator:
   @staticmethod
   def run_validations(file_path):
     """Runs all validations on the file specified by file_path.  Returns a list
-    of all errors generated."""
+    of all errors generated.  file_path can be anything that lxml will accept,
+    including file objects and file-like objects."""
     validator = PfifValidator(file_path)
     methods = inspect.getmembers(validator, inspect.ismethod)
     messages = []
