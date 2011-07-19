@@ -1,4 +1,7 @@
 #!/bin/bash
+# Modified from Google Person Finder:
+# http://code.google.com/p/googlepersonfinder/
+
 
 # Scripts in the tools/ directory should source this file with the line:
 # pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
@@ -10,10 +13,9 @@ export TESTS_DIR=$PROJECT_DIR/tests
 
 for python in \
     "$PYTHON" \
-    $(which python2.5) \
-    /usr/local/bin/python2.5 \
-    /usr/bin/python2.5 \
-    /Library/Frameworks/Python.framework/Versions/2.5/bin/python; do
+    $(which python) \
+    /usr/local/bin/python \
+    /usr/bin/python; do
     if [ -x "$python" ]; then
         export PYTHON="$python"
         break
@@ -21,14 +23,7 @@ for python in \
 done
 
 if [ -z "$PYTHON" ]; then
-    DEFAULT_PYTHON="$(which python)"
-    if [[ "$($DEFAULT_PYTHON -V 2>&1)" =~ "Python 2.5" ]]; then
-        export PYTHON="$DEFAULT_PYTHON"
-    fi
-fi
-
-if [ -z "$PYTHON" ]; then
-    echo "Could not find python2.5 executable.  Please set PYTHON."
+    echo "Could not find python executable.  Please set PYTHON."
     exit 1
 fi
 
