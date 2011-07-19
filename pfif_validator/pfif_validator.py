@@ -69,7 +69,7 @@ class PfifValidator:
   # http://tools.ietf.org/html/rfc4933#section-2.5 and
   # http://en.wikipedia.org/wiki/E.164)
   PHONE = r'^([-\.+() ]*\d[-\.+() ]*)+([#x]\d+)?$'
-  URL = "URL"
+  URL = 'URL'
   CAPS = r'^[A-Z ]+$'
   US_STATE = r'^[A-Z][A-Z]$'
   ISO31661_COUNTRY = US_STATE
@@ -477,19 +477,19 @@ class PfifValidator:
     tag = root.tag
     # xml.etree.Element.tag is formatted like: {namespace}tag
     match = re.match(r'\{(.+)\}(.+)', tag)
-    assert match, "This XML root node doesn't specify a namespace and tag"
+    assert match, 'This XML root node does not specify a namespace and tag'
     self.namespace = match.group(1)
     tag = match.group(2)
-    assert tag == "pfif", "The root node must be pfif"
+    assert tag == 'pfif', 'The root node must be pfif'
 
     # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
     # is 1.1, 1.2, or 1.3
     match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
-    assert match, "The XML namespace specified is not correct.  It should be " \
-                  "in the following format: http://zesty.ca/pfif/VERSION"
+    assert match, ('The XML namespace specified is not correct.  It should be '
+                   'in the following format: http://zesty.ca/pfif/VERSION')
     self.version = float(match.group(1))
     assert (self.version >= 1.1 and self.version <= 1.3), (
-           "This validator only supports versions 1.1-1.3.")
+           'This validator only supports versions 1.1-1.3.')
     return self.version
 
   def validate_root_has_child(self):
@@ -497,7 +497,7 @@ class PfifValidator:
     root = self.tree.getroot()
     children = root.getchildren()
     if not len(children) > 0:
-      print "The root node must have at least one child"
+      print 'The root node must have at least one child'
       return False
     return True
 
@@ -511,13 +511,13 @@ class PfifValidator:
     result = False
     for child in children:
       tag = utils.extract_tag(child.tag)
-      if tag == "person" or (self.version >= 1.2 and tag == "note"):
+      if tag == 'person' or (self.version >= 1.2 and tag == 'note'):
         result = True
         break
     if not result:
-      print "ERROR: Having a person tag (or a note tag in PFIF 1.2+) as one " \
-            "of the children of the root node is mandatory."
-      print "All children: " + str(children)
+      print ('ERROR: Having a person tag (or a note tag in PFIF 1.2+) as one '
+             'of the children of the root node is mandatory.')
+      print 'All children: ' + str(children)
     return result
 
   def validate_has_mandatory_children(self, parent_tag):
@@ -559,11 +559,12 @@ class PfifValidator:
           if element.text:
             #TODO(samking): is it correct to strip this string?
             text = element.text.strip()
-            if field_format == "URL":
+            if field_format == 'URL':
               url = urlparse(text)
               # pylint: disable=E1101
-              failed = (url.scheme != "http" and url.scheme != "https") or (
-                  url.netloc == "")
+              # The URL should be HTTP or HTTPS.  If the netloc is blank, the
+              # URL is probably blank or malformed.
+              failed = url.scheme not in ['http', 'https'] or url.netloc == ''
               # pylint: enable=E1101
             else:
               match = re.match(field_format, text)
@@ -596,8 +597,8 @@ class PfifValidator:
       collection = self.get_all_notes()
       field = 'note_record_id'
     else:
-      print "INTERNAL ERROR: We just tried to validate that a type of ID " \
-            "other than person or note was unique.  We can't do that."
+      print ('INTERNAL ERROR: We just tried to validate that a type of ID '
+             'other than person or note was unique.  We can not do that.')
       return []
     ids = []
     duplicate_ids = []
@@ -631,12 +632,13 @@ class PfifValidator:
       if person_id == None:
         note_id = note.find(self.add_namespace_to_tag('note_record_id'))
         if note_id == None:
-          unassociated_notes.append("A top level note is missing a " \
-                                    "person_record_id.  It also doesn't have " \
-                                    "a note_record_id, so we can't refer to it")
+          unassociated_notes.append('A top level note is missing a '
+                                    'person_record_id.  It also does not have'
+                                    ' a note_record_id, so we can not refer '
+                                    'to it')
         else:
-          unassociated_notes.append("The following top level note is missing " \
-                                    "a person_record_id: " + note_id.text)
+          unassociated_notes.append('The following top level note is missing '
+                                    'a person_record_id: ' + note_id.text)
     persons = self.get_all_persons()
     for person in persons:
       person_id = person.find(self.add_namespace_to_tag('person_record_id'))
@@ -646,8 +648,8 @@ class PfifValidator:
           note_person_id = note.find(
               self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
-            unassociated_notes.append("Person with ID: " + person_id.text + \
-                                      "\nhas a note with person ID: " + \
+            unassociated_notes.append('Person with ID: ' + person_id.text +
+                                      '\nhas a note with person ID: ' +
                                       note_person_id.text)
 
     return unassociated_notes
@@ -668,8 +670,8 @@ class PfifValidator:
     elif field_type == 'note':
       collection = self.get_all_notes()
     else:
-      print "INTERNAL ERROR: tried to validate field order for something " \
-            "other than a person or note"
+      print ('INTERNAL ERROR: tried to validate field order for something '
+             'other than a person or note')
 
     out_of_order_tags = []
     for parent in collection:
@@ -796,7 +798,7 @@ class PfifValidator:
 def main():
   """Runs all validations on the provided PFIF XML file"""
   if (not len(sys.argv) == 2):
-    print "Usage: python pfif-validator.py my-pyif-xml-file"
+    print 'Usage: python pfif-validator.py my-pyif-xml-file'
   PfifValidator.run_validations(sys.argv[1])
 
 if __name__ == '__main__':
