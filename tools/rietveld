@@ -12,7 +12,8 @@
 # To use this script, specify at least one reviewer's address and optionally
 # a comma-separated list of CC addresses.  For example:
 #     tools/rietveld alice@google.com bob@google.com
-# Script from PersonFinder
+# Slightly modified from Google Person Finder:
+# http://code.google.com/p/googlepersonfinder/
 
 pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 
@@ -133,11 +134,11 @@ fi
 
 # Get the e-mail addresses for the CC list.
 # Always include personfinder-changes.
-CC_LIST="$2"
-if echo "$CC_LIST" | grep -q -v "personfinder-changes"; then
-  CC_LIST="$CC_LIST,personfinder-changes@googlegroups.com"
-fi
-OPTIONS="$OPTIONS --cc=$CC_LIST"
+#CC_LIST="$2"
+#if echo "$CC_LIST" | grep -q -v "personfinder-changes"; then
+#  CC_LIST="$CC_LIST,personfinder-changes@googlegroups.com"
+#fi
+#OPTIONS="$OPTIONS --cc=$CC_LIST"
 
 # Add the existing issue number, if there is one.
 if [ -n "$ISSUE" ]; then
