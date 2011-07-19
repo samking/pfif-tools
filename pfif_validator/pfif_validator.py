@@ -636,16 +636,20 @@ class PfifValidator:
     messages = []
     for name, method in methods:
       # run all validation methods except for the or_die methods, which were run
-      # when the PfifValidator was initialized
-      if name.find('validate_') != -1 and name.find('_or_die') == -1:
-        messages.extend(method())
+      # when the PfifValidator was initialized.  Also, don't run any validation
+      # method that takes more than one argument (self), because that will have
+      # a wrapper method.
+      if (name.find('validate_') != -1 and name.find('_or_die') == -1 and
+          len(inspect.getargspec(method).args) == 1):
+        # TODO(samking): for unified printing system, change this to extend
+        messages.append(method())
     return messages
 
 def main():
   """Runs all validations on the provided PFIF XML file"""
   if (not len(sys.argv) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
-  run_validations(sys.argv[1])
+  PfifValidator.run_validations(sys.argv[1])
 
 if __name__ == '__main__':
   main()
