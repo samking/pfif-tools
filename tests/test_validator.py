@@ -1026,5 +1026,23 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_duplicate_fields
 
+  # run_validations
+
+  def test_run_validations_without_errors(self):
+    """run_validations should return an empty message list when passed a valid
+    file"""
+    validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
+    # TODO(samking): won't work until after unified printing
+    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+
+  def test_run_validations_with_errors(self):
+    """run_validations should return a message list with three errors when the
+    root doesn't have a mandatory child and there are two duplicate nodes"""
+    # TODO(samking): won't work until after unified printing and extraneous
+    # nodes
+    validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
+    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+
+
 if __name__ == '__main__':
   unittest.main()
