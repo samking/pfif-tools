@@ -21,6 +21,7 @@ import utils
 from urlparse import urlparse
 import datetime
 import sys
+import inspect
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
@@ -338,6 +339,35 @@ class PfifValidator:
       return child.text
     return None
 
+  def has_personal_data(self, person):
+    """After expiration, a person can only contain placeholder data, which
+    includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
+    personal data.  Returns true if there is any personal data in person"""
+    children = person.getchildren()
+    for child in children:
+      tag = utils.extract_tag(child.tag)
+      if tag not in PfifValidator.PLACEHOLDER_FIELDS:
+        if child.text:
+          # notes with text are okay as long as none of their children have text
+          if tag == 'note':
+            return self.has_personal_data(child)
+          else:
+            return True
+    return False
+
+  def dates_are_placeholders(self, person, expiry_date):
+    """Placeholders must be created within one day of expiry, and when they are
+    created, the source_date and entry_date must match.  Returns true if those
+    conditions hold."""
+    source_date = self.get_field_text(person, 'source_date')
+    entry_date = self.get_field_text(person, 'entry_date')
+    if (not source_date) or (source_date != entry_date):
+      return False
+    # If source_date > expiry_date, the placeholder was made more than a day
+    # after expiry; even though the current PFIF XML is not exposing data, it
+    # was exposing data between expiry_date and search_date
+    return self.pfif_date_to_py_date(source_date) < expiry_date
+
   # validation
 
   def validate_xml_or_die(self):
@@ -574,35 +604,6 @@ class PfifValidator:
     are in the correct order."""
     return self.validate_field_order('note')
 
-  def has_personal_data(self, person):
-    """After expiration, a person can only contain placeholder data, which
-    includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
-    personal data.  Returns true if there is any personal data in person"""
-    children = person.getchildren()
-    for child in children:
-      tag = utils.extract_tag(child.tag)
-      if tag not in PfifValidator.PLACEHOLDER_FIELDS:
-        if child.text:
-          # notes with text are okay as long as none of their children have text
-          if tag == 'note':
-            return self.has_personal_data(child)
-          else:
-            return True
-    return False
-
-  def validate_placeholder_dates(self, person, expiry_date):
-    """Placeholders must be created within one day of expiry, and when they are
-    created, the source_date and entry_date must match.  Returns true if those
-    conditions hold."""
-    source_date = self.get_field_text(person, 'source_date')
-    entry_date = self.get_field_text(person, 'entry_date')
-    if (not source_date) or (source_date != entry_date):
-      return False
-    # If source_date > expiry_date, the placeholder was made more than a day
-    # after expiry; even though the current PFIF XML is not exposing data, it
-    # was exposing data between expiry_date and search_date
-    return self.pfif_date_to_py_date(source_date) < expiry_date
-
   def validate_expired_records_removed(self):
     """Validates that if the current time is at least one day greater than any
     person's expiry_date, all fields other than person_record_id, expiry_date,
@@ -620,28 +621,31 @@ class PfifValidator:
       # if the record is expired
       if expiry_date != None and expiry_date < curr_date:
         if (self.has_personal_data(person) or not
-            self.validate_placeholder_dates(person, expiry_date)):
+            self.dates_are_placeholders(person, expiry_date)):
           # TODO(samking): make this (and all other prints / returns) nicer
           # and unified.
           unremoved_expired_records.append('You had an expired record!')
     return unremoved_expired_records
 
+  @staticmethod
+  def run_validations(file_path):
+    """Runs all validations on the file specified by file_path.  Returns a list
+    of all errors generated."""
+    validator = PfifValidator(file_path)
+    methods = inspect.getmembers(validator, inspect.ismethod)
+    messages = []
+    for name, method in methods:
+      # run all validation methods except for the or_die methods, which were run
+      # when the PfifValidator was initialized
+      if name.find('validate_') != -1 and name.find('_or_die') == -1:
+        messages.extend(method())
+    return messages
+
 def main():
   """Runs all validations on the provided PFIF XML file"""
   if (not len(sys.argv) == 2):
     print "Usage: python pfif-validator.py my-pyif-xml-file"
-  validator = PfifValidator(sys.argv[1])
-  validator.validate_root_has_child()
-  validator.validate_root_has_mandatory_children()
-  validator.validate_person_has_mandatory_children()
-  validator.validate_note_has_mandatory_children()
-  validator.validate_fields_have_correct_format()
-  validator.validate_person_ids_are_unique()
-  validator.validate_note_ids_are_unique()
-  validator.validate_notes_belong_to_persons()
-  validator.validate_person_field_order()
-  validator.validate_note_field_order()
-  validator.validate_expired_records_removed()
+  run_validations(sys.argv[1])
 
 if __name__ == '__main__':
   main()
