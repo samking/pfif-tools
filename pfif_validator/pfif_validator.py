@@ -271,6 +271,15 @@ class PfifValidator:
   PLACEHOLDER_FIELDS = ['person_record_id', 'expiry_date', 'source_date',
                         'entry_date']
 
+  def __init__(self, xml_file, initialize=True):
+    self.xml_file = xml_file
+    self.tree = None
+    self.namespace = None
+    self.version = None
+    if initialize:
+      self.validate_xml_or_die()
+      self.validate_root_is_pfif_or_die()
+
   # helpers
 
   def add_namespace_to_tag(self, tag):
@@ -329,16 +338,7 @@ class PfifValidator:
       return child.text
     return None
 
-  # initialization
-
-  def __init__(self, xml_file, initialize=True):
-    self.xml_file = xml_file
-    self.tree = None
-    self.namespace = None
-    self.version = None
-    if initialize:
-      self.validate_xml_or_die()
-      self.validate_root_is_pfif_or_die()
+  # validation
 
   def validate_xml_or_die(self):
     """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
@@ -367,8 +367,6 @@ class PfifValidator:
     assert (self.version >= 1.1 and self.version <= 1.3), (
            "This validator only supports versions 1.1-1.3.")
     return self.version
-
-  # validation
 
   def validate_root_has_child(self):
     """If there is at least one child, returns true."""
