@@ -736,7 +736,8 @@ class PfifValidator:
           unmatched_notes.append(person_record_id)
     return unmatched_notes
 
-  def validate_extraneous_children(self, parents, approved_tags):
+  @staticmethod
+  def validate_extraneous_children(parents, approved_tags):
     """For each parent in parents, ensures that every child's tag is in
     approved_tags and is not a duplicate (except for notes and persons).
     Returns a list of all extraneous tags."""
