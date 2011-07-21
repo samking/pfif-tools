@@ -791,7 +791,7 @@ class PfifValidator:
       # a wrapper method.
       if (name.find('validate_') != -1 and name.find('_or_die') == -1 and
           len(inspect.getargspec(method).args) == 1):
-        # TODO(samking): for unified printing system, change this to extend
+        # TODO(samking): for unified printing system, change this to extend.
         messages.append(method())
     return messages
 
