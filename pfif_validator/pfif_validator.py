@@ -425,7 +425,7 @@ class PfifValidator:
     linked_id = self.get_field_text(note, 'linked_person_record_id')
     if linked_id != None and person_record_id != None:
       linked_dict = linked_records.setdefault(person_record_id, {})
-      linked_dict[linked_id] = note 
+      linked_dict[linked_id] = note
 
   def get_linked_records(self):
     """Returns a map from person_record_id to a set of
@@ -601,9 +601,9 @@ class PfifValidator:
               failed = (match is None)
             if failed:
               messages.append(self.make_message(
-                  'The text in one of your fields does not match the ' 
+                  'The text in one of your fields does not match the '
                   'requirement in the specification.  The field: ' + field +
-                  '.  The text: ' + element.text, 
+                  '.  The text: ' + element.text,
                   record=parent, element=element))
     return messages
 
