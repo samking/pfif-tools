@@ -36,9 +36,6 @@ class Message:
     self.note_record_id  = note_record_id
 
 class PfifValidator:
-  # TODO(samking): should I move a lot of this data stuff at the top into an
-  # external file that I would read in?
-
   # a map from version to parent : required-children mappings
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
@@ -418,13 +415,14 @@ class PfifValidator:
     return None
 
   def add_linked_record_mapping(self, person_record_id, note, linked_records):
-    """Adds a mapping from person_record_id to the note's
-    linked_person_record_id in the linked_records map if the note contains a
-    linked_record"""
+    """if the note contains a linked_record, adds a mapping from
+    person_record_id to a dict and a mapping in that dict from the note's
+    linked_person_record_id to the note itself (for ease of creating a message
+    about the note) in the linked_records map."""
     linked_id = self.get_field_text(note, 'linked_person_record_id')
     if linked_id != None and person_record_id != None:
-      linked_set = linked_records.setdefault(person_record_id, set())
-      linked_set.add(linked_id)
+      linked_dict = linked_records.setdefault(person_record_id, {})
+      linked_dict[linked_id] = note 
 
   def get_linked_records(self):
     """Returns a map from person_record_id to a set of
@@ -784,16 +782,21 @@ class PfifValidator:
     """Validates that if a note has a linked_person_record_id field, that the
     person that it points to has a note pointing back.  If A links to B, B
     should link to A.  Returns a list of any notes that point to nowhere"""
-    unmatched_notes = []
+    messages = []
     linked_records = self.get_linked_records()
-    for person_record_id, linked_ids in linked_records.items():
-      for linked_id in linked_ids:
+    for person_record_id, linked_dict in linked_records.items():
+      for linked_id, linking_note in linked_dict.items():
         # if B doesn't exist or B doesn't point to A, then A points to nowhere
         if (linked_id not in linked_records or
             person_record_id not in linked_records[linked_id]):
-          #TODO(samking): use pretty printing method
-          unmatched_notes.append(person_record_id)
-    return unmatched_notes
+          link_field = linking_note.find(
+              self.add_namespace_to_tag('linked_person_record_id'))
+          messages.append(self.make_message(
+              'There is an asymmetric linked record.  That is, a note has a'
+              'linked_person_record_id to another person, but that person '
+              'does not link back.',
+              record=linking_note, element=link_field, is_error=False))
+    return messages
 
   @staticmethod
   def validate_extraneous_children(parents, approved_tags):

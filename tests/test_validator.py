@@ -1242,5 +1242,6 @@ class ValidatorTests(unittest.TestCase):
         ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
     self.assertEqual(len(PfifValidator.run_validations(validation_file)), 3)
 
+
 if __name__ == '__main__':
   unittest.main()
