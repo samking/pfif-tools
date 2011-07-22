@@ -356,8 +356,38 @@ class PfifValidator:
     self.namespace = None
     self.version = None
     if initialize:
-      self.validate_xml_or_die()
-      self.validate_root_is_pfif_or_die()
+      self.initialize_xml_or_die()
+      self.initialize_pfif_version_or_die()
+
+  def initialize_xml_or_die(self):
+    """Reads in the XML tree from the XML file to initialize self.tree.  Returns
+    an empty list.  If the XML file is invalid, the XML library will raise an
+    exception."""
+    self.tree = ET.parse(self.xml_file)
+    return []
+
+  def initialize_pfif_version_or_die(self):
+    """Validates that tree refers to a PFIF XML file with a supported version
+    and initializes self.namespace and self.version.  Returns an empty list.
+    Raises an exception if unsuccessful."""
+    root = self.tree.getroot()
+    tag = root.tag
+    # xml.etree.Element.tag is formatted like: {namespace}tag
+    match = re.match(r'\{(.+)\}(.+)', tag)
+    assert match, 'This XML root node does not specify a namespace and tag'
+    self.namespace = match.group(1)
+    tag = match.group(2)
+    assert tag == 'pfif', 'The root node must be pfif'
+
+    # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
+    # is 1.1, 1.2, or 1.3
+    match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
+    assert match, ('The XML namespace specified is not correct.  It should be '
+                   'in the following format: http://zesty.ca/pfif/VERSION')
+    self.version = float(match.group(1))
+    assert (self.version >= 1.1 and self.version <= 1.3), (
+           'This validator only supports versions 1.1-1.3.')
+    return []
 
   # helpers
 
@@ -496,34 +526,12 @@ class PfifValidator:
       print
 
   # validation
-
-  def validate_xml_or_die(self):
-    """Reads in the XML tree from the XML file.  Returns an empty list.  If the
-    XML file is invalid, the XML library will raise an exception."""
-    self.tree = ET.parse(self.xml_file)
-    return []
-
-  def validate_root_is_pfif_or_die(self):
-    """Validates that tree refers to a PFIF XML file.  Returns an empty list.
-    Raises an exception if unsuccessful."""
-    root = self.tree.getroot()
-    tag = root.tag
-    # xml.etree.Element.tag is formatted like: {namespace}tag
-    match = re.match(r'\{(.+)\}(.+)', tag)
-    assert match, 'This XML root node does not specify a namespace and tag'
-    self.namespace = match.group(1)
-    tag = match.group(2)
-    assert tag == 'pfif', 'The root node must be pfif'
-
-    # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
-    # is 1.1, 1.2, or 1.3
-    match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
-    assert match, ('The XML namespace specified is not correct.  It should be '
-                   'in the following format: http://zesty.ca/pfif/VERSION')
-    self.version = float(match.group(1))
-    assert (self.version >= 1.1 and self.version <= 1.3), (
-           'This validator only supports versions 1.1-1.3.')
-    return []
+  # Each validate method can only be run on an initialized validator (the
+  # validator will be initialized unless the constructor is called with
+  # initialize=False).  Each validate method will return an array of messages,
+  # where an empty array means that all validation tests passed.  Only methods
+  # that take no arguments (other than self) should be called externally; all
+  # other methods should be considered private.
 
   def validate_root_has_child(self):
     """If there is at least one child, returns an empty list.  Else, returns a
@@ -728,7 +736,7 @@ class PfifValidator:
     entry_date = self.get_field_text(person, 'entry_date')
     if (not source_date) or (source_date != entry_date):
       messages.append(self.make_message('An expired record has a source date '
-                                        'that doe not match the entry date.',
+                                        'that does not match the entry date.',
                                         record=person, element=person))
     # If source_date > expiry_date, the placeholder was made more than a day
     # after expiry; even though the current PFIF XML is not exposing data, it
@@ -849,11 +857,9 @@ class PfifValidator:
     methods = inspect.getmembers(validator, inspect.ismethod)
     messages = []
     for name, method in methods:
-      # run all validation methods except for the or_die methods, which were run
-      # when the PfifValidator was initialized.  Also, don't run any validation
-      # method that takes more than one argument (self), because that will have
-      # a wrapper method.
-      if (name.find('validate_') != -1 and name.find('_or_die') == -1 and
+      # run all validation methods except for any validation method that takes
+      # more than one argument (self), because that will have a wrapper method.
+      if (name.find('validate_') != -1 and
           len(inspect.getargspec(method).args) == 1):
         messages.extend(method())
     return messages

@@ -20,7 +20,7 @@ import StringIO
 
 import os
 import sys
-# TODO(samking): is there a better way to do this without using an extra script?
+# TODO(samking): remove this after adding a test running script
 sys.path.append(sys.path[0] + '/../pfif_validator')
 from pfif_validator import PfifValidator, Message
 import datetime
@@ -795,65 +795,65 @@ class ValidatorTests(unittest.TestCase):
 
     sys.stdout = old_stdout
 
-  # validate_xml_or_die
+  # initialize_xml_or_die
 
   def test_valid_xml(self):
-    """validate_xml_or_die should turn a string of valid XML into an object"""
+    """initialize_xml_or_die should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(valid_xml_file, initialize=False)
-    self.assertEqual(len(validator.validate_xml_or_die()), 0)
+    self.assertEqual(len(validator.initialize_xml_or_die()), 0)
 
   def test_invalid_xml(self):
-    """validate_xml_or_die should raise an error on a string of invalid XML"""
+    """initialize_xml_or_die should raise an error on a string of invalid XML"""
     invalid_xml_file = StringIO.StringIO(
         """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>""")
     validator = PfifValidator(invalid_xml_file, initialize=False)
-    self.assertRaises(Exception, validator.validate_xml_or_die)
+    self.assertRaises(Exception, validator.initialize_xml_or_die)
 
-  # validate_root_is_pfif_or_die
+  # initialize_pfif_version_or_die
 
   def test_root_is_pfif(self):
-    """validate_root_is_pfif_or_die should return an empty list if the XML root
-    is PFIF"""
+    """initialize_pfif_version_or_die should return an empty list if the XML
+    root is PFIF"""
     pfif_11_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(pfif_11_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertEqual(len(validator.validate_root_is_pfif_or_die()), 0)
+    validator.initialize_xml_or_die()
+    self.assertEqual(len(validator.initialize_pfif_version_or_die()), 0)
 
   def test_root_is_not_pfif(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    """initialize_pfif_version_or_die should raise an exception if the XML root
     is not PFIF"""
     random_xml_file = StringIO.StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
     validator = PfifValidator(random_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml_or_die()
+    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
 
   def test_root_lacks_namespace(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    """initialize_pfif_version_or_die should raise an exception if the XML root
     doesn't specify a namespace"""
     no_namespace_xml_file = StringIO.StringIO(ValidatorTests.XML_NO_NAMESPACE)
     validator = PfifValidator(no_namespace_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml_or_die()
+    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
 
   def test_root_is_bad_pfif_version(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    """initialize_pfif_version_or_die should raise an exception if the PFIF
     version is not supported"""
     pfif_99_xml_file = StringIO.StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
     validator = PfifValidator(pfif_99_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml_or_die()
+    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
 
   def test_root_is_bad_pfif_website(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    """initialize_pfif_version_or_die should raise an exception if the PFIF
     website is wrong"""
     pfif_bad_website_xml_file = StringIO.StringIO(
         ValidatorTests.XML_BAD_PFIF_WEBSITE)
     validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml_or_die()
+    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
 
   # validate_root_has_child
 
