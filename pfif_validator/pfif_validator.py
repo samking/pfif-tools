@@ -820,8 +820,6 @@ class PfifValidator:
     entry_date must be the time that the placeholder was created.  Returns a
     list with the person_record_ids of any persons that violate those
     conditions"""
-    # TODO(samking): if a person is expired, then there should not be any notes
-    # associated with that person
     messages = []
     if self.version >= 1.3:
       persons = self.get_all_persons()
