@@ -625,12 +625,16 @@ class PfifValidator:
     ids = []
     messages = []
     for record in records:
-      curr_id = record.find(self.add_namespace_to_tag(field)).text
-      if curr_id in ids:
-        messages.append(self.make_message('You had a duplicate id.',
-                                          record=record, element=record))
-      elif curr_id not in ids:
-        ids.append(curr_id)
+      id_field = record.find(self.add_namespace_to_tag(field))
+      # If the record is incorrectly missing a record_id field, that should be
+      # flagged as a missing mandatory child, not here.
+      if id_field is not None:
+        curr_id = id_field.text
+        if curr_id in ids:
+          messages.append(self.make_message('You had a duplicate id.',
+                                            record=record, element=record))
+        elif curr_id not in ids:
+          ids.append(curr_id)
     return messages
 
   def validate_person_ids_are_unique(self):
@@ -846,8 +850,7 @@ class PfifValidator:
       # a wrapper method.
       if (name.find('validate_') != -1 and name.find('_or_die') == -1 and
           len(inspect.getargspec(method).args) == 1):
-        # TODO(samking): for unified printing system, change this to extend.
-        messages.append(method())
+        messages.extend(method())
     return messages
 
 def main():
