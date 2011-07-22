@@ -20,9 +20,9 @@ import StringIO
 
 import os
 import sys
-# TODO(samking): is there a better way to do this without using an extra script?
+# TODO(samking): remove this after adding a test running script
 sys.path.append(sys.path[0] + '/../pfif_validator')
-from pfif_validator import PfifValidator
+from pfif_validator import PfifValidator, Message
 import datetime
 import utils
 
@@ -204,7 +204,7 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
   <pfif:person>
     <pfif:sex>female</pfif:sex>
-    <pfif:home_street></pfif:home_street>
+    <pfif:home_street>street address</pfif:home_street>
     <pfif:date_of_birth>1990-09</pfif:date_of_birth>
     <pfif:age>3-100</pfif:age>
     <pfif:home_state>71</pfif:home_state>
@@ -310,9 +310,6 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
-  </pfif:person>
-  <pfif:person>
-    <pfif:person_record_id>example.com/2</pfif:person_record_id>
   </pfif:person>
   <pfif:person>
     <pfif:person_record_id>example.com/2</pfif:person_record_id>
@@ -711,6 +708,12 @@ class ValidatorTests(unittest.TestCase):
   </pfif:note>
 </pfif:pfif>"""
 
+  XML_TWO_DUPLICATE_NO_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:foo />
+  <pfif:foo />
+</pfif:pfif>"""
+
   EXPIRED_TIME = datetime.datetime(1999, 3, 1)
 
   PRINT_VALIDATOR_OUTPUT = True
@@ -729,105 +732,170 @@ class ValidatorTests(unittest.TestCase):
     pfif_file = StringIO.StringIO(xml)
     return PfifValidator(pfif_file, initialize=True)
 
-  # validate_xml_or_die
+  # printing
+
+  def test_printing(self):
+    """Tests that each of the printing options in set_printing_options changes
+    the behavior of print_errors"""
+    # mock stdout so that we can tell what gets printed
+    old_stdout = sys.stdout
+    fake_stdout = StringIO.StringIO()
+    sys.stdout = fake_stdout
+
+    # set up the messages to be printed
+    messages = []
+    messages.append(Message("Message 1", is_error=True, xml_line_number=333,
+                            xml_element_text="Text", person_record_id="Person",
+                            note_record_id="Note"))
+    messages.append(Message("Message 2", is_error=False))
+    messages.append(Message("Message 3"))
+
+    # With no test name, errors, or warnings, nothing should print
+    PfifValidator.print_messages(messages, show_errors=False,
+                                 show_warnings=False)
+    self.assertEqual(fake_stdout.tell(), 0)
+
+    # with errors and warnings off, only test names should print
+    PfifValidator.print_messages(messages, test_name="Test", show_errors=False,
+                                 show_warnings=False)
+    self.assertEqual(fake_stdout.getvalue().find("Message"), -1)
+    self.assertNotEqual(fake_stdout.getvalue().find("Test"), -1)
+
+    # with only errors on, only errors should print
+    PfifValidator.print_messages(messages, show_warnings=False,
+                                 show_line_numbers=False, show_record_ids=False,
+                                 show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 1"), -1)
+    self.assertEqual(fake_stdout.getvalue().find("Message 2"), -1)
+    # the default value of is_error should be True, so Message 3 should print
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 3"), -1)
+
+    # with warnings on, warnings should print
+    PfifValidator.print_messages(messages, show_line_numbers=False,
+                                 show_record_ids=False, show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("Message 2"), -1)
+
+    # line numbers, xml text, and record IDs should not print with them off and
+    # should print with them on
+    self.assertEqual(fake_stdout.getvalue().find("333"), -1)
+    PfifValidator.print_messages(messages, show_line_numbers=True,
+                                 show_record_ids=False, show_xml_text=False)
+    self.assertNotEqual(fake_stdout.getvalue().find("333"), -1)
+
+    self.assertEqual(fake_stdout.getvalue().find("Text"), -1)
+    PfifValidator.print_messages(messages, show_record_ids=False,
+                                 show_xml_text=True)
+    self.assertNotEqual(fake_stdout.getvalue().find("Text"), -1)
+
+    self.assertEqual(fake_stdout.getvalue().find("Person"), -1)
+    self.assertEqual(fake_stdout.getvalue().find("Note"), -1)
+    PfifValidator.print_messages(messages, show_record_ids=True)
+    self.assertNotEqual(fake_stdout.getvalue().find("Person"), -1)
+    self.assertNotEqual(fake_stdout.getvalue().find("Note"), -1)
+
+    sys.stdout = old_stdout
+
+  # initialize_xml
 
   def test_valid_xml(self):
-    """validate_xml_or_die should turn a string of valid XML into an object"""
+    """initialize_xml should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(valid_xml_file, initialize=False)
-    self.assertTrue(validator.validate_xml_or_die())
+    self.assertEqual(len(validator.initialize_xml()), 0)
 
   def test_invalid_xml(self):
-    """validate_xml_or_die should raise an error on a string of invalid XML"""
+    """initialize_xml should raise an error on a string of invalid XML"""
     invalid_xml_file = StringIO.StringIO(
         """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>""")
     validator = PfifValidator(invalid_xml_file, initialize=False)
-    self.assertRaises(Exception, validator.validate_xml_or_die)
+    self.assertRaises(Exception, validator.initialize_xml)
 
-  # validate_root_is_pfif_or_die
+  # initialize_pfif_version
 
   def test_root_is_pfif(self):
-    """validate_root_is_pfif_or_die should return the PFIF version if the XML
+    """initialize_pfif_version should return an empty list if the XML
     root is PFIF"""
     pfif_11_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(pfif_11_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertEqual(validator.validate_root_is_pfif_or_die(), 1.1)
+    validator.initialize_xml()
+    self.assertEqual(len(validator.initialize_pfif_version()), 0)
 
   def test_root_is_not_pfif(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    """initialize_pfif_version should raise an exception if the XML root
     is not PFIF"""
     random_xml_file = StringIO.StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
     validator = PfifValidator(random_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_lacks_namespace(self):
-    """validate_root_is_pfif_or_die should raise an exception if the XML root
+    """initialize_pfif_version should raise an exception if the XML root
     doesn't specify a namespace"""
     no_namespace_xml_file = StringIO.StringIO(ValidatorTests.XML_NO_NAMESPACE)
     validator = PfifValidator(no_namespace_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_is_bad_pfif_version(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    """initialize_pfif_version should raise an exception if the PFIF
     version is not supported"""
     pfif_99_xml_file = StringIO.StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
     validator = PfifValidator(pfif_99_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_is_bad_pfif_website(self):
-    """validate_root_is_pfif_or_die should raise an exception if the PFIF
+    """initialize_pfif_version should raise an exception if the PFIF
     website is wrong"""
     pfif_bad_website_xml_file = StringIO.StringIO(
         ValidatorTests.XML_BAD_PFIF_WEBSITE)
     validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
-    validator.validate_xml_or_die()
-    self.assertRaises(Exception, validator.validate_root_is_pfif_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   # validate_root_has_child
 
   def test_root_has_child(self):
-    """validate_root_has_child should return true if the root node has at
-    least one child"""
+    """validate_root_has_child should return an empty list if the root node has
+    at least one child"""
     validator = self.set_up_validator(ValidatorTests.XML_11_SMALL)
-    self.assertTrue(validator.validate_root_has_child())
+    self.assertEqual(len(validator.validate_root_has_child()), 0)
 
   def test_root_lacks_child(self):
-    """validate_root_has_child should return false if the root node
-    does not have at least one child"""
+    """validate_root_has_child should return a list with a message if the root
+    node does not have at least one child"""
     validator = self.set_up_validator(ValidatorTests.XML_ROOT_LACKS_CHILD)
-    self.assertFalse(validator.validate_root_has_child())
+    self.assertNotEqual(len(validator.validate_root_has_child()), 0)
 
   # validate_root_has_mandatory_children
 
   def test_root_has_mandatory_children(self):
-    """validate_root_has_mandatory_children should return true if one of the
-    children is a person"""
+    """validate_root_has_mandatory_children should return an empty list if one
+    of the children is a person"""
     validator = self.set_up_validator(ValidatorTests.XML_11_SMALL)
-    self.assertTrue(validator.validate_root_has_mandatory_children())
+    self.assertEqual(len(validator.validate_root_has_mandatory_children()), 0)
 
   def test_root_lacks_mandatory_children(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are not notes or persons"""
+    """validate_root_has_mandatory_children should return a list with a message
+    if the only children are not notes or persons"""
     validator = self.set_up_validator(ValidatorTests.XML_ROOT_HAS_BAD_CHILD)
-    self.assertFalse(validator.validate_root_has_mandatory_children())
+    self.assertNotEqual(
+        len(validator.validate_root_has_mandatory_children()), 0)
 
   def test_root_has_note_child_11(self):
-    """validate_root_has_mandatory_children should return false if the only
-    children are notes and the version is 1.1"""
+    """validate_root_has_mandatory_children should return a list with a message
+    if the only children are notes and the version is 1.1"""
     validator = self.set_up_validator(ValidatorTests.XML_TOP_LEVEL_NOTE_11)
-    self.assertFalse(validator.validate_root_has_mandatory_children())
+    self.assertNotEqual(
+        len(validator.validate_root_has_mandatory_children()), 0)
 
   def test_root_has_note_child_12(self):
-    """validate_root_has_mandatory_children should return true if the only
-    children are notes and the version is greater than 1.1"""
+    """validate_root_has_mandatory_children should return an empty list if the
+    only children are notes and the version is greater than 1.1"""
     validator = self.set_up_validator(ValidatorTests.XML_TOP_LEVEL_NOTE_12)
-    self.assertTrue(validator.validate_root_has_mandatory_children())
+    self.assertEqual(len(validator.validate_root_has_mandatory_children()), 0)
 
   # validate_has_mandatory_children
 
@@ -1165,16 +1233,14 @@ class ValidatorTests(unittest.TestCase):
     """run_validations should return an empty message list when passed a valid
     file"""
     validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
-    # TODO(samking): won't work until after unified printing
-    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
 
   def test_run_validations_with_errors(self):
     """run_validations should return a message list with three errors when the
     root doesn't have a mandatory child and there are two duplicate nodes"""
-    # TODO(samking): won't work until after unified printing and extraneous
-    # nodes
-    validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
-    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+    validation_file = StringIO.StringIO(
+        ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
+    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 3)
 
 
 if __name__ == '__main__':
