@@ -363,7 +363,9 @@ class PfifValidator:
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
-    self.tree = ET.parse(self.xml_file)
+    parser = ET.XMLParser(remove_comments=True)
+    self.tree = ET.parse(self.xml_file, parser=parser)
+
     return []
 
   def initialize_pfif_version(self):
