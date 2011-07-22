@@ -408,11 +408,21 @@ class PfifValidator:
     """returns a list of all persons in the tree"""
     return self.tree.findall(self.add_namespace_to_tag('person'))
 
-  def get_all_notes(self):
-    """returns a list of all notes in the tree"""
-    notes = self.tree.findall(self.add_namespace_to_tag('note'))
+  def get_low_level_notes(self):
+    """returns a list of all notes that are subnodes of persons"""
+    notes = []
     for person in self.get_all_persons():
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
+    return notes
+
+  def get_top_level_notes(self):
+    """returns a list of all notes that are subnodes of the root node"""
+    return self.tree.findall(self.add_namespace_to_tag('note'))
+
+  def get_all_notes(self):
+    """returns a list of all notes in the tree"""
+    notes = self.get_top_level_notes()
+    notes.extend(self.get_low_level_notes())
     return notes
 
   @staticmethod
@@ -479,7 +489,7 @@ class PfifValidator:
         self.add_linked_record_mapping(person_record_id, note, linked_records)
     # Top level notes are required to have their person_record_id, so we can
     # just iterate over them
-    for note in self.tree.findall(self.add_namespace_to_tag('note')):
+    for note in self.get_top_level_notes():
       person_record_id = self.get_field_text(note, 'person_record_id')
       self.add_linked_record_mapping(person_record_id, note, linked_records)
     return linked_records
@@ -590,9 +600,19 @@ class PfifValidator:
   def validate_note_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that notes have
     all mandatory children."""
-    mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]['note']
-    notes = self.get_all_notes()
-    return self.validate_has_mandatory_children(notes, mandatory_children)
+    messages = []
+    top_level_notes = self.get_top_level_notes()
+    top_note_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['top_note'])
+    messages.extend(self.validate_has_mandatory_children(top_level_notes,
+                                                         top_note_children))
+
+    low_notes = self.get_low_level_notes()
+    low_note_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['note'])
+    messages.extend(self.validate_has_mandatory_children(low_notes,
+                                                         low_note_children))
+    return messages
 
   def validate_children_have_correct_format(self, parents, formats):
     """validates that every element in parents has valid text, as per the
@@ -676,7 +696,7 @@ class PfifValidator:
     matches the id of the parent person.  Returns a list of all unmatched
     notes"""
     messages = []
-    top_level_notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    top_level_notes = self.get_top_level_notes()
     for note in top_level_notes:
       person_id = note.find(self.add_namespace_to_tag('person_record_id'))
       if person_id == None:
