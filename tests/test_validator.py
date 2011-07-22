@@ -995,7 +995,6 @@ class ValidatorTests(unittest.TestCase):
     validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_11)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 23)
 
-  #TODO(samking): test that non-ascii characters are accepted
   def test_all_12_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
     presented with a document where all fields have the correct format.  This
