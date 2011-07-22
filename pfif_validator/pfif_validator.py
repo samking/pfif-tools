@@ -494,6 +494,18 @@ class PfifValidator:
       self.add_linked_record_mapping(person_record_id, note, linked_records)
     return linked_records
 
+
+  def get_top_level_notes_by_person(self):
+    """Returns a map from person_record_id to a set of top level notes with that
+    person_record_id"""
+    associated_notes = {}
+    for note in self.get_top_level_notes():
+      associated_person_id = self.get_field_text(note, 'person_record_id')
+      if associated_person_id:
+        notes_set = associated_notes.setdefault(associated_person_id, set())
+        notes_set.add(note)
+    return associated_notes
+
   def make_message(self, error_message, record, element=None, is_error=True):
     """Wrapper for initializing a Message that extracts the person_record_id and
     note_record_id, if present, from a record and the text and line number from
@@ -813,13 +825,21 @@ class PfifValidator:
     messages = []
     if self.version >= 1.3:
       persons = self.get_all_persons()
+      top_level_notes_by_person = self.get_top_level_notes_by_person()
       for person in persons:
         expiry_date = self.get_expiry_datetime(person)
         curr_date = utils.get_utcnow()
         # if the record is expired
         if expiry_date != None and expiry_date < curr_date:
+          # the person itself can't have data
           messages.extend(self.validate_personal_data_removed(person))
+          # the placeholder dates must match
           messages.extend(self.validate_placeholder_dates(person, expiry_date))
+          # top level notes associated with the expired person can't have data
+          associated_notes = top_level_notes_by_person.get(
+              self.get_field_text(person, 'person_record_id'), [])
+          for note in associated_notes:
+            messages.extend(self.validate_personal_data_removed(note))
     return messages
 
   def validate_linked_records_matched(self):

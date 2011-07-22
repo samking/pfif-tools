@@ -631,8 +631,7 @@ class ValidatorTests(unittest.TestCase):
   </pfif:person>
   <pfif:note>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
-    <pfif:note_record_id>example.org/note</pfif:note_record_id>
-    <pfif:text>this text is not deleted</pfif:text>
+    <pfif:note_record_id>example.org/note/not/deleted</pfif:note_record_id>
   </pfif:note>
 </pfif:pfif>"""
 
