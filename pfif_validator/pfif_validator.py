@@ -873,7 +873,8 @@ def main():
   """Runs all validations on the provided PFIF XML file"""
   if (not len(sys.argv) == 2):
     print 'Usage: python pfif-validator.py my-pyif-xml-file'
-  PfifValidator.run_validations(sys.argv[1])
+  messages = PfifValidator.run_validations(sys.argv[1])
+  PfifValidator.print_messages(messages)
 
 if __name__ == '__main__':
   main()
