@@ -708,6 +708,12 @@ class ValidatorTests(unittest.TestCase):
   </pfif:note>
 </pfif:pfif>"""
 
+  XML_TWO_DUPLICATE_NO_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
+  <pfif:foo />
+  <pfif:foo />
+</pfif:pfif>"""
+
   EXPIRED_TIME = datetime.datetime(1999, 3, 1)
 
   PRINT_VALIDATOR_OUTPUT = True
@@ -1227,17 +1233,14 @@ class ValidatorTests(unittest.TestCase):
     """run_validations should return an empty message list when passed a valid
     file"""
     validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
-    # TODO(samking): won't work until after unified printing
-    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
 
   def test_run_validations_with_errors(self):
     """run_validations should return a message list with three errors when the
     root doesn't have a mandatory child and there are two duplicate nodes"""
-    # TODO(samking): won't work until after unified printing and extraneous
-    # nodes
-    validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
-    # self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
-
+    validation_file = StringIO.StringIO(
+        ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
+    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 3)
 
 if __name__ == '__main__':
   unittest.main()
