@@ -21,6 +21,7 @@ import utils
 from urlparse import urlparse
 import datetime
 import inspect
+import sys
 
 class Message:
   """A container for information about an error or warning message"""
@@ -36,7 +37,9 @@ class Message:
     self.note_record_id  = note_record_id
 
 class PfifValidator:
-  # a map from version to parent : required-children mappings
+  """A validator that can run tests on a PFIF XML file."""
+
+  # A map from version to parent : required-children mappings.
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
