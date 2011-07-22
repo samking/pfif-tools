@@ -794,49 +794,48 @@ class PfifValidator:
           messages.append(self.make_message(
               'There is an asymmetric linked record.  That is, a note has a'
               'linked_person_record_id to another person, but that person '
-              'does not link back.',
-              record=linking_note, element=link_field, is_error=False))
+              'does not link back.', record=linking_note, element=link_field,
+              is_error=False))
     return messages
 
-  @staticmethod
-  def validate_extraneous_children(parents, approved_tags):
+  def validate_extraneous_children(self, parents, approved_tags):
     """For each parent in parents, ensures that every child's tag is in
     approved_tags and is not a duplicate (except for notes and persons).
     Returns a list of all extraneous tags."""
-    #TODO(samking): use pretty printing method
-    extra_fields = []
+    messages = []
     for parent in parents:
       used_tags = []
       for child in parent.getchildren():
         tag = utils.extract_tag(child.tag)
         if tag in used_tags and tag != 'note' and tag != 'person':
-          extra_fields.append('Duplicate Tag: ' + tag)
+          messages.append(self.make_message('Duplicate Tag.', record=parent,
+                                            element=child))
         elif tag not in approved_tags:
-          extra_fields.append('Extraneous Tag: ' + tag)
+          messages.append(self.make_message('Extraneous Tag.', record=parent,
+                                            element=child))
         else:
           used_tags.append(tag)
-    return extra_fields
+    return messages
 
   def validate_extraneous_fields(self):
     """Validates that all fields present are in the specification.  Returns a
     list with every extraneous or duplicate field.  This includes fields added
     in a more recent version of the specification."""
-    #TODO(samking): use pretty printing method
-    extra_fields = []
+    messages = []
 
     pfif_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['pfif']
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         [self.tree.getroot()], pfif_fields))
 
     person_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['person']
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         self.get_all_persons(), person_fields))
 
     note_fields = PfifValidator.FORMATS[self.version]['note'].keys()
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         self.get_all_notes(), note_fields))
 
-    return extra_fields
+    return messages
 
   @staticmethod
   def run_validations(file_path):
