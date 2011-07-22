@@ -113,19 +113,31 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note />
 </pfif:pfif>"""
 
-  XML_NOTE_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
+    <pfif:person_record_id />
     <pfif:note_record_id />
     <pfif:author_name />
     <pfif:source_date />
     <pfif:text />
   </pfif:note>
+  <pfif:person>
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:author_name />
+      <pfif:source_date />
+      <pfif:text />
+    </pfif:note>
+  </pfif:person>
 </pfif:pfif>"""
 
-  XML_NOTE_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
+  <pfif:person>
+    <pfif:note />
+  </pfif:person>
 </pfif:pfif>"""
 
   XML_PERSON_WITH_CHILDREN_11 = """<?xml version="1.0" encoding="UTF-8"?>
@@ -899,18 +911,18 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_has_mandatory_children
 
-  #TODO(samking): notes that are free floating must have a person record id
   def test_note_has_mandatory_children(self):
     """validate_has_mandatory_children should return an empty list if it is
-    given a note with all mandatory children"""
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_WITH_CHILDREN)
+    given notes with all mandatory children"""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_WITH_CHILDREN)
     self.assertEqual(len(validator.validate_note_has_mandatory_children()), 0)
 
   def test_note_has_no_mandatory_children(self):
-    """validate_has_mandatory_children should return a list with four missing
-    children when given a note with no children"""
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
-    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 4)
+    """validate_has_mandatory_children should return a list with nine missing
+    children when given one child of a person with no children and one top level
+    note (which also must have a person_record_id) with no children."""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_NO_CHILDREN)
+    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 9)
 
   def test_person_has_mandatory_children_11(self):
     """validate_has_mandatory_children should return an empty list if it is
@@ -946,7 +958,7 @@ class ValidatorTests(unittest.TestCase):
     improperly formatted."""
     validator = self.set_up_validator(ValidatorTests.XML_PERSON_NO_CHILDREN_13)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_NO_CHILDREN)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
 
   def test_all_11_fields_have_correct_format(self):
