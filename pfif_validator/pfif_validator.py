@@ -15,20 +15,31 @@
 
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 import re
 import utils
 from urlparse import urlparse
 import datetime
-import sys
 import inspect
+import sys
+
+class Message:
+  """A container for information about an error or warning message"""
+
+  def __init__(self, main_text, is_error=True, xml_line_number=None,
+               xml_element_text=None, person_record_id=None,
+               note_record_id=None):
+    self.main_text = main_text
+    self.is_error = is_error
+    self.xml_line_number = xml_line_number
+    self.xml_element_text = xml_element_text
+    self.person_record_id = person_record_id
+    self.note_record_id  = note_record_id
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
-  # TODO(samking): should I move a lot of this data stuff at the top into an
-  # external file that I would read in?
 
-  # a map from version to parent : required-children mappings
+  # A map from version to parent : required-children mappings.
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
@@ -345,8 +356,38 @@ class PfifValidator:
     self.namespace = None
     self.version = None
     if initialize:
-      self.validate_xml_or_die()
-      self.validate_root_is_pfif_or_die()
+      self.initialize_xml()
+      self.initialize_pfif_version()
+
+  def initialize_xml(self):
+    """Reads in the XML tree from the XML file to initialize self.tree.  Returns
+    an empty list.  If the XML file is invalid, the XML library will raise an
+    exception."""
+    self.tree = ET.parse(self.xml_file)
+    return []
+
+  def initialize_pfif_version(self):
+    """Validates that tree refers to a PFIF XML file with a supported version
+    and initializes self.namespace and self.version.  Returns an empty list.
+    Raises an exception if unsuccessful."""
+    root = self.tree.getroot()
+    tag = root.tag
+    # xml.etree.Element.tag is formatted like: {namespace}tag
+    match = re.match(r'\{(.+)\}(.+)', tag)
+    assert match, 'This XML root node does not specify a namespace and tag'
+    self.namespace = match.group(1)
+    tag = match.group(2)
+    assert tag == 'pfif', 'The root node must be pfif'
+
+    # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
+    # is 1.1, 1.2, or 1.3
+    match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
+    assert match, ('The XML namespace specified is not correct.  It should be '
+                   'in the following format: http://zesty.ca/pfif/VERSION')
+    self.version = float(match.group(1))
+    assert (self.version >= 1.1 and self.version <= 1.3), (
+           'This validator only supports versions 1.1-1.3.')
+    return []
 
   # helpers
 
@@ -407,13 +448,14 @@ class PfifValidator:
     return None
 
   def add_linked_record_mapping(self, person_record_id, note, linked_records):
-    """Adds a mapping from person_record_id to the note's
-    linked_person_record_id in the linked_records map if the note contains a
-    linked_record"""
+    """if the note contains a linked_record, adds a mapping from
+    person_record_id to a dict and a mapping in that dict from the note's
+    linked_person_record_id to the note itself (for ease of creating a message
+    about the note) in the linked_records map."""
     linked_id = self.get_field_text(note, 'linked_person_record_id')
     if linked_id != None and person_record_id != None:
-      linked_set = linked_records.setdefault(person_record_id, set())
-      linked_set.add(linked_id)
+      linked_dict = linked_records.setdefault(person_record_id, {})
+      linked_dict[linked_id] = note
 
   def get_linked_records(self):
     """Returns a map from person_record_id to a set of
@@ -433,73 +475,72 @@ class PfifValidator:
       self.add_linked_record_mapping(person_record_id, note, linked_records)
     return linked_records
 
-  def has_personal_data(self, person):
-    """After expiration, a person can only contain placeholder data, which
-    includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
-    personal data.  Returns true if there is any personal data in person"""
-    children = person.getchildren()
-    for child in children:
-      tag = utils.extract_tag(child.tag)
-      if tag not in PfifValidator.PLACEHOLDER_FIELDS:
-        if child.text:
-          # notes with text are okay as long as none of their children have text
-          if tag == 'note':
-            return self.has_personal_data(child)
-          else:
-            return True
-    return False
+  def make_message(self, error_message, record, element=None, is_error=True):
+    """Wrapper for initializing a Message that extracts the person_record_id and
+    note_record_id, if present, from a record and the text and line number from
+    an element"""
+    person_record_id = self.get_field_text(record, 'person_record_id')
+    note_record_id = self.get_field_text(record, 'note_record_id')
+    line = None
+    text = None
+    if element != None:
+      text = element.text
+      line = element.sourceline
+    return Message(error_message, is_error=is_error, xml_line_number=line,
+                   xml_element_text=text, person_record_id=person_record_id,
+                   note_record_id=note_record_id)
 
-  def dates_are_placeholders(self, person, expiry_date):
-    """Placeholders must be created within one day of expiry, and when they are
-    created, the source_date and entry_date must match.  Returns true if those
-    conditions hold."""
-    source_date = self.get_field_text(person, 'source_date')
-    entry_date = self.get_field_text(person, 'entry_date')
-    if (not source_date) or (source_date != entry_date):
-      return False
-    # If source_date > expiry_date, the placeholder was made more than a day
-    # after expiry; even though the current PFIF XML is not exposing data, it
-    # was exposing data between expiry_date and search_date
-    return self.pfif_date_to_py_date(source_date) < expiry_date
+  # printing
+
+  @staticmethod
+  def print_messages(messages, test_name=None, show_errors=True,
+                     show_warnings=True, show_line_numbers=True,
+                     show_record_ids=True, show_xml_text=False):
+    """Prints out all errors from the current test, per the options in
+    set_printing_options"""
+    if test_name != None:
+      print "****" + test_name + "****"
+    for message in messages:
+      if (message.is_error and show_errors) or (
+          not message.is_error and show_warnings):
+        output = []
+        if message.is_error:
+          output.append("ERROR: ")
+        else:
+          output.append("WARNING: ")
+        output.append(message.main_text + " ")
+        if (show_line_numbers and message.xml_line_number != None):
+          output.append("XML Line " + str(message.xml_line_number) + ". ")
+        if show_record_ids:
+          if message.person_record_id != None:
+            output.append("The relevant person_record_id is: " +
+                           message.person_record_id)
+          if message.note_record_id != None:
+            output.append("The relevant note_record_id is: " +
+                           message.note_record_id)
+        if show_xml_text and message.xml_element_text:
+          output.append("The text of the relevant PFIF XML node: " +
+                         message.xml_element_text)
+        print ''.join(output)
+    if test_name != None:
+      print
 
   # validation
-
-  def validate_xml_or_die(self):
-    """Returns an XML tree of the xml file.  If the XML file is invalid, the XML
-    library will raise an exception."""
-    self.tree = ET.parse(self.xml_file)
-    return self.tree
-
-  def validate_root_is_pfif_or_die(self):
-    """Validates that tree refers to a PFIF XML file.  Returns the version.
-    Raises an exception if unsuccessful."""
-    root = self.tree.getroot()
-    tag = root.tag
-    # xml.etree.Element.tag is formatted like: {namespace}tag
-    match = re.match(r'\{(.+)\}(.+)', tag)
-    assert match, 'This XML root node does not specify a namespace and tag'
-    self.namespace = match.group(1)
-    tag = match.group(2)
-    assert tag == 'pfif', 'The root node must be pfif'
-
-    # the correct pfif url is like: http://zesty.ca/pfif/VERSION where VERSION
-    # is 1.1, 1.2, or 1.3
-    match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
-    assert match, ('The XML namespace specified is not correct.  It should be '
-                   'in the following format: http://zesty.ca/pfif/VERSION')
-    self.version = float(match.group(1))
-    assert (self.version >= 1.1 and self.version <= 1.3), (
-           'This validator only supports versions 1.1-1.3.')
-    return self.version
+  # Each validate method can only be run on an initialized validator (the
+  # validator will be initialized unless the constructor is called with
+  # initialize=False).  Each validate method will return an array of messages,
+  # where an empty array means that all validation tests passed.  Only methods
+  # that take no arguments (other than self) should be called externally; all
+  # other methods should be considered private.
 
   def validate_root_has_child(self):
-    """If there is at least one child, returns true."""
+    """If there is at least one child, returns an empty list.  Else, returns a
+    list with an error message."""
     root = self.tree.getroot()
     children = root.getchildren()
-    if not len(children) > 0:
-      print 'The root node must have at least one child'
-      return False
-    return True
+    if not children:
+      return [Message("The root node must have at least one child")]
+    return []
 
   def validate_root_has_mandatory_children(self):
     """In 1.1, the root must have at least a person node.  In 1.2+, the root
@@ -508,34 +549,30 @@ class PfifValidator:
     a later test, so if the root has a person and a note node in version 1.1,
     that will return true."""
     children = self.tree.getroot().getchildren()
-    result = False
     for child in children:
       tag = utils.extract_tag(child.tag)
       if tag == 'person' or (self.version >= 1.2 and tag == 'note'):
-        result = True
-        break
-    if not result:
-      print ('ERROR: Having a person tag (or a note tag in PFIF 1.2+) as one '
-             'of the children of the root node is mandatory.')
-      print 'All children: ' + str(children)
-    return result
+        return []
+    return [Message('Having a person tag (or a note tag in PFIF 1.2+) as one '
+                    'of the children of the root node is mandatory.')]
 
   def validate_has_mandatory_children(self, parent_tag):
     """Validates that every parent node has all mandatory children specified by
     MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
     missing from any parent found.
     parent_tag should be a string of the local tag of the node to check."""
+    messages = []
     mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]
     mandatory_children = mandatory_children[parent_tag]
     parents = self.tree.findall(self.add_namespace_to_tag(parent_tag))
-    missing_children = []
     for parent in parents:
       for child_tag in mandatory_children:
         child = parent.find(self.add_namespace_to_tag(child_tag))
         if child is None:
-          if not child_tag in missing_children:
-            missing_children.append(child_tag)
-    return missing_children
+          messages.append(self.make_message(
+              'You do not have all mandatory children.  You were missing the '
+              'following tag: ' + child_tag, record=parent))
+    return messages
 
   def validate_person_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that persons have
@@ -550,95 +587,94 @@ class PfifValidator:
   def validate_children_have_correct_format(self, parents, formats):
     """validates that every element in parents has valid text, as per the
     specification in formats"""
-    failed_matches = []
+    messages = []
     for parent in parents:
       for field, field_format in formats.items():
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
-          #TODO(samking): is an empty node failure or success?
+          # TODO(samking): here, an empty node counts as the correct format.
+          # Should an empty note connote failure or success?
           if element.text:
-            #TODO(samking): is it correct to strip this string?
+            # strip the string so that extra whitespace around the edges won't
+            # interfere with matching
             text = element.text.strip()
             if field_format == 'URL':
               url = urlparse(text)
-              # pylint: disable=E1101
               # The URL should be HTTP or HTTPS.  If the netloc is blank, the
               # URL is probably blank or malformed.
+              # pylint: disable=E1101
               failed = url.scheme not in ['http', 'https'] or url.netloc == ''
               # pylint: enable=E1101
             else:
               match = re.match(field_format, text)
               failed = (match is None)
             if failed:
-              failed_matches.append((element.tag, element.text))
-    return failed_matches
+              messages.append(self.make_message(
+                  'The text in one of your fields does not match the '
+                  'requirement in the specification.  The field: ' + field +
+                  '.  The text: ' + element.text,
+                  record=parent, element=element))
+          else:
+            messages.append(self.make_message('You had an empty field.',
+                                              is_error=False, record=parent,
+                                              element=element))
+    return messages
 
   def validate_fields_have_correct_format(self):
     """Validates that every field in FORMATS follows the correct format
     (ie, that the dates are in yyyy-mm-ddThh:mm:ssZ format).  Returns a list of
     the fields that have improperly formatted data.  Wrapper for
     validate_children_have_correct_format"""
-    incorrect_formats = self.validate_children_have_correct_format(
+    messages = self.validate_children_have_correct_format(
         self.get_all_persons(), PfifValidator.FORMATS[self.version]['person'])
-    incorrect_formats.extend(self.validate_children_have_correct_format(
+    messages.extend(self.validate_children_have_correct_format(
         self.get_all_notes(), PfifValidator.FORMATS[self.version]['note']))
-    for incorrect_format in incorrect_formats:
-      print incorrect_format
-    return incorrect_formats
+    return messages
 
-  def validate_ids_are_unique(self, id_type):
-    """Validates that all id_type ids are unique.  There should not be two
-    persons with the same person_record_id or two notes with the same
-    note_record_id."""
-    if id_type == 'person':
-      collection = self.get_all_persons()
-      field = 'person_record_id'
-    elif id_type == 'note':
-      collection = self.get_all_notes()
-      field = 'note_record_id'
-    else:
-      print ('INTERNAL ERROR: We just tried to validate that a type of ID '
-             'other than person or note was unique.  We can not do that.')
-      return []
+  def validate_ids_are_unique(self, records, field):
+    """Validates that all record ids in records are unique.  There should not be
+    two persons with the same person_record_id or two notes with the same
+    note_record_id.  Field should be 'person_record_id' if records is persons
+    and 'note_record_id' if records is notes"""
     ids = []
-    duplicate_ids = []
-    for elem in collection:
-      curr_id = elem.find(self.add_namespace_to_tag(field)).text
-      if curr_id in ids and curr_id not in duplicate_ids:
-        duplicate_ids.append(curr_id)
-      elif curr_id not in ids:
-        ids.append(curr_id)
-    return duplicate_ids
+    messages = []
+    for record in records:
+      id_field = record.find(self.add_namespace_to_tag(field))
+      # If the record is incorrectly missing a record_id field, that should be
+      # flagged as a missing mandatory child, not here.
+      if id_field is not None:
+        curr_id = id_field.text
+        if curr_id in ids:
+          messages.append(self.make_message('You had a duplicate id.',
+                                            record=record, element=record))
+        elif curr_id not in ids:
+          ids.append(curr_id)
+    return messages
 
   def validate_person_ids_are_unique(self):
     """Wrapper for validate_ids_are_unique to validate that person_record_ids
     are unique"""
-    return self.validate_ids_are_unique('person')
+    return self.validate_ids_are_unique(self.get_all_persons(),
+                                        'person_record_id')
 
   def validate_note_ids_are_unique(self):
     """Wrapper for validate_ids_are_unique to validate that note_record_ids are
     unique"""
-    return self.validate_ids_are_unique('note')
+    return self.validate_ids_are_unique(self.get_all_notes(), 'note_record_id')
 
   def validate_notes_belong_to_persons(self):
     """Validates that every note that is at the top level contains a
     person_record_id and that every note inside a person with a person_record_id
     matches the id of the parent person.  Returns a list of all unmatched
     notes"""
-    unassociated_notes = []
+    messages = []
     top_level_notes = self.tree.findall(self.add_namespace_to_tag('note'))
     for note in top_level_notes:
       person_id = note.find(self.add_namespace_to_tag('person_record_id'))
       if person_id == None:
-        note_id = note.find(self.add_namespace_to_tag('note_record_id'))
-        if note_id == None:
-          unassociated_notes.append('A top level note is missing a '
-                                    'person_record_id.  It also does not have'
-                                    ' a note_record_id, so we can not refer '
-                                    'to it')
-        else:
-          unassociated_notes.append('The following top level note is missing '
-                                    'a person_record_id: ' + note_id.text)
+        messages.append(self.make_message(
+            'A top level note (a note not contained within a person) is '
+            'missing a person_record_id.', record=note, element=note))
     persons = self.get_all_persons()
     for person in persons:
       person_id = person.find(self.add_namespace_to_tag('person_record_id'))
@@ -648,57 +684,94 @@ class PfifValidator:
           note_person_id = note.find(
               self.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
-            unassociated_notes.append('Person with ID: ' + person_id.text +
-                                      '\nhas a note with person ID: ' +
-                                      note_person_id.text)
+            messages.append(Message(
+                'You have a note that has a person_record_id that does not '
+                'match the person_record_id of the person that owns the note.',
+                xml_line_number=note_person_id.sourceline,
+                xml_element_text=note_person_id.text,
+                person_record_id=self.get_field_text(person,
+                                                     'person_record_id'),
+                note_record_id=self.get_field_text(note, 'note_record_id')))
+    return messages
 
-    return unassociated_notes
-
-  def validate_field_order(self, field_type):
+  def validate_field_order(self, records, field_type):
     """Validates that all subnodes of field_type (either person or note) are in
     the correct order.  For version 1.1, this means that all fields must be in
     the order specified in the spec (the same as the FIELD_ORDER data structure)
     or omitted.  For version 1.2, person_record_id must appear first and notes
     must appear last in a person, and note_record_id and person_record_id must
     appear first in notes"""
+    messages = []
     # 1.3 and above don't have order
-    if self.version > 1.2:
-      return []
-
-    if field_type == 'person':
-      collection = self.get_all_persons()
-    elif field_type == 'note':
-      collection = self.get_all_notes()
-    else:
-      print ('INTERNAL ERROR: tried to validate field order for something '
-             'other than a person or note')
-
-    out_of_order_tags = []
-    for parent in collection:
-      # foreach field, if this field is lower than the current max field, it
-      # represents an invalid order
-      curr_max = 0
-      for field in parent.getchildren():
-        tag = utils.extract_tag(field.tag)
-        if tag in PfifValidator.FIELD_ORDER[self.version][field_type]:
-          tag_order = PfifValidator.FIELD_ORDER[self.version][field_type][tag]
-          if tag_order >= curr_max:
-            curr_max = tag_order
-          else:
-            out_of_order_tags.append(tag)
-            break
-    print out_of_order_tags
-    return out_of_order_tags
+    if self.version < 1.3:
+      field_order = PfifValidator.FIELD_ORDER[self.version][field_type]
+      for record in records:
+        # foreach field, if this field is lower than the current max field, it
+        # represents an invalid order
+        curr_max = 0
+        for field in record.getchildren():
+          tag = utils.extract_tag(field.tag)
+          if tag in field_order:
+            field_order_num = field_order[tag]
+            if field_order_num >= curr_max:
+              curr_max = field_order_num
+            else:
+              messages.append(self.make_message(
+                  'One of your fields was out of order.  The field: ' + tag,
+                  record=record, element=field))
+              break
+    return messages
 
   def validate_person_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all
     persons are in the correct order."""
-    return self.validate_field_order('person')
+    return self.validate_field_order(self.get_all_persons(), 'person')
 
   def validate_note_field_order(self):
     """Wrapper for validate_field_order.  Validates that all fields in all notes
     are in the correct order."""
-    return self.validate_field_order('note')
+    return self.validate_field_order(self.get_all_notes(), 'note')
+
+  def validate_placeholder_dates(self, person, expiry_date):
+    """Placeholders must be created within one day of expiry, and when they are
+    created, the source_date and entry_date must match.  Returns true if those
+    conditions hold."""
+    messages = []
+    source_date = self.get_field_text(person, 'source_date')
+    entry_date = self.get_field_text(person, 'entry_date')
+    if (not source_date) or (source_date != entry_date):
+      messages.append(self.make_message('An expired record has a source date '
+                                        'that does not match the entry date.',
+                                        record=person, element=person))
+    # If source_date > expiry_date, the placeholder was made more than a day
+    # after expiry; even though the current PFIF XML is not exposing data, it
+    # was exposing data between expiry_date and search_date
+    if PfifValidator.pfif_date_to_py_date(source_date) > expiry_date:
+      source_element = person.find(self.add_namespace_to_tag('source_date'))
+      messages.append(self.make_message(
+          'The placeholder for an expired record was created more than a day '
+          'after the record expired.', record=person, element=source_element))
+    return messages
+
+  def validate_personal_data_removed(self, record):
+    """After expiration, a person can only contain placeholder data, which
+    includes all fields aside from PLACEHOLDER_FIELDS.  All other data is
+    personal data.  Adds an error message if there is any personal data in
+    the record"""
+    messages = []
+    children = record.getchildren()
+    for child in children:
+      tag = utils.extract_tag(child.tag)
+      if tag not in PfifValidator.PLACEHOLDER_FIELDS:
+        if child.text:
+          # notes with text are okay as long as none of their children have text
+          if tag == 'note':
+            messages.extend(self.validate_personal_data_removed(child))
+          else:
+            messages.append(self.make_message("An expired record still has "
+                                              "personal data.", record=record,
+                                              element=child))
+    return messages
 
   def validate_expired_records_removed(self):
     """Validates that if the current time is at least one day greater than any
@@ -707,74 +780,78 @@ class PfifValidator:
     entry_date must be the time that the placeholder was created.  Returns a
     list with the person_record_ids of any persons that violate those
     conditions"""
-    if self.version < 1.3:
-      return []
-    persons = self.get_all_persons()
-    unremoved_expired_records = []
-    for person in persons:
-      expiry_date = self.get_expiry_datetime(person)
-      curr_date = utils.get_utcnow()
-      # if the record is expired
-      if expiry_date != None and expiry_date < curr_date:
-        if (self.has_personal_data(person) or not
-            self.dates_are_placeholders(person, expiry_date)):
-          # TODO(samking): make this (and all other prints / returns) nicer
-          # and unified.
-          unremoved_expired_records.append('You had an expired record!')
-    return unremoved_expired_records
+    # TODO(samking): if a person is expired, then there should not be any notes
+    # associated with that person
+    messages = []
+    if self.version >= 1.3:
+      persons = self.get_all_persons()
+      for person in persons:
+        expiry_date = self.get_expiry_datetime(person)
+        curr_date = utils.get_utcnow()
+        # if the record is expired
+        if expiry_date != None and expiry_date < curr_date:
+          messages.extend(self.validate_personal_data_removed(person))
+          messages.extend(self.validate_placeholder_dates(person, expiry_date))
+    return messages
 
   def validate_linked_records_matched(self):
     """Validates that if a note has a linked_person_record_id field, that the
     person that it points to has a note pointing back.  If A links to B, B
     should link to A.  Returns a list of any notes that point to nowhere"""
-    unmatched_notes = []
+    messages = []
     linked_records = self.get_linked_records()
-    for person_record_id, linked_ids in linked_records.items():
-      for linked_id in linked_ids:
+    for person_record_id, linked_dict in linked_records.items():
+      for linked_id, linking_note in linked_dict.items():
         # if B doesn't exist or B doesn't point to A, then A points to nowhere
         if (linked_id not in linked_records or
             person_record_id not in linked_records[linked_id]):
-          #TODO(samking): use pretty printing method
-          unmatched_notes.append(person_record_id)
-    return unmatched_notes
+          link_field = linking_note.find(
+              self.add_namespace_to_tag('linked_person_record_id'))
+          messages.append(self.make_message(
+              'There is an asymmetric linked record.  That is, a note has a'
+              'linked_person_record_id to another person, but that person '
+              'does not link back.', record=linking_note, element=link_field,
+              is_error=False))
+    return messages
 
-  @staticmethod
-  def validate_extraneous_children(parents, approved_tags):
+  def validate_extraneous_children(self, parents, approved_tags):
     """For each parent in parents, ensures that every child's tag is in
     approved_tags and is not a duplicate (except for notes and persons).
     Returns a list of all extraneous tags."""
-    extra_fields = []
+    messages = []
     for parent in parents:
       used_tags = []
       for child in parent.getchildren():
         tag = utils.extract_tag(child.tag)
         if tag in used_tags and tag != 'note' and tag != 'person':
-          extra_fields.append('Duplicate Tag: ' + tag)
+          messages.append(self.make_message('Duplicate Tag.', record=parent,
+                                            element=child))
         elif tag not in approved_tags:
-          extra_fields.append('Extraneous Tag: ' + tag)
+          messages.append(self.make_message('Extraneous Tag.', record=parent,
+                                            element=child))
         else:
           used_tags.append(tag)
-    return extra_fields
+    return messages
 
   def validate_extraneous_fields(self):
     """Validates that all fields present are in the specification.  Returns a
     list with every extraneous or duplicate field.  This includes fields added
     in a more recent version of the specification."""
-    extra_fields = []
+    messages = []
 
     pfif_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['pfif']
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         [self.tree.getroot()], pfif_fields))
 
     person_fields = PfifValidator.ALLOWED_CHILDREN[self.version]['person']
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         self.get_all_persons(), person_fields))
 
     note_fields = PfifValidator.FORMATS[self.version]['note'].keys()
-    extra_fields.extend(self.validate_extraneous_children(
+    messages.extend(self.validate_extraneous_children(
         self.get_all_notes(), note_fields))
 
-    return extra_fields
+    return messages
 
   @staticmethod
   def run_validations(file_path):
@@ -785,14 +862,11 @@ class PfifValidator:
     methods = inspect.getmembers(validator, inspect.ismethod)
     messages = []
     for name, method in methods:
-      # run all validation methods except for the or_die methods, which were run
-      # when the PfifValidator was initialized.  Also, don't run any validation
-      # method that takes more than one argument (self), because that will have
-      # a wrapper method.
-      if (name.find('validate_') != -1 and name.find('_or_die') == -1 and
+      # run all validation methods except for any validation method that takes
+      # more than one argument (self), because that will have a wrapper method.
+      if (name.find('validate_') != -1 and
           len(inspect.getargspec(method).args) == 1):
-        # TODO(samking): for unified printing system, change this to extend.
-        messages.append(method())
+        messages.extend(method())
     return messages
 
 def main():
