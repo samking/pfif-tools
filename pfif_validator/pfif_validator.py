@@ -356,17 +356,17 @@ class PfifValidator:
     self.namespace = None
     self.version = None
     if initialize:
-      self.initialize_xml_or_die()
-      self.initialize_pfif_version_or_die()
+      self.initialize_xml()
+      self.initialize_pfif_version()
 
-  def initialize_xml_or_die(self):
+  def initialize_xml(self):
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
     self.tree = ET.parse(self.xml_file)
     return []
 
-  def initialize_pfif_version_or_die(self):
+  def initialize_pfif_version(self):
     """Validates that tree refers to a PFIF XML file with a supported version
     and initializes self.namespace and self.version.  Returns an empty list.
     Raises an exception if unsuccessful."""

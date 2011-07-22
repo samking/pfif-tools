@@ -795,65 +795,65 @@ class ValidatorTests(unittest.TestCase):
 
     sys.stdout = old_stdout
 
-  # initialize_xml_or_die
+  # initialize_xml
 
   def test_valid_xml(self):
-    """initialize_xml_or_die should turn a string of valid XML into an object"""
+    """initialize_xml should turn a string of valid XML into an object"""
     valid_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(valid_xml_file, initialize=False)
-    self.assertEqual(len(validator.initialize_xml_or_die()), 0)
+    self.assertEqual(len(validator.initialize_xml()), 0)
 
   def test_invalid_xml(self):
-    """initialize_xml_or_die should raise an error on a string of invalid XML"""
+    """initialize_xml should raise an error on a string of invalid XML"""
     invalid_xml_file = StringIO.StringIO(
         """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>""")
     validator = PfifValidator(invalid_xml_file, initialize=False)
-    self.assertRaises(Exception, validator.initialize_xml_or_die)
+    self.assertRaises(Exception, validator.initialize_xml)
 
-  # initialize_pfif_version_or_die
+  # initialize_pfif_version
 
   def test_root_is_pfif(self):
-    """initialize_pfif_version_or_die should return an empty list if the XML
+    """initialize_pfif_version should return an empty list if the XML
     root is PFIF"""
     pfif_11_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(pfif_11_xml_file, initialize=False)
-    validator.initialize_xml_or_die()
-    self.assertEqual(len(validator.initialize_pfif_version_or_die()), 0)
+    validator.initialize_xml()
+    self.assertEqual(len(validator.initialize_pfif_version()), 0)
 
   def test_root_is_not_pfif(self):
-    """initialize_pfif_version_or_die should raise an exception if the XML root
+    """initialize_pfif_version should raise an exception if the XML root
     is not PFIF"""
     random_xml_file = StringIO.StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
     validator = PfifValidator(random_xml_file, initialize=False)
-    validator.initialize_xml_or_die()
-    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_lacks_namespace(self):
-    """initialize_pfif_version_or_die should raise an exception if the XML root
+    """initialize_pfif_version should raise an exception if the XML root
     doesn't specify a namespace"""
     no_namespace_xml_file = StringIO.StringIO(ValidatorTests.XML_NO_NAMESPACE)
     validator = PfifValidator(no_namespace_xml_file, initialize=False)
-    validator.initialize_xml_or_die()
-    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_is_bad_pfif_version(self):
-    """initialize_pfif_version_or_die should raise an exception if the PFIF
+    """initialize_pfif_version should raise an exception if the PFIF
     version is not supported"""
     pfif_99_xml_file = StringIO.StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
     validator = PfifValidator(pfif_99_xml_file, initialize=False)
-    validator.initialize_xml_or_die()
-    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   def test_root_is_bad_pfif_website(self):
-    """initialize_pfif_version_or_die should raise an exception if the PFIF
+    """initialize_pfif_version should raise an exception if the PFIF
     website is wrong"""
     pfif_bad_website_xml_file = StringIO.StringIO(
         ValidatorTests.XML_BAD_PFIF_WEBSITE)
     validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
-    validator.initialize_xml_or_die()
-    self.assertRaises(Exception, validator.initialize_pfif_version_or_die)
+    validator.initialize_xml()
+    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   # validate_root_has_child
 
