@@ -595,7 +595,8 @@ class PfifValidator:
           # TODO(samking): here, an empty node counts as the correct format.
           # Should an empty note connote failure or success?
           if element.text:
-            #TODO(samking): is it correct to strip this string?
+            # strip the string so that extra whitespace around the edges won't
+            # interfere with matching
             text = element.text.strip()
             if field_format == 'URL':
               url = urlparse(text)
@@ -613,6 +614,10 @@ class PfifValidator:
                   'requirement in the specification.  The field: ' + field +
                   '.  The text: ' + element.text,
                   record=parent, element=element))
+          else:
+            messages.append(self.make_message('You had an empty field.',
+                                              is_error=False, record=parent,
+                                              element=element))
     return messages
 
   def validate_fields_have_correct_format(self):
