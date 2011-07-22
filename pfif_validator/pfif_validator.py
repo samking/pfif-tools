@@ -43,17 +43,26 @@ class PfifValidator:
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               },
                         1.2 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               },
                         1.3 : {'person' : ['person_record_id', 'source_date',
                                          'full_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               }
                        }
 
@@ -556,15 +565,11 @@ class PfifValidator:
     return [Message('Having a person tag (or a note tag in PFIF 1.2+) as one '
                     'of the children of the root node is mandatory.')]
 
-  def validate_has_mandatory_children(self, parent_tag):
-    """Validates that every parent node has all mandatory children specified by
-    MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
-    missing from any parent found.
+  def validate_has_mandatory_children(self, parents, mandatory_children):
+    """Validates that every parent node has all mandatory children .  Returns a
+    list with the names of all mandatory children missing from any parent found.
     parent_tag should be a string of the local tag of the node to check."""
     messages = []
-    mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]
-    mandatory_children = mandatory_children[parent_tag]
-    parents = self.tree.findall(self.add_namespace_to_tag(parent_tag))
     for parent in parents:
       for child_tag in mandatory_children:
         child = parent.find(self.add_namespace_to_tag(child_tag))
@@ -577,12 +582,17 @@ class PfifValidator:
   def validate_person_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that persons have
     all mandatory children."""
-    return self.validate_has_mandatory_children('person')
+    mandatory_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['person'])
+    persons = self.get_all_persons()
+    return self.validate_has_mandatory_children(persons, mandatory_children)
 
   def validate_note_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that notes have
     all mandatory children."""
-    return self.validate_has_mandatory_children('note')
+    mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]['note']
+    notes = self.get_all_notes()
+    return self.validate_has_mandatory_children(notes, mandatory_children)
 
   def validate_children_have_correct_format(self, parents, formats):
     """validates that every element in parents has valid text, as per the
