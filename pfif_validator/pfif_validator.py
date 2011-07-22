@@ -68,7 +68,7 @@ class PfifValidator:
   DOMAIN_NAME = r'(' + DOMAIN_LABEL + r'\.)*' + DOMAIN_LABEL + '\.?'
   RECORD_ID = r'^' + DOMAIN_NAME + r'/.+$'
   DATE = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$'
-  TEXT = r'^.*$' #TODO(samking): do we want to do .+?
+  TEXT = r'^.*$'
   EMAIL = r'^.+@.+$' #TODO(samking): make more specific
   # Allow there to be any number of delimiters (space, hyphen, dot, plus, and
   # parentheses) around each digit
@@ -592,8 +592,6 @@ class PfifValidator:
       for field, field_format in formats.items():
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
-          # TODO(samking): here, an empty node counts as the correct format.
-          # Should an empty note connote failure or success?
           if element.text:
             # strip the string so that extra whitespace around the edges won't
             # interfere with matching
