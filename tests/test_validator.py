@@ -1242,6 +1242,18 @@ class ValidatorTests(unittest.TestCase):
         ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
     self.assertEqual(len(PfifValidator.run_validations(validation_file)), 3)
 
+  # line numbers
+
+  def test_line_numbers(self):
+    """After initialization, all elements in the tree should have line
+    numbers in the map."""
+    validator = self.set_up_validator(ValidatorTests.XML_FULL_12)
+    nodes = validator.get_all_persons()
+    nodes.extend(validator.get_all_notes())
+    for node in nodes:
+      self.assertTrue(node in validator.line_numbers)
+      for child in node.getchildren():
+        self.assertTrue(child in validator.line_numbers)
 
 if __name__ == '__main__':
   unittest.main()

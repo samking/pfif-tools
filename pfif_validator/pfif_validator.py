@@ -15,7 +15,7 @@
 
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
 import re
 import utils
 from urlparse import urlparse
@@ -35,6 +35,20 @@ class Message:
     self.xml_element_text = xml_element_text
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
+
+class FileWithLines:
+  """A file that keeps track of its line number.  From
+  http://bytes.com/topic/python/answers/535191-elementtree-line-numbers-iterparse
+  """
+
+  def __init__(self, source):
+    self.source = source
+    self.line_number = 0
+
+  def read(self, bytes):
+    """Wrapper around file.readLine that keeps track of line number"""
+    self.line_number += 1
+    return self.source.readline()
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
@@ -355,6 +369,7 @@ class PfifValidator:
     self.tree = None
     self.namespace = None
     self.version = None
+    self.line_numbers = {}
     if initialize:
       self.initialize_xml()
       self.initialize_pfif_version()
@@ -363,7 +378,15 @@ class PfifValidator:
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
-    self.tree = ET.parse(self.xml_file)
+    file_with_lines = FileWithLines(self.xml_file)
+    tree_parser = iter(ET.iterparse(file_with_lines, events=['start']))
+    event, root = tree_parser.next()
+    self.line_numbers[root] = file_with_lines.line_number
+
+    for event, elem in tree_parser:
+      self.line_numbers[elem] = file_with_lines.line_number
+    self.tree = ET.ElementTree(root)
+
     return []
 
   def initialize_pfif_version(self):
@@ -485,7 +508,7 @@ class PfifValidator:
     text = None
     if element != None:
       text = element.text
-      line = element.sourceline
+      line = self.line_numbers[element]
     return Message(error_message, is_error=is_error, xml_line_number=line,
                    xml_element_text=text, person_record_id=person_record_id,
                    note_record_id=note_record_id)
@@ -687,7 +710,7 @@ class PfifValidator:
             messages.append(Message(
                 'You have a note that has a person_record_id that does not '
                 'match the person_record_id of the person that owns the note.',
-                xml_line_number=note_person_id.sourceline,
+                xml_line_number=self.line_numbers[note_person_id],
                 xml_element_text=note_person_id.text,
                 person_record_id=self.get_field_text(person,
                                                      'person_record_id'),
