@@ -737,10 +737,6 @@ class ValidatorTests(unittest.TestCase):
   def test_printing(self):
     """Tests that each of the printing options in set_printing_options changes
     the behavior of print_errors"""
-    # mock stdout so that we can tell what gets printed
-    old_stdout = sys.stdout
-    fake_stdout = StringIO.StringIO()
-    sys.stdout = fake_stdout
 
     # set up the messages to be printed
     messages = []
@@ -751,49 +747,51 @@ class ValidatorTests(unittest.TestCase):
     messages.append(Message("Message 3"))
 
     # With no test name, errors, or warnings, nothing should print
-    PfifValidator.print_messages(messages, show_errors=False,
-                                 show_warnings=False)
-    self.assertEqual(fake_stdout.tell(), 0)
+    output = PfifValidator.messages_to_str(messages, show_errors=False,
+                                           show_warnings=False)
+    self.assertEqual(len(output), 0)
 
     # with errors and warnings off, only test names should print
-    PfifValidator.print_messages(messages, test_name="Test", show_errors=False,
-                                 show_warnings=False)
-    self.assertEqual(fake_stdout.getvalue().find("Message"), -1)
-    self.assertNotEqual(fake_stdout.getvalue().find("Test"), -1)
+    output = PfifValidator.messages_to_str(messages, test_name="Test",
+                                           show_errors=False,
+                                           show_warnings=False)
+    self.assertEqual(output.find("Message"), -1)
+    self.assertNotEqual(output.find("Test"), -1)
 
     # with only errors on, only errors should print
-    PfifValidator.print_messages(messages, show_warnings=False,
-                                 show_line_numbers=False, show_record_ids=False,
-                                 show_xml_text=False)
-    self.assertNotEqual(fake_stdout.getvalue().find("Message 1"), -1)
-    self.assertEqual(fake_stdout.getvalue().find("Message 2"), -1)
+    output = PfifValidator.messages_to_str(messages, show_warnings=False,
+                                           show_line_numbers=False,
+                                           show_record_ids=False,
+                                           show_xml_text=False)
+    self.assertNotEqual(output.find("Message 1"), -1)
+    self.assertEqual(output.find("Message 2"), -1)
     # the default value of is_error should be True, so Message 3 should print
-    self.assertNotEqual(fake_stdout.getvalue().find("Message 3"), -1)
+    self.assertNotEqual(output.find("Message 3"), -1)
 
     # with warnings on, warnings should print
-    PfifValidator.print_messages(messages, show_line_numbers=False,
-                                 show_record_ids=False, show_xml_text=False)
-    self.assertNotEqual(fake_stdout.getvalue().find("Message 2"), -1)
+    output = PfifValidator.messages_to_str(messages, show_line_numbers=False,
+                                           show_record_ids=False,
+                                           show_xml_text=False)
+    self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
     # should print with them on
-    self.assertEqual(fake_stdout.getvalue().find("333"), -1)
-    PfifValidator.print_messages(messages, show_line_numbers=True,
-                                 show_record_ids=False, show_xml_text=False)
-    self.assertNotEqual(fake_stdout.getvalue().find("333"), -1)
+    self.assertEqual(output.find("333"), -1)
+    output = PfifValidator.messages_to_str(messages, show_line_numbers=True,
+                                           show_record_ids=False,
+                                           show_xml_text=False)
+    self.assertNotEqual(output.find("333"), -1)
 
-    self.assertEqual(fake_stdout.getvalue().find("Text"), -1)
-    PfifValidator.print_messages(messages, show_record_ids=False,
-                                 show_xml_text=True)
-    self.assertNotEqual(fake_stdout.getvalue().find("Text"), -1)
+    self.assertEqual(output.find("Text"), -1)
+    output = PfifValidator.messages_to_str(messages, show_record_ids=False,
+                                           show_xml_text=True)
+    self.assertNotEqual(output.find("Text"), -1)
 
-    self.assertEqual(fake_stdout.getvalue().find("Person"), -1)
-    self.assertEqual(fake_stdout.getvalue().find("Note"), -1)
-    PfifValidator.print_messages(messages, show_record_ids=True)
-    self.assertNotEqual(fake_stdout.getvalue().find("Person"), -1)
-    self.assertNotEqual(fake_stdout.getvalue().find("Note"), -1)
-
-    sys.stdout = old_stdout
+    self.assertEqual(output.find("Person"), -1)
+    self.assertEqual(output.find("Note"), -1)
+    output = PfifValidator.messages_to_str(messages, show_record_ids=True)
+    self.assertNotEqual(output.find("Person"), -1)
+    self.assertNotEqual(output.find("Note"), -1)
 
   # initialize_xml
 

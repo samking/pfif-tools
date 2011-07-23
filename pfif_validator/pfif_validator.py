@@ -516,37 +516,37 @@ class PfifValidator:
   # printing
 
   @staticmethod
-  def print_messages(messages, test_name=None, show_errors=True,
-                     show_warnings=True, show_line_numbers=True,
-                     show_record_ids=True, show_xml_text=False):
-    """Prints out all errors from the current test, per the options in
-    set_printing_options"""
+  def messages_to_str(messages, test_name=None, show_errors=True,
+                      show_warnings=True, show_line_numbers=True,
+                      show_record_ids=True, show_xml_text=False):
+    """Returns a string containing all messages formatted per the options."""
+    output = []
     if test_name != None:
-      print "****" + test_name + "****"
+      output.append('****' + test_name + '****\n')
     for message in messages:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
-        output = []
         if message.is_error:
-          output.append("ERROR: ")
+          output.append('ERROR: ')
         else:
-          output.append("WARNING: ")
-        output.append(message.main_text + " ")
+          output.append('WARNING: ')
+        output.append(message.main_text + '. ')
         if (show_line_numbers and message.xml_line_number != None):
-          output.append("XML Line " + str(message.xml_line_number) + ". ")
+          output.append('XML Line ' + str(message.xml_line_number) + '. ')
         if show_record_ids:
           if message.person_record_id != None:
-            output.append("The relevant person_record_id is: " +
-                           message.person_record_id)
+            output.append('The relevant person_record_id is: ' +
+                           message.person_record_id + '. ')
           if message.note_record_id != None:
-            output.append("The relevant note_record_id is: " +
-                           message.note_record_id)
+            output.append('The relevant note_record_id is: ' +
+                           message.note_record_id + '. ')
         if show_xml_text and message.xml_element_text:
-          output.append("The text of the relevant PFIF XML node: " +
-                         message.xml_element_text)
-        print ''.join(output)
+          output.append('The text of the relevant PFIF XML node: ' +
+                         message.xml_element_text + '. ')
+        output.append('\n')
     if test_name != None:
-      print
+      output.append('\n')
+    return ''.join(output)
 
   # validation
   # Each validate method can only be run on an initialized validator (the
@@ -562,7 +562,7 @@ class PfifValidator:
     root = self.tree.getroot()
     children = root.getchildren()
     if not children:
-      return [Message("The root node must have at least one child")]
+      return [Message('The root node must have at least one child')]
     return []
 
   def validate_root_has_mandatory_children(self):
@@ -791,8 +791,8 @@ class PfifValidator:
           if tag == 'note':
             messages.extend(self.validate_personal_data_removed(child))
           else:
-            messages.append(self.make_message("An expired record still has "
-                                              "personal data.", record=record,
+            messages.append(self.make_message('An expired record still has '
+                                              'personal data.', record=record,
                                               element=child))
     return messages
 
