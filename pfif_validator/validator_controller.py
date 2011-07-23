@@ -23,18 +23,11 @@ class MainPage(webapp.RequestHandler):
 
 class Validator(webapp.RequestHandler):
   def post(self):
-    self.response.out.write('<html><body>You wrote:<pre>')
+    self.response.out.write('<html><body><p>You wrote:</p><pre>')
     xml_file = StringIO.StringIO(self.request.get('pfif_xml'))
     messages = pfif_validator.PfifValidator.run_validations(xml_file)
-
-    old_stdout = sys.stdout
-    fake_stdout = StringIO.StringIO()
-    sys.stdout = fake_stdout
-    pfif_validator.PfifValidator.print_messages(messages)
-    sys.stdout = old_stdout
-
-    self.response.out.write(cgi.escape(fake_stdout.getvalue()))
-    #self.response.out.write(cgi.escape(self.request.get('pfif_xml')))
+    output = pfif_validator.PfifValidator.messages_to_str(messages)
+    self.response.out.write(cgi.escape(output))
     self.response.out.write('</pre></body></html>')
 
 application = webapp.WSGIApplication([('/', MainPage),
