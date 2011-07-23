@@ -25,11 +25,14 @@ class Validator(webapp.RequestHandler):
   def post(self):
     self.response.out.write('<html><body>You wrote:<pre>')
     xml_file = StringIO.StringIO(self.request.get('pfif_xml'))
+    messages = pfif_validator.PfifValidator.run_validations(xml_file)
+
     old_stdout = sys.stdout
     fake_stdout = StringIO.StringIO()
     sys.stdout = fake_stdout
-    pfif_validator.run_all_validations(xml_file)
+    pfif_validator.PfifValidator.print_messages(messages)
     sys.stdout = old_stdout
+
     self.response.out.write(cgi.escape(fake_stdout.getvalue()))
     #self.response.out.write(cgi.escape(self.request.get('pfif_xml')))
     self.response.out.write('</pre></body></html>')
