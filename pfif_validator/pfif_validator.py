@@ -518,7 +518,7 @@ class PfifValidator:
   @staticmethod
   def messages_to_str(messages, test_name=None, show_errors=True,
                       show_warnings=True, show_line_numbers=True,
-                      show_record_ids=True, show_xml_text=False):
+                      show_record_ids=True, show_xml_text=True):
     """Returns a string containing all messages formatted per the options."""
     output = []
     if test_name != None:
