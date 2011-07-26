@@ -410,7 +410,7 @@ class PfifValidator:
     """returns a list of all persons in the tree"""
     return self.tree.findall(self.add_namespace_to_tag('person'))
 
-  def get_low_level_notes(self):
+  def get_child_notes(self):
     """returns a list of all notes that are subnodes of persons"""
     notes = []
     for person in self.get_all_persons():
@@ -424,7 +424,7 @@ class PfifValidator:
   def get_all_notes(self):
     """returns a list of all notes in the tree"""
     notes = self.get_top_level_notes()
-    notes.extend(self.get_low_level_notes())
+    notes.extend(self.get_child_notes())
     return notes
 
   @staticmethod
@@ -621,11 +621,11 @@ class PfifValidator:
     messages.extend(self.validate_has_mandatory_children(top_level_notes,
                                                          top_note_children))
 
-    low_notes = self.get_low_level_notes()
-    low_note_children = (
+    child_notes = self.get_child_notes()
+    child_note_children = (
         PfifValidator.MANDATORY_CHILDREN[self.version]['note'])
-    messages.extend(self.validate_has_mandatory_children(low_notes,
-                                                         low_note_children))
+    messages.extend(self.validate_has_mandatory_children(child_notes,
+                                                         child_note_children))
     return messages
 
   def validate_children_have_correct_format(self, parents, formats):
