@@ -1,14 +1,33 @@
-import cgi
+#!/usr/bin/env python
+# Copyright 2011 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Inspiration (and some CSS/HTML) for the output design from the W3 validator.
+# See the W3C Software Notice and Licence at
+# http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
 
-from google.appengine.api import users
+"""Provides a web interface for pfif_validator"""
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 import StringIO
 import pfif_validator
-import sys
 
 class MainPage(webapp.RequestHandler):
+  """Displays the home page."""
+
   def get(self):
     self.response.out.write("""
       <html>
@@ -23,6 +42,9 @@ class MainPage(webapp.RequestHandler):
             <div><input type="checkbox" name="print_options"
                   value="show_line_numbers" checked>Show Line Numbers</div>
             <div><input type="checkbox" name="print_options"
+                  value="show_line_text" checked>Show the Line the Error
+                                                 Happened On</div>
+            <div><input type="checkbox" name="print_options"
                   value="show_record_ids" checked>Show Record IDs</div>
             <div><input type="checkbox" name="print_options"
                   value="show_xml_text" checked>Show XML Text</div>
@@ -32,28 +54,36 @@ class MainPage(webapp.RequestHandler):
       </html>""")
 
 class Validator(webapp.RequestHandler):
+  """Displays the validation results page."""
+
   def post(self):
-    self.response.out.write('<html><body><p>Validation Messages:</p><pre>')
     xml_file = StringIO.StringIO(self.request.get('pfif_xml'))
-    messages = pfif_validator.PfifValidator.run_validations(xml_file)
-    # Get the output.
     print_options = self.request.get_all('print_options')
-    output = pfif_validator.PfifValidator.messages_to_str(
+    validator = pfif_validator.PfifValidator(xml_file)
+    messages = validator.run_validations()
+    self.response.out.write('<html><body><h1>Validation: ' +
+                            str(len(messages)) + ' Messages</h1>')
+    marked_up_message = validator.messages_to_str(
         messages,
         show_errors='show_errors' in print_options,
         show_warnings='show_warnings' in print_options,
         show_line_numbers='show_line_numbers' in print_options,
+        show_line_text='show_line_text' in print_options,
         show_record_ids='show_record_ids' in print_options,
-        show_xml_text='show_xml_text' in print_options)
-    self.response.out.write(cgi.escape(output))
-    self.response.out.write('</pre></body></html>')
+        show_xml_text='show_xml_text' in print_options,
+        is_html=True)
+    # don't escape the message since is_html escapes all input and contains html
+    # that should be interpreted as html
+    self.response.out.write(marked_up_message)
+    self.response.out.write('</body></html>')
 
-application = webapp.WSGIApplication([('/', MainPage),
+APPLICATION = webapp.WSGIApplication([('/', MainPage),
                                       ('/validate', Validator)],
                                      debug=True)
 
 def main():
-  run_wsgi_app(application)
+  """Sets up the controller."""
+  run_wsgi_app(APPLICATION)
 
 if __name__ == "__main__":
   main()

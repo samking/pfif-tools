@@ -739,59 +739,67 @@ class ValidatorTests(unittest.TestCase):
     the behavior of print_errors"""
 
     # set up the messages to be printed
+    validator = PfifValidator('', initialize=False)
+    lines = []
+    for i in range(1, 12):
+      lines.append('ZZZ ' + str(i))
     messages = []
-    messages.append(Message("Message 1", is_error=True, xml_line_number=333,
+    messages.append(Message("Message 1", is_error=True, xml_line_number=11,
                             xml_element_text="Text", person_record_id="Person",
                             note_record_id="Note"))
     messages.append(Message("Message 2", is_error=False))
     messages.append(Message("Message 3"))
 
-    # With no test name, errors, or warnings, nothing should print
-    output = PfifValidator.messages_to_str(messages, show_errors=False,
-                                           show_warnings=False)
+    # With no errors or warnings, nothing should print
+    output = validator.messages_to_str(messages, show_errors=False,
+                                       show_warnings=False)
     self.assertEqual(len(output), 0)
 
-    # with errors and warnings off, only test names should print
-    output = PfifValidator.messages_to_str(messages, test_name="Test",
-                                           show_errors=False,
-                                           show_warnings=False)
-    self.assertEqual(output.find("Message"), -1)
-    self.assertNotEqual(output.find("Test"), -1)
-
     # with only errors on, only errors should print
-    output = PfifValidator.messages_to_str(messages, show_warnings=False,
-                                           show_line_numbers=False,
-                                           show_record_ids=False,
-                                           show_xml_text=False)
+    output = validator.messages_to_str(messages, show_warnings=False,
+                                       show_line_numbers=False,
+                                       show_record_ids=False,
+                                       show_xml_text=False,
+                                       show_line_text=False)
     self.assertNotEqual(output.find("Message 1"), -1)
     self.assertEqual(output.find("Message 2"), -1)
     # the default value of is_error should be True, so Message 3 should print
     self.assertNotEqual(output.find("Message 3"), -1)
 
     # with warnings on, warnings should print
-    output = PfifValidator.messages_to_str(messages, show_line_numbers=False,
-                                           show_record_ids=False,
-                                           show_xml_text=False)
+    output = validator.messages_to_str(messages, show_line_numbers=False,
+                                       show_record_ids=False,
+                                       show_xml_text=False,
+                                       show_line_text=False)
     self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
     # should print with them on
-    self.assertEqual(output.find("333"), -1)
-    output = PfifValidator.messages_to_str(messages, show_line_numbers=True,
-                                           show_record_ids=False,
-                                           show_xml_text=False)
-    self.assertNotEqual(output.find("333"), -1)
+    self.assertEqual(output.find("11"), -1)
+    output = validator.messages_to_str(messages, show_line_numbers=True,
+                                       show_record_ids=False,
+                                       show_xml_text=False,
+                                       show_line_text=False)
+    self.assertNotEqual(output.find("11"), -1)
 
     self.assertEqual(output.find("Text"), -1)
-    output = PfifValidator.messages_to_str(messages, show_record_ids=False,
-                                           show_xml_text=True)
+    output = validator.messages_to_str(messages, show_record_ids=False,
+                                       show_xml_text=True, show_line_text=False)
     self.assertNotEqual(output.find("Text"), -1)
 
     self.assertEqual(output.find("Person"), -1)
     self.assertEqual(output.find("Note"), -1)
-    output = PfifValidator.messages_to_str(messages, show_record_ids=True)
+    output = validator.messages_to_str(messages, show_record_ids=True,
+                                       show_line_text=False)
     self.assertNotEqual(output.find("Person"), -1)
     self.assertNotEqual(output.find("Note"), -1)
+
+    self.assertEqual(output.find("ZZZ 11"), -1)
+    output = validator.messages_to_str(messages, show_line_text=True,
+                                       xml_lines=lines)
+    self.assertNotEqual(output.find("ZZZ 11"), -1)
+
+    #TODO(samking): test that if is_html, there is a div somewhere
 
   # initialize_xml
 
@@ -1230,15 +1238,14 @@ class ValidatorTests(unittest.TestCase):
   def test_run_validations_without_errors(self):
     """run_validations should return an empty message list when passed a valid
     file"""
-    validation_file = StringIO.StringIO(ValidatorTests.XML_11_FULL)
-    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 0)
+    validator = self.set_up_validator(ValidatorTests.XML_11_FULL)
+    self.assertEqual(len(validator.run_validations()), 0)
 
   def test_run_validations_with_errors(self):
     """run_validations should return a message list with three errors when the
     root doesn't have a mandatory child and there are two duplicate nodes"""
-    validation_file = StringIO.StringIO(
-        ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
-    self.assertEqual(len(PfifValidator.run_validations(validation_file)), 3)
+    validator = self.set_up_validator(ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
+    self.assertEqual(len(validator.run_validations()), 3)
 
   # line numbers
 

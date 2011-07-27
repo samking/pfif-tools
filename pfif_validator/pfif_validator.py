@@ -22,6 +22,7 @@ from urlparse import urlparse
 import datetime
 import inspect
 import sys
+import cgi
 
 class Message:
   """A container for information about an error or warning message"""
@@ -45,10 +46,55 @@ class FileWithLines:
     self.source = source
     self.line_number = 0
 
-  def read(self, bytes):
+  def read(self, num_bytes): # pylint: disable=W0613
     """Wrapper around file.readLine that keeps track of line number"""
     self.line_number += 1
     return self.source.readline()
+
+class MessagesOutput:
+  """A container that allows for outputting either a plain string or HTML
+  easily"""
+
+  def __init__(self, is_html):
+    self.is_html = is_html
+    self.output = []
+    if is_html:
+      self.output.append('<div class="all_messages">')
+
+  def get_output(self):
+    """Turns the stored data into a string.  Call at most once per instance of
+    MessagesOutput."""
+    if self.is_html:
+      # closes all_messages div
+      self.output.append('</div>') 
+    return ''.join(self.output)
+
+  def start_new_message(self):
+    """Call once at the start of each message before calling
+    make_message_part"""
+    if self.is_html:
+      self.output.append('<div class="message">')
+
+  def end_new_message(self):
+    """Call once at the end of each message after all calls to
+    make_message_part"""
+    if self.is_html:
+      # clases message div
+      self.output.append('</div>') 
+    self.output.append('\n')
+
+  def make_message_part(self, text, html_class):
+    """Call once for each different part of the message (ie, the main text, the
+    line number).  text is the body of the message.  html_class is the class of
+    the span that will contain the text."""
+    if self.is_html:
+      self.output.append('<span class="' + html_class + '">')
+    if self.is_html:
+      self.output.append(cgi.escape(text))
+    else:
+      self.output.append(text)
+    if self.is_html:
+      self.output.append('</span>')
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
@@ -366,6 +412,7 @@ class PfifValidator:
 
   def __init__(self, xml_file, initialize=True):
     self.xml_file = xml_file
+    self.lines = None
     self.tree = None
     self.namespace = None
     self.version = None
@@ -378,9 +425,12 @@ class PfifValidator:
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
+    self.lines = self.xml_file.readlines()
+    self.xml_file.seek(0)
+
     file_with_lines = FileWithLines(self.xml_file)
     tree_parser = iter(ET.iterparse(file_with_lines, events=['start']))
-    event, root = tree_parser.next()
+    event, root = tree_parser.next() # pylint: disable=W0612
     self.line_numbers[root] = file_with_lines.line_number
 
     for event, elem in tree_parser:
@@ -515,38 +565,44 @@ class PfifValidator:
 
   # printing
 
-  @staticmethod
-  def messages_to_str(messages, test_name=None, show_errors=True,
-                      show_warnings=True, show_line_numbers=True,
-                      show_record_ids=True, show_xml_text=True):
+  def messages_to_str(self, messages, show_errors=True, show_warnings=True,
+                      show_line_numbers=True, show_line_text=True,
+                      show_record_ids=True, show_xml_text=True, is_html=False,
+                      xml_lines=None):
     """Returns a string containing all messages formatted per the options."""
-    output = []
-    if test_name != None:
-      output.append('****' + test_name + '****\n')
+    if xml_lines is None:
+      xml_lines = self.lines
+    output = MessagesOutput(is_html)
     for message in messages:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
+        output.start_new_message()
         if message.is_error:
-          output.append('ERROR: ')
+          output.make_message_part('ERROR: ', 'message_type')
         else:
-          output.append('WARNING: ')
-        output.append(message.main_text + '. ')
-        if (show_line_numbers and message.xml_line_number != None):
-          output.append('XML Line ' + str(message.xml_line_number) + '. ')
+          output.make_message_part('WARNING: ', 'message_type')
+        output.make_message_part(message.main_text + '. ', 'message_text')
         if show_record_ids:
           if message.person_record_id != None:
-            output.append('The relevant person_record_id is: ' +
-                           message.person_record_id + '. ')
+            output.make_message_part('The relevant person_record_id is: ' +
+                                     message.person_record_id + '. ',
+                                     'message_person_record_id')
           if message.note_record_id != None:
-            output.append('The relevant note_record_id is: ' +
-                           message.note_record_id + '. ')
+            output.make_message_part('The relevant note_record_id is: ' +
+                                     message.note_record_id + '. ',
+                                     'message_note_record_id')
         if show_xml_text and message.xml_element_text:
-          output.append('The text of the relevant PFIF XML node: ' +
-                         message.xml_element_text + '. ')
-        output.append('\n')
-    if test_name != None:
-      output.append('\n')
-    return ''.join(output)
+          output.make_message_part('The text of the relevant PFIF XML node: ' +
+                                   message.xml_element_text + '. ',
+                                   'message_xml_element_text')
+        if (show_line_numbers and message.xml_line_number != None):
+          output.make_message_part('Line ' + str(message.xml_line_number) +
+                                   '. ', 'message_line_number')
+        if (show_line_text and message.xml_line_number != None):
+          output.make_message_part(xml_lines[message.xml_line_number - 1],
+                                   'message_xml_line')
+        output.end_new_message()
+    return output.get_output()
 
   # validation
   # Each validate method can only be run on an initialized validator (the
@@ -876,13 +932,11 @@ class PfifValidator:
 
     return messages
 
-  @staticmethod
-  def run_validations(file_path):
+  def run_validations(self):
     """Runs all validations on the file specified by file_path.  Returns a list
     of all errors generated.  file_path can be anything that lxml will accept,
     including file objects and file-like objects."""
-    validator = PfifValidator(file_path)
-    methods = inspect.getmembers(validator, inspect.ismethod)
+    methods = inspect.getmembers(self, inspect.ismethod)
     messages = []
     for name, method in methods:
       # run all validation methods except for any validation method that takes
