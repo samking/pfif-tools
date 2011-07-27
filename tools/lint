@@ -11,6 +11,8 @@ REPORTS="no"
 INDENT_STRING="  "
 # Long method names are okay
 METHOD_REGEX="[a-z_][a-z0-9_]+$"
+# We want to know the lint IDs so that we can disable them if need be
+INCLUDE_IDS="yes"
 # All methods are public, so it's okay to have lots of public methods
 DISABLE="R0904"
 # It's okay to have container classes that don't have any methods
@@ -27,4 +29,5 @@ fi
 
 pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 ${LINT} --reports=${REPORTS} "--indent-string=${INDENT_STRING}" \
-  "--method-rgx=${METHOD_REGEX}" --disable=${DISABLE} "$@"
+  "--method-rgx=${METHOD_REGEX}" --disable=${DISABLE} \
+  --include-ids=${INCLUDE_IDS} "$@"
