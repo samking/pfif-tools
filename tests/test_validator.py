@@ -26,6 +26,8 @@ from pfif_validator import PfifValidator, Message
 import datetime
 import utils
 
+# TODO(samking): server tests for the controller
+
 class ValidatorTests(unittest.TestCase):
   """Tests each validation function in pfif_validator.py"""
 
