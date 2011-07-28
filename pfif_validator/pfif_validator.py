@@ -942,7 +942,7 @@ class PfifValidator:
       # run all validation methods except for any validation method that takes
       # more than one argument (self), because that will have a wrapper method.
       if (name.find('validate_') != -1 and
-          len(inspect.getargspec(method).args) == 1):
+          len(inspect.getargspec(method)[0]) == 1):
         messages.extend(method())
     return messages
 
