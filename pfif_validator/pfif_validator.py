@@ -578,9 +578,12 @@ class PfifValidator:
           not message.is_error and show_warnings):
         output.start_new_message()
         if message.is_error:
-          output.make_message_part('ERROR: ', 'message_type')
+          output.make_message_part('ERROR ', 'message_type')
         else:
-          output.make_message_part('WARNING: ', 'message_type')
+          output.make_message_part('WARNING ', 'message_type')
+        if (show_line_numbers and message.xml_line_number != None):
+          output.make_message_part('Line ' + str(message.xml_line_number) +
+                                   ': ', 'message_line_number')
         output.make_message_part(message.main_text + '. ', 'message_text')
         if show_record_ids:
           if message.person_record_id != None:
@@ -595,9 +598,6 @@ class PfifValidator:
           output.make_message_part('The text of the relevant PFIF XML node: ' +
                                    message.xml_element_text + '. ',
                                    'message_xml_element_text')
-        if (show_line_numbers and message.xml_line_number != None):
-          output.make_message_part('Line ' + str(message.xml_line_number) +
-                                   '. ', 'message_line_number')
         if (show_line_text and message.xml_line_number != None):
           output.make_message_part(xml_lines[message.xml_line_number - 1],
                                    'message_xml_line')

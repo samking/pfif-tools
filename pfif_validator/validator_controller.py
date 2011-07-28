@@ -12,10 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Inspiration (and some CSS/HTML) for the output design from the W3 validator.
-# See the W3C Software Notice and Licence at
-# http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
 
 """Provides a web interface for pfif_validator"""
 
@@ -56,12 +52,57 @@ class MainPage(webapp.RequestHandler):
 class Validator(webapp.RequestHandler):
   """Displays the validation results page."""
 
+  # Inspiration (and some CSS/HTML) for the output design from the W3 validator.
+  # See the W3C Software Notice and Licence at
+  # http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
+  CSS = """<style media="screen" type="text/css">
+div.all_messages {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding:0;
+  border-top: 1px solid #EAEBEE;
+  line-height: 135%;
+  margin-bottom: .65em;
+}
+
+div.message {
+  border: 1px solid #EAEBEE;
+  border-top: 0;
+  list-style-position: inside;
+  padding: 1em;
+  padding-bottom: 2em;
+  clear: both;
+}
+
+div.message:hover {
+  background-color: #fcfcfc;
+}
+
+span.message_line_number {
+  font-style:italic;
+}
+
+span.message_text {
+  font-weight:bold;
+}
+
+span.message_xml_line {
+  color: black;
+  background-color: #EAEBEE;
+  font-family: monospace;
+  white-space: pre;
+  display: block;
+}
+
+</style>"""
+
   def post(self):
     xml_file = StringIO.StringIO(self.request.get('pfif_xml'))
     print_options = self.request.get_all('print_options')
     validator = pfif_validator.PfifValidator(xml_file)
     messages = validator.run_validations()
-    self.response.out.write('<html><body><h1>Validation: ' +
+    self.response.out.write('<html><head>' + Validator.CSS + '</head>'
+                            '<body><h1>Validation: ' +
                             str(len(messages)) + ' Messages</h1>')
     marked_up_message = validator.messages_to_str(
         messages,
