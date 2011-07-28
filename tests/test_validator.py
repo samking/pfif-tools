@@ -21,8 +21,6 @@ import StringIO
 
 import os
 import sys
-# TODO(samking): remove this after adding a test running script
-sys.path.append(sys.path[0] + '/../pfif_validator')
 from pfif_validator import PfifValidator, Message
 import datetime
 import utils

@@ -2,13 +2,12 @@
 # Modified from Google Person Finder:
 # http://code.google.com/p/googlepersonfinder/
 
-
 # Scripts in the tools/ directory should source this file with the line:
 # pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 
 export TOOLS_DIR=$(pwd)
 export PROJECT_DIR=$(dirname $TOOLS_DIR)
-export VALIDATOR_DIR=$PROJECT_DIR/pfif_validator
+export APP_DIR=$PROJECT_DIR/pfif_validator
 export TESTS_DIR=$PROJECT_DIR/tests
 
 for dir in \
@@ -45,7 +44,7 @@ if [ -z "$PYTHON" ]; then
 fi
 
 export PYTHONPATH=\
-"$VALIDATOR_DIR":\
+"$APP_DIR":\
 "$TESTS_DIR":\
 "$TOOLS_DIR":\
 "$APPENGINE_DIR":\
