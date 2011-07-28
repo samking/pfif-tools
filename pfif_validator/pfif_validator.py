@@ -66,7 +66,7 @@ class MessagesOutput:
     MessagesOutput."""
     if self.is_html:
       # closes all_messages div
-      self.output.append('</div>') 
+      self.output.append('</div>')
     return ''.join(self.output)
 
   def start_new_message(self):
@@ -80,7 +80,7 @@ class MessagesOutput:
     make_message_part"""
     if self.is_html:
       # clases message div
-      self.output.append('</div>') 
+      self.output.append('</div>')
     self.output.append('\n')
 
   def make_message_part(self, text, html_class):

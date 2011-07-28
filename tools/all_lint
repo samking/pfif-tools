@@ -1,0 +1,10 @@
+#!/bin/bash
+# Runs the lint script on every .py file in the app directory and test
+# directories.
+
+pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
+
+for file in $APP_DIR/*.py $TESTS_DIR/*.py
+do
+  $TOOLS_DIR/lint $file
+done
