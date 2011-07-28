@@ -1298,7 +1298,7 @@ class ValidatorTests(unittest.TestCase):
     unicode text."""
     validator = self.set_up_validator(ValidatorTests.XML_UNICODE_12)
     messages = validator.run_validations()
-    output = validator.messages_to_str(messages)
+    validator.messages_to_str(messages)
     self.assertEqual(len(messages), 0)
 
 if __name__ == '__main__':
