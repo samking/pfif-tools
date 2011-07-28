@@ -22,10 +22,12 @@ import os
 import sys
 import unittest
 
+# pylint: disable=R0801
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore_file_stub
 
 import remote_api
+# pylint: enable=R0801
 
 def setup():
   """Setup for all tests in tests/"""
