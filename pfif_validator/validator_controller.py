@@ -20,6 +20,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 import StringIO
 import pfif_validator
+import urllib
 
 class MainPage(webapp.RequestHandler):
   """Displays the home page."""
@@ -28,9 +29,14 @@ class MainPage(webapp.RequestHandler):
     self.response.out.write("""
       <html>
         <body>
-          <form action="/validate" method="post">
+          <form action="/validate" method="post" enctype="multipart/form-data">
             <p>Put PFIF XML here to validate it:</p>
             <div><textarea name="pfif_xml" rows="3" cols="60"></textarea></div>
+            <div>Or, upload a file: <input name="pfif_xml_file" type="file" />
+                  </div>
+            <div>Or, choose the URL of a PFIF XML file: <input type="text"
+                  name="pfif_xml_url" /> </div>
+            <br />
             <div><input type="checkbox" name="print_options"
                   value="show_errors" checked>Show Errors</div>
             <div><input type="checkbox" name="print_options"
@@ -38,8 +44,8 @@ class MainPage(webapp.RequestHandler):
             <div><input type="checkbox" name="print_options"
                   value="show_line_numbers" checked>Show Line Numbers</div>
             <div><input type="checkbox" name="print_options"
-                  value="show_line_text" checked>Show the Line the Error
-                                                 Happened On</div>
+                  value="show_line_text" checked>Show the Line on which the
+                                                 Error Happened</div>
             <div><input type="checkbox" name="print_options"
                   value="show_record_ids" checked>Show Record IDs</div>
             <div><input type="checkbox" name="print_options"
@@ -97,7 +103,13 @@ span.message_xml_line {
 </style>"""
 
   def post(self):
-    xml_file = StringIO.StringIO(self.request.get('pfif_xml'))
+    for file_location in ['pfif_xml', 'pfif_xml_file']:
+      if self.request.get(file_location):
+        xml_file = StringIO.StringIO(self.request.get(file_location))
+    if self.request.get('pfif_xml_url'):
+      url = self.request.get('pfif_xml_url')
+      # make a file-like object out of the URL's xml so we can seek on it
+      xml_file = StringIO.StringIO(urllib.urlopen(url).read())
     print_options = self.request.get_all('print_options')
     validator = pfif_validator.PfifValidator(xml_file)
     messages = validator.run_validations()
