@@ -15,7 +15,6 @@
 
 """Tests for utils.py"""
 
-import sys
 import utils
 import unittest
 

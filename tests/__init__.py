@@ -16,7 +16,6 @@
 # Slightly Modified from Google Person Finder:
 # http://code.google.com/p/googlepersonfinder/
 
-
 """Setup and teardown fixtures for all the tests in the tests/ directory."""
 
 import os
@@ -29,11 +28,12 @@ from google.appengine.api import datastore_file_stub
 import remote_api
 
 def setup():
-    # Create a new apiproxy and temp datastore to use for this test suite
-    apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
-    temp_db = datastore_file_stub.DatastoreFileStub(
-        'PfifToolsUnittestDataStore', None, None, trusted=True)
-    apiproxy_stub_map.apiproxy.RegisterStub('datastore', temp_db)
+  """Setup for all tests in tests/"""
+  # Create a new apiproxy and temp datastore to use for this test suite
+  apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
+  temp_db = datastore_file_stub.DatastoreFileStub(
+      'PfifToolsUnittestDataStore', None, None, trusted=True)
+  apiproxy_stub_map.apiproxy.RegisterStub('datastore', temp_db)
 
-    # An application id is required to access the datastore, so let's create one
-    os.environ['APPLICATION_ID'] = 'pfif-tools-test'
+  # An application id is required to access the datastore, so let's create one
+  os.environ['APPLICATION_ID'] = 'pfif-tools-test'

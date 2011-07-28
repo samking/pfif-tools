@@ -21,6 +21,8 @@ DISABLE="${DISABLE},R0903"
 DISABLE="${DISABLE},R0913"
 # It's okay to have long files
 DISABLE="${DISABLE},C0302"
+# When we pylint: disable something, we don't need to hear about it
+DISABLE="${DISABLE},I0011"
 
 if [ -z "$LINT" ]; then
   echo "pylint not found, please install."

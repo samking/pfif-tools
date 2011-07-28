@@ -31,16 +31,16 @@ from google.appengine.api import datastore_file_stub
 import remote_api
 
 # Gather the tests from all the test modules.
-loader = unittest.defaultTestLoader
-suites = []
+loader = unittest.defaultTestLoader # pylint: disable=C0103
+suites = [] # pylint: disable=C0103
 for filename in os.listdir(remote_api.TESTS_DIR):
-    if filename.startswith('test_') and filename.endswith('.py'):
-        module = filename[:-3]
-        suites.append(loader.loadTestsFromName(module))
+  if filename.startswith('test_') and filename.endswith('.py'):
+    module = filename[:-3]
+    suites.append(loader.loadTestsFromName(module))
 
 # Create a new apiproxy and temp datastore to use for this test suite
 apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
-temp_db = datastore_file_stub.DatastoreFileStub(
+temp_db = datastore_file_stub.DatastoreFileStub( # pylint: disable=C0103
     'PfifToolsUnittestDataStore', None, None, trusted=True)
 apiproxy_stub_map.apiproxy.RegisterStub('datastore', temp_db)
 
@@ -48,5 +48,7 @@ apiproxy_stub_map.apiproxy.RegisterStub('datastore', temp_db)
 os.environ['APPLICATION_ID'] = 'pfif-tools-unittest'
 
 # Run the tests.
+# pylint: disable=C0103
 result = unittest.TextTestRunner().run(unittest.TestSuite(suites))
+# pylint: enable=C0103
 sys.exit(not result.wasSuccessful())
