@@ -16,8 +16,6 @@
 """Tests for utils.py"""
 
 import sys
-# TODO(samking): remove this after adding a test running script
-sys.path.append(sys.path[0] + '/../pfif_validator')
 import utils
 import unittest
 

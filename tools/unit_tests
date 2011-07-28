@@ -1,0 +1,8 @@
+#!/bin/bash
+# From Google Person Finder: http://code.google.com/p/googlepersonfinder/
+
+pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
+
+echo
+echo "--- Running unit tests"
+nosetests -d "$@"
