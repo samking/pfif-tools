@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 # Copyright 2011 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -716,6 +717,36 @@ class ValidatorTests(unittest.TestCase):
   <pfif:foo />
 </pfif:pfif>"""
 
+  XML_UNICODE_12 = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
+  <pfif:person>
+    <pfif:person_record_id>not.unicode/person-id</pfif:person_record_id>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:author_name>ユニコード名</pfif:author_name>
+    <pfif:first_name>اسم يونيكود</pfif:first_name>
+    <pfif:last_name>Unicode名称</pfif:last_name>
+    <pfif:home_street>Юнікодам вуліцы</pfif:home_street>
+    <pfif:home_city>ইউনিকোড শহর</pfif:home_city>
+    <pfif:home_neighborhood>Unicode השכונה</pfif:home_neighborhood>
+    <pfif:other>ಯುನಿಕೋಡಿನ ಇತರ</pfif:other>
+    <pfif:note>
+      <pfif:note_record_id>not.unicode/note-id</pfif:note_record_id>
+      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+      <pfif:author_name>유니 코드 이름</pfif:author_name>
+      <pfif:last_known_location>محل یونیکد</pfif:last_known_location>
+      <pfif:text>Unicode текст</pfif:text>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>not.unicode/note-id-2</pfif:note_record_id>
+    <pfif:person_record_id>note.unicode/person-id</pfif:person_record_id>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:author_name>Уницоде имена</pfif:author_name>
+    <pfif:last_known_location>யுனிகோட் இடம்</pfif:last_known_location>
+    <pfif:text>యూనికోడ్ టెక్స్ట్</pfif:text>
+  </pfif:note>
+</pfif:pfif>"""
+
   EXPIRED_TIME = datetime.datetime(1999, 3, 1)
 
   PRINT_VALIDATOR_OUTPUT = True
@@ -1261,6 +1292,16 @@ class ValidatorTests(unittest.TestCase):
       self.assertTrue(node in validator.line_numbers)
       for child in node.getchildren():
         self.assertTrue(child in validator.line_numbers)
+
+  # unicode
+
+  def test_unicode_works(self):
+    """none of the validations should fail when processing a field that includes
+    unicode text."""
+    validator = self.set_up_validator(ValidatorTests.XML_UNICODE_12)
+    messages = validator.run_validations()
+    output = validator.messages_to_str(messages)
+    self.assertEqual(len(messages), 0)
 
 if __name__ == '__main__':
   unittest.main()
