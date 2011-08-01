@@ -189,6 +189,9 @@ class ValidatorTests(unittest.TestCase):
       <pfif:note_record_id>يونيكود/bar</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/aoeu </pfif:person_record_id>
+  </pfif:person>
 </pfif:pfif>"""
 
   XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
@@ -998,7 +1001,7 @@ class ValidatorTests(unittest.TestCase):
     format.  This tests all fields in version 1.1 for which incorrect input is
     possible."""
     validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_11)
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 25)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 26)
 
   def test_all_12_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
