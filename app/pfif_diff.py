@@ -15,18 +15,24 @@
 
 """Displays the difference between two PFIF XML files.
 
-Differences in field order are ignored regardless of PFIF version.
-Notes that are children of persons automatically have the person_record_id added
-to them, so children of persons and top-level notes are considered the same.
-The output will include one message per person or note that is missing or added.
-These messages will specify whether it is a person or note and whether it was
-missing or added in addition to the id of the note.  The output will also
-include one message per person or note field that is missing, added, or changed.
-For each of these, it will display the id of the containing person or note, the
-field name, whether the field was missing, added, or changed, the current text
-(if present), and the expected text (if present)."""
+* Differences in field order are ignored regardless of PFIF version.
+* Notes that are children of persons automatically have the person_record_id
+  added to them, so children of persons and top-level notes are considered the
+  same.
+* This tool assumes that both files are valid PFIF XML.  That means that this
+  tool is not guaranteed to notice if, for instance, one file has a child of the
+  root that is neither a person nor a note and the other child is missing that.
+* The output will include one message per person or note that is missing or
+  added.  These messages will specify whether it is a person or note and whether
+  it was missing or added in addition to the id of the note.  The output will
+  also include one message per person or note field that is missing, added, or
+  changed.  For each of these, it will display the id of the containing person
+  or note, the field name, whether the field was missing, added, or changed, the
+  current text (if present), and the expected text (if present)."""
 
 __author__ = 'samking@google.com (Sam King)'
+
+import xml.etree.ElementTree as ET
 
 class PfifDiffTool:
   """Allows the user to get the diff between two files and control the output"""
@@ -36,7 +42,7 @@ class PfifDiffTool:
   def objectify_pfif_xml(self, file_to_objectify):
     """Turns a file of PFIF XML into a map."""
     # read the file into an XML tree
-    xml_tree = 
+    xml_tree = ET.parse(file_to_objectify)
     # turn the xml trees into a persons and notes map for each file.  They will
     # map from record_id to a map from field_name to value
     object_map = {}
