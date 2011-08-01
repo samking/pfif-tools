@@ -637,9 +637,10 @@ class PfifValidator:
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
           if element.text:
-            # strip the string so that extra whitespace around the edges won't
-            # interfere with matching
-            text = element.text.strip()
+            # note: the text is not stripped.  Some parsers may choke on extra
+            # whitespace, so extra whitespace around text will cause it to fail
+            # to match the field
+            text = element.text
             if field_format == 'URL':
               url = urlparse(text)
               # The URL should be HTTP or HTTPS.  If the netloc is blank, the
