@@ -8,7 +8,7 @@
 
 export TOOLS_DIR=$(pwd)
 export PROJECT_DIR=$(dirname $TOOLS_DIR)
-export VALIDATOR_DIR=$PROJECT_DIR/pfif_validator
+export APP_DIR=$PROJECT_DIR/app
 export TESTS_DIR=$PROJECT_DIR/tests
 
 for python in \
@@ -28,6 +28,6 @@ if [ -z "$PYTHON" ]; then
 fi
 
 export PYTHONPATH=\
-"$VALIDATOR_DIR":\
+"$APP_DIR":\
 "$TESTS_DIR":\
 "$TOOLS_DIR"
