@@ -53,9 +53,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_neighborhood>HOME NEIGHBORHOOD</pfif:home_neighborhood>
     <pfif:home_street>HOME STREET</pfif:home_street>
     <pfif:home_zip>12345</pfif:home_zip>
-    <pfif:photo_url>
-      https://user:pass@host:999/url_path?var=val#hash
-    </pfif:photo_url>
+    <pfif:photo_url>https://user:pass@host:999/url_path?var=val#hash</pfif:photo_url>
     <pfif:other>other text</pfif:other>
     <pfif:note>
       <pfif:note_record_id>www.example.org/local-id.4</pfif:note_record_id>
