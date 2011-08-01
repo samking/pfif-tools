@@ -190,7 +190,8 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
   </pfif:person>
   <pfif:person>
-    <pfif:person_record_id>example.org/aoeu </pfif:person_record_id>
+    <pfif:person_record_id>example.org/ao
+                           e	u </pfif:person_record_id>
   </pfif:person>
 </pfif:pfif>"""
 
