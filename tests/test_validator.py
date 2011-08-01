@@ -183,6 +183,12 @@ class ValidatorTests(unittest.TestCase):
       <pfif:note_record_id>http://foo/bar</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/యూనికోడ్</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>يونيكود/bar</pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
 </pfif:pfif>"""
 
   XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
@@ -986,14 +992,13 @@ class ValidatorTests(unittest.TestCase):
     validator = self.set_up_validator(ValidatorTests.XML_11_FULL)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
 
-  #TODO(samking): test that non-ascii characters should be rejected
   def test_no_11_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return a list with every
     subnode of person and note when every such subnode is of an incorrect
     format.  This tests all fields in version 1.1 for which incorrect input is
     possible."""
     validator = self.set_up_validator(ValidatorTests.XML_INCORRECT_FORMAT_11)
-    self.assertEqual(len(validator.validate_fields_have_correct_format()), 23)
+    self.assertEqual(len(validator.validate_fields_have_correct_format()), 25)
 
   def test_all_12_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
