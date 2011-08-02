@@ -22,85 +22,8 @@ import StringIO
 import pfif_validator
 import urllib
 
-class MainPage(webapp.RequestHandler):
-  """Displays the home page."""
-
-  def get(self):
-    self.response.out.write("""
-      <html>
-        <body>
-          <form action="/validate" method="post" enctype="multipart/form-data">
-            <p>Put PFIF XML here to validate it:</p>
-            <div><textarea name="pfif_xml" rows="3" cols="60"></textarea></div>
-            <div>Or, upload a file: <input name="pfif_xml_file" type="file" />
-                  </div>
-            <div>Or, choose the URL of a PFIF XML file: <input type="text"
-                  name="pfif_xml_url" /> </div>
-            <br />
-            <div><input type="checkbox" name="print_options"
-                  value="show_errors" checked>Show Errors</div>
-            <div><input type="checkbox" name="print_options"
-                  value="show_warnings" checked>Show Warnings</div>
-            <div><input type="checkbox" name="print_options"
-                  value="show_line_numbers" checked>Show Line Numbers</div>
-            <div><input type="checkbox" name="print_options"
-                  value="show_line_text" checked>Show the Line on which the
-                                                 Error Happened</div>
-            <div><input type="checkbox" name="print_options"
-                  value="show_record_ids" checked>Show Record IDs</div>
-            <div><input type="checkbox" name="print_options"
-                  value="show_xml_text" checked>Show XML Text</div>
-            <div><input type="submit" value="Validate PFIF XML"></div>
-          </form>
-        </body>
-      </html>""")
-
 class Validator(webapp.RequestHandler):
   """Displays the validation results page."""
-
-  # Inspiration (and some CSS/HTML) for the output design from the W3 validator.
-  # See the W3C Software Notice and Licence at
-  # http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
-  CSS = """<style media="screen" type="text/css">
-div.all_messages {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding:0;
-  border-top: 1px solid #EAEBEE;
-  line-height: 135%;
-  margin-bottom: .65em;
-}
-
-div.message {
-  border: 1px solid #EAEBEE;
-  border-top: 0;
-  list-style-position: inside;
-  padding: 1em;
-  padding-bottom: 2em;
-  clear: both;
-}
-
-div.message:hover {
-  background-color: #fcfcfc;
-}
-
-span.message_line_number {
-  font-style:italic;
-}
-
-span.message_text {
-  font-weight:bold;
-}
-
-span.message_xml_line {
-  color: black;
-  background-color: #EAEBEE;
-  font-family: monospace;
-  white-space: pre;
-  display: block;
-}
-
-</style>"""
 
   def post(self):
     for file_location in ['pfif_xml', 'pfif_xml_file']:
@@ -113,7 +36,8 @@ span.message_xml_line {
     print_options = self.request.get_all('print_options')
     validator = pfif_validator.PfifValidator(xml_file)
     messages = validator.run_validations()
-    self.response.out.write('<html><head>' + Validator.CSS + '</head>'
+    self.response.out.write('<html><head><link rel="stylesheet" type="text/css"'
+                            'href="/static/style.css" /></head>'
                             '<body><h1>Validation: ' +
                             str(len(messages)) + ' Messages</h1>')
     marked_up_message = validator.messages_to_str(
@@ -130,9 +54,7 @@ span.message_xml_line {
     self.response.out.write(marked_up_message)
     self.response.out.write('</body></html>')
 
-APPLICATION = webapp.WSGIApplication([('/', MainPage),
-                                      ('/validate', Validator)],
-                                     debug=True)
+APPLICATION = webapp.WSGIApplication([('/validate', Validator)], debug=True)
 
 def main():
   """Sets up the controller."""
