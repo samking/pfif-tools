@@ -33,6 +33,7 @@
 __author__ = 'samking@google.com (Sam King)'
 
 import xml.etree.ElementTree as ET
+import utils
 
 class PfifDiffTool:
   """Allows the user to get the diff between two files and control the output"""
@@ -42,13 +43,29 @@ class PfifDiffTool:
   def objectify_pfif_xml(self, file_to_objectify):
     """Turns a file of PFIF XML into a map."""
     # read the file into an XML tree
-    xml_tree = ET.parse(file_to_objectify)
+    tree = utils.PfifXmlTree(file_to_objectify)
     # turn the xml trees into a persons and notes map for each file.  They will
     # map from record_id to a map from field_name to value
     object_map = {}
+    persons = tree.get_all_persons()
+    for person in persons:
+      person_record_id = tree.get_field_text(person, 'person_record_id')
+      if person_record_id is None:
+        # TODO(samking): make it a real message
+        print "error!"
+      else:
+        object_map[person_record_id] = {}
+        for child in person.getchildren():
+          field_name = utils.extract_tag(child.tag)
+          field_value = child.text
+          if field_name == 'note':
+            # get the note record id
+            # force-add the person_record_id to it if it's absent
+            # do the same stuff as with a person
+          else:
+            object_map[person_record_id][field_name] = field_value
 
 
-  # TODO(samking): implement
   def pfif_diff(self, file1, file2):
 
     # Compute the Diff
