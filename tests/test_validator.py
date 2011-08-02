@@ -1330,9 +1330,16 @@ class ValidatorTests(unittest.TestCase):
   def test_main(self):
     """main should not raise an exception under normal circumstances."""
     old_argv = sys.argv
-    utils.set_file_for_test(StringIO(ValidatorTests.XML_11_FULL))
+    old_stdout = sys.stdout
     sys.argv = ['pfif_validator.py', 'mocked_file']
+    sys.stdout = StringIO('')
+
+    utils.set_file_for_test(StringIO(ValidatorTests.XML_11_FULL))
     pfif_validator.main()
+    # There should be one newline but no content printed
+    self.assertEqual(len(sys.stdout.getvalue()), 1)
+
+    sys.stdout = old_stdout
     sys.argv = old_argv
 
   # line numbers

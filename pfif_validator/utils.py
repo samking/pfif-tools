@@ -40,10 +40,11 @@ def get_utcnow():
   return _utcnow_for_test or datetime.utcnow()
 
 # Dependency injection for files
-_file_for_test = None
+_file_for_test = None # pylint: disable=c0103
 
 def set_file_for_test(file_for_test):
-  global _file_for_test
+  """Set current file for debugging purposes."""
+  global _file_for_test # pylint: disable=w0603
   _file_for_test = file_for_test
 
 def open_file(filename, mode='r'):
