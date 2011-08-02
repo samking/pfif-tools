@@ -38,3 +38,14 @@ def set_utcnow_for_test(now):
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()
+
+# Dependency injection for files
+_file_for_test = None
+
+def set_file_for_test(file_for_test):
+  global _file_for_test
+  _file_for_test = file_for_test
+
+def open_file(filename, mode='r'):
+  """Opens the file or returns a debug value if set."""
+  return _file_for_test or open(filename, mode)
