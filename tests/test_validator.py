@@ -862,7 +862,10 @@ class ValidatorTests(unittest.TestCase):
                                        xml_lines=lines)
     self.assertNotEqual(output.find("ZZZ 11"), -1)
 
-    #TODO(samking): test that if is_html, there is a div somewhere
+    # is_html should output a div somewhere
+    self.assertEqual(output.find("div"), -1)
+    output = validator.messages_to_str(messages, is_html=True, xml_lines=lines)
+    self.assertNotEqual(output.find("div"), -1)
 
   # initialize_xml
 
