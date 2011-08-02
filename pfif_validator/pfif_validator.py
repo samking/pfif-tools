@@ -993,9 +993,8 @@ class PfifValidator:
 
 def main():
   """Runs all validations on the provided PFIF XML file"""
-  if (not len(sys.argv) == 2):
-    print 'Usage: python pfif-validator.py my-pyif-xml-file'
-  validator = PfifValidator(open(sys.argv[1]), 'r')
+  assert len(sys.argv) == 2, 'Usage: python pfif_validator.py my-pyif-xml-file'
+  validator = PfifValidator(utils.open_file(sys.argv[1]), 'r')
   messages = validator.run_validations()
   print validator.messages_to_str(messages)
 

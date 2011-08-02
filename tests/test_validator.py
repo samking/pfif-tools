@@ -17,11 +17,11 @@
 """Tests for pfif_validator.py"""
 
 import unittest
-import StringIO
-
+from StringIO import StringIO
 import os
 import sys
 from pfif_validator import PfifValidator, Message
+import pfif_validator # to test main
 import datetime
 import utils
 
@@ -792,7 +792,7 @@ class ValidatorTests(unittest.TestCase):
   @staticmethod
   def set_up_validator(xml):
     """Creates a PFIF validator from XML and initializes it"""
-    pfif_file = StringIO.StringIO(xml)
+    pfif_file = StringIO(xml)
     return PfifValidator(pfif_file, initialize=True)
 
   # printing
@@ -871,14 +871,13 @@ class ValidatorTests(unittest.TestCase):
 
   def test_valid_xml(self):
     """initialize_xml should turn a string of valid XML into an object"""
-    valid_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
+    valid_xml_file = StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(valid_xml_file, initialize=False)
     self.assertEqual(len(validator.initialize_xml()), 0)
 
   def test_invalid_xml(self):
     """initialize_xml should raise an error on a string of invalid XML"""
-    invalid_xml_file = StringIO.StringIO(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    invalid_xml_file = StringIO("""<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>""")
     validator = PfifValidator(invalid_xml_file, initialize=False)
@@ -889,7 +888,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_is_pfif(self):
     """initialize_pfif_version should return an empty list if the XML
     root is PFIF"""
-    pfif_11_xml_file = StringIO.StringIO(ValidatorTests.XML_11_SMALL)
+    pfif_11_xml_file = StringIO(ValidatorTests.XML_11_SMALL)
     validator = PfifValidator(pfif_11_xml_file, initialize=False)
     validator.initialize_xml()
     self.assertEqual(len(validator.initialize_pfif_version()), 0)
@@ -897,7 +896,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_is_not_pfif(self):
     """initialize_pfif_version should raise an exception if the XML root
     is not PFIF"""
-    random_xml_file = StringIO.StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
+    random_xml_file = StringIO(ValidatorTests.XML_NON_PFIF_ROOT)
     validator = PfifValidator(random_xml_file, initialize=False)
     validator.initialize_xml()
     self.assertRaises(Exception, validator.initialize_pfif_version)
@@ -905,7 +904,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_lacks_namespace(self):
     """initialize_pfif_version should raise an exception if the XML root
     doesn't specify a namespace"""
-    no_namespace_xml_file = StringIO.StringIO(ValidatorTests.XML_NO_NAMESPACE)
+    no_namespace_xml_file = StringIO(ValidatorTests.XML_NO_NAMESPACE)
     validator = PfifValidator(no_namespace_xml_file, initialize=False)
     validator.initialize_xml()
     self.assertRaises(Exception, validator.initialize_pfif_version)
@@ -913,7 +912,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_is_bad_pfif_version(self):
     """initialize_pfif_version should raise an exception if the PFIF
     version is not supported"""
-    pfif_99_xml_file = StringIO.StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
+    pfif_99_xml_file = StringIO(ValidatorTests.XML_BAD_PFIF_VERSION)
     validator = PfifValidator(pfif_99_xml_file, initialize=False)
     validator.initialize_xml()
     self.assertRaises(Exception, validator.initialize_pfif_version)
@@ -921,8 +920,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_is_bad_pfif_website(self):
     """initialize_pfif_version should raise an exception if the PFIF
     website is wrong"""
-    pfif_bad_website_xml_file = StringIO.StringIO(
-        ValidatorTests.XML_BAD_PFIF_WEBSITE)
+    pfif_bad_website_xml_file = StringIO(ValidatorTests.XML_BAD_PFIF_WEBSITE)
     validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
     validator.initialize_xml()
     self.assertRaises(Exception, validator.initialize_pfif_version)
@@ -1308,7 +1306,7 @@ class ValidatorTests(unittest.TestCase):
         ValidatorTests.XML_TOP_LEVEL_NOTE_PERSON_11)
     self.assertEqual(len(validator.validate_extraneous_fields()), 2)
 
-  # run_validations
+  # main application + run_validations
 
   def test_run_validations_without_errors(self):
     """run_validations should return an empty message list when passed a valid
@@ -1318,9 +1316,24 @@ class ValidatorTests(unittest.TestCase):
 
   def test_run_validations_with_errors(self):
     """run_validations should return a message list with three errors when the
-    root doesn't have a mandatory child and there are two duplicate nodes"""
+    root doesn't have a mandatory child and there are two duplicate nodes."""
     validator = self.set_up_validator(ValidatorTests.XML_TWO_DUPLICATE_NO_CHILD)
     self.assertEqual(len(validator.run_validations()), 3)
+
+  def test_main_no_args(self):
+    """main should give an assertion if it is given the wrong number of args."""
+    old_argv = sys.argv
+    sys.argv = ['pfif_validator.py']
+    self.assertRaises(Exception, pfif_validator.main)
+    sys.argv = old_argv
+
+  def test_main(self):
+    """main should not raise an exception under normal circumstances."""
+    old_argv = sys.argv
+    utils.set_file_for_test(StringIO(ValidatorTests.XML_11_FULL))
+    sys.argv = ['pfif_validator.py', 'mocked_file']
+    pfif_validator.main()
+    sys.argv = old_argv
 
   # line numbers
 
