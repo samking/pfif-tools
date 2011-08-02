@@ -89,12 +89,10 @@ class MessagesOutput:
     the span that will contain the text."""
     if self.is_html:
       self.output.append('<span class="' + html_class + '">')
-    if self.is_html:
       self.output.append(cgi.escape(text))
+      self.output.append('</span>')
     else:
       self.output.append(text)
-    if self.is_html:
-      self.output.append('</span>')
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
