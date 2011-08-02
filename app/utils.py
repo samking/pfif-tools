@@ -50,7 +50,6 @@ class PfifXmlTree():
     self.tree = ET.parse(xml_file, parser=parser)
     self.namespace = None
 
-
   def initialize_pfif_version(self):
     root = self.tree.getroot()
     tag = root.tag
@@ -93,3 +92,11 @@ class PfifXmlTree():
     for person in self.get_all_persons():
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
     return notes
+
+  def get_field_text(self, parent, child_tag):
+    """Returns the text associated with the child node of parent.  Returns none
+    if parent doesn't have that child or if the child doesn't have any text"""
+    child = parent.find(self.add_namespace_to_tag(child_tag))
+    if child != None:
+      return child.text
+    return None
