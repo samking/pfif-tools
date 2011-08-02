@@ -21,7 +21,8 @@
   same.
 * This tool assumes that both files are valid PFIF XML.  That means that this
   tool is not guaranteed to notice if, for instance, one file has a child of the
-  root that is neither a person nor a note and the other child is missing that.
+  root that is neither a person nor a note and the other child is missing that
+  or if there are two notes with the same note_record_id.
 * The output will include one message per person or note that is missing or
   added.  These messages will specify whether it is a person or note and whether
   it was missing or added in addition to the id of the note.  The output will
@@ -40,6 +41,42 @@ class PfifDiffTool:
 
   # TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
 
+  def objectify_parents(self, parents, is_person, object_map, tree,
+                        parent_person_record_id=None):
+    """Adds the object representation of each parent in parents to object_map.
+    If is_person, all parents are assumed to be persons (else, notes).  Tree is
+    a PfifXmlTree.  Specifying parent_person_record_id is used for recursive
+    calls when a person has a note as a child."""
+    if is_person:
+      record_id_tag = 'person_record_id'
+    else:
+      record_id_tag = 'note_record_id'
+    for parent in parents:
+      record_id = tree.get_field_text(parent, record_id_tag)
+      assert record_id is not None, ('Invalid PFIF XML: a record is missing '
+                                     'its ' + record_id_tag + ' field.')
+      # We prepend person record ids with 'person_record_id' and note record ids
+      # with 'note_record_id' to allow both to exist in the same map with no
+      # risk of collisions.
+      record_map = object_map.setdefault(record_id_tag + record_id, {})
+      # If this note is a child of a person, it isn't required to have a
+      # person_record_id, but it's easier to deal with notes that have
+      # person_record_ids, so we force-add it.
+      if not is_person and parent_person_record_id is not None:
+        record_map['person_record_id'] = parent_person_record_id
+      for child in person.getchildren():
+        field_name = utils.extract_tag(child.tag)
+        # We'll deal with all notes together, so skip them for now.
+        if is_person and field_name == 'note':
+          continue
+        else:
+          field_value = child.text
+          record_map[field_name] = field_value
+      if is_person:
+        self.objectify_parents(
+            parent.getchildren(tree.add_namespace_to_tag('note')),
+            False, object_map, parent_person_record_id=record_id)
+
   def objectify_pfif_xml(self, file_to_objectify):
     """Turns a file of PFIF XML into a map."""
     # read the file into an XML tree
@@ -47,26 +84,12 @@ class PfifDiffTool:
     # turn the xml trees into a persons and notes map for each file.  They will
     # map from record_id to a map from field_name to value
     object_map = {}
-    persons = tree.get_all_persons()
-    for person in persons:
-      person_record_id = tree.get_field_text(person, 'person_record_id')
-      if person_record_id is None:
-        # TODO(samking): make it a real message
-        print "error!"
-      else:
-        object_map[person_record_id] = {}
-        for child in person.getchildren():
-          field_name = utils.extract_tag(child.tag)
-          field_value = child.text
-          if field_name == 'note':
-            # get the note record id
-            # force-add the person_record_id to it if it's absent
-            # do the same stuff as with a person
-          else:
-            object_map[person_record_id][field_name] = field_value
-
+    self.objectify_parents(tree.get_all_persons(), True, object_map, tree)
+    self.objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
+    return object_map
 
   def pfif_diff(self, file1, file2):
+    return "TODO"
 
     # Compute the Diff
     # foreach id in map1
