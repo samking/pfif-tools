@@ -25,6 +25,14 @@ import urllib
 class Validator(webapp.RequestHandler):
   """Displays the validation results page."""
 
+  RESULTS_HEADER = """<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>PFIF Validator: Results</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css" />
+  </head>"""
+
   def post(self):
     for file_location in ['pfif_xml', 'pfif_xml_file']:
       if self.request.get(file_location):
@@ -36,8 +44,7 @@ class Validator(webapp.RequestHandler):
     print_options = self.request.get_all('print_options')
     validator = pfif_validator.PfifValidator(xml_file)
     messages = validator.run_validations()
-    self.response.out.write('<html><head><link rel="stylesheet" type="text/css"'
-                            'href="/static/style.css" /></head>'
+    self.response.out.write(Validator.RESULTS_HEADER +
                             '<body><h1>Validation: ' +
                             str(len(messages)) + ' Messages</h1>')
     marked_up_message = validator.messages_to_str(
