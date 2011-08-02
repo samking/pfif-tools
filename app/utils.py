@@ -86,11 +86,21 @@ class PfifXmlTree():
     """returns a list of all persons in the tree"""
     return self.tree.findall(self.add_namespace_to_tag('person'))
 
-  def get_all_notes(self):
-    """returns a list of all notes in the tree"""
-    notes = self.tree.findall(self.add_namespace_to_tag('note'))
+  def get_child_notes(self):
+    """returns a list of all notes that are subnodes of persons"""
+    notes = []
     for person in self.get_all_persons():
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
+    return notes
+
+  def get_top_level_notes(self):
+    """returns a list of all notes that are subnodes of the root node"""
+    return self.tree.findall(self.add_namespace_to_tag('note'))
+
+  def get_all_notes(self):
+    """returns a list of all notes in the tree"""
+    notes = self.get_top_level_notes()
+    notes.extend(self.get_child_notes())
     return notes
 
   def get_field_text(self, parent, child_tag):
