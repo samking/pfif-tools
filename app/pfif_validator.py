@@ -410,20 +410,12 @@ class PfifValidator:
         return expiry_date
     return None
 
-  def get_field_text(self, parent, child_tag):
-    """Returns the text associated with the child node of parent.  Returns none
-    if parent doesn't have that child or if the child doesn't have any text"""
-    child = parent.find(self.tree.add_namespace_to_tag(child_tag))
-    if child != None:
-      return child.text
-    return None
-
   def add_linked_record_mapping(self, person_record_id, note, linked_records):
     """if the note contains a linked_record, adds a mapping from
     person_record_id to a dict and a mapping in that dict from the note's
     linked_person_record_id to the note itself (for ease of creating a message
     about the note) in the linked_records map."""
-    linked_id = self.get_field_text(note, 'linked_person_record_id')
+    linked_id = self.tree.get_field_text(note, 'linked_person_record_id')
     if linked_id != None and person_record_id != None:
       linked_dict = linked_records.setdefault(person_record_id, {})
       linked_dict[linked_id] = note
@@ -436,13 +428,13 @@ class PfifValidator:
     # so we need to get that from the person that owns the note rather than just
     # using self.tree.get_all_notes
     for person in self.tree.get_all_persons():
-      person_record_id = self.get_field_text(person, 'person_record_id')
+      person_record_id = self.tree.get_field_text(person, 'person_record_id')
       for note in person.findall(self.tree.add_namespace_to_tag('note')):
         self.add_linked_record_mapping(person_record_id, note, linked_records)
     # Top level notes are required to have their person_record_id, so we can
     # just iterate over them
     for note in self.tree.findall(self.tree.add_namespace_to_tag('note')):
-      person_record_id = self.get_field_text(note, 'person_record_id')
+      person_record_id = self.tree.get_field_text(note, 'person_record_id')
       self.add_linked_record_mapping(person_record_id, note, linked_records)
     return linked_records
 
@@ -450,8 +442,8 @@ class PfifValidator:
     """Wrapper for initializing a Message that extracts the person_record_id and
     note_record_id, if present, from a record and the text and line number from
     an element"""
-    person_record_id = self.get_field_text(record, 'person_record_id')
-    note_record_id = self.get_field_text(record, 'note_record_id')
+    person_record_id = self.tree.get_field_text(record, 'person_record_id')
+    note_record_id = self.tree.get_field_text(record, 'note_record_id')
     line = None
     text = None
     if element != None:
@@ -663,9 +655,10 @@ class PfifValidator:
                 'match the person_record_id of the person that owns the note.',
                 xml_line_number=note_person_id.sourceline,
                 xml_element_text=note_person_id.text,
-                person_record_id=self.get_field_text(person,
+                person_record_id=self.tree.get_field_text(person,
                                                      'person_record_id'),
-                note_record_id=self.get_field_text(note, 'note_record_id')))
+                note_record_id=self.tree.get_field_text(note,
+                                                        'note_record_id')))
     return messages
 
   def validate_field_order(self, records, field_type):
@@ -711,8 +704,8 @@ class PfifValidator:
     created, the source_date and entry_date must match.  Returns true if those
     conditions hold."""
     messages = []
-    source_date = self.get_field_text(person, 'source_date')
-    entry_date = self.get_field_text(person, 'entry_date')
+    source_date = self.tree.get_field_text(person, 'source_date')
+    entry_date = self.tree.get_field_text(person, 'entry_date')
     if (not source_date) or (source_date != entry_date):
       messages.append(self.make_message('An expired record has a source date '
                                         'that does not match the entry date.',
