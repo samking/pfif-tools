@@ -53,9 +53,7 @@ class ValidatorTests(unittest.TestCase):
     <pfif:home_neighborhood>HOME NEIGHBORHOOD</pfif:home_neighborhood>
     <pfif:home_street>HOME STREET</pfif:home_street>
     <pfif:home_zip>12345</pfif:home_zip>
-    <pfif:photo_url>
-      https://user:pass@host:999/url_path?var=val#hash
-    </pfif:photo_url>
+    <pfif:photo_url>https://user:pass@host:999/url_path?var=val#hash</pfif:photo_url>
     <pfif:other>other text</pfif:other>
     <pfif:note>
       <pfif:note_record_id>www.example.org/local-id.4</pfif:note_record_id>
@@ -71,7 +69,11 @@ class ValidatorTests(unittest.TestCase):
       <pfif:text>large text string</pfif:text>
     </pfif:note>
     <pfif:note>
+      <pfif:note_record_id>www.example.org/local-id.5</pfif:note_record_id>
+      <pfif:author_name>author name</pfif:author_name>
+      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
       <pfif:found>false</pfif:found>
+      <pfif:text>large text string</pfif:text>
     </pfif:note>
   </pfif:person>
 </pfif:pfif>"""
@@ -114,19 +116,31 @@ class ValidatorTests(unittest.TestCase):
   <pfif:note />
 </pfif:pfif>"""
 
-  XML_NOTE_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
+    <pfif:person_record_id />
     <pfif:note_record_id />
     <pfif:author_name />
     <pfif:source_date />
     <pfif:text />
   </pfif:note>
+  <pfif:person>
+    <pfif:note>
+      <pfif:note_record_id />
+      <pfif:author_name />
+      <pfif:source_date />
+      <pfif:text />
+    </pfif:note>
+  </pfif:person>
 </pfif:pfif>"""
 
-  XML_NOTE_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+  XML_NOTES_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
+  <pfif:person>
+    <pfif:note />
+  </pfif:person>
 </pfif:pfif>"""
 
   XML_PERSON_WITH_CHILDREN_11 = """<?xml version="1.0" encoding="UTF-8"?>
@@ -522,6 +536,10 @@ class ValidatorTests(unittest.TestCase):
     </pfif:note>
     <pfif:other>not deleted or omitted</pfif:other>
   </pfif:person>
+  <pfif:note>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:text>this isn't deleted either</pfif:text>
+  </pfif:note>
 </pfif:pfif>"""
 
   XML_EXPIRE_99_EMPTY_DATA = """<?xml version="1.0" encoding="UTF-8"?>
@@ -578,13 +596,13 @@ class ValidatorTests(unittest.TestCase):
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
-    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:person_record_id>example.org/id1</pfif:person_record_id>
     <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
     <pfif:source_date>1998-02-03T04:05:06Z</pfif:source_date>
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
   </pfif:person>
   <pfif:person>
-    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:person_record_id>example.org/id2</pfif:person_record_id>
     <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
     <pfif:source_date>1999-04-03T04:05:06Z</pfif:source_date>
     <pfif:entry_date>1999-04-03T04:05:06Z</pfif:entry_date>
@@ -600,6 +618,20 @@ class ValidatorTests(unittest.TestCase):
     <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
     <pfif:other>data still here</pfif:other>
   </pfif:person>
+</pfif:pfif>"""
+
+  XML_EXPIRE_99_HAS_NOTE_DATA = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:expiry_date>1999-02-03T04:05:06Z</pfif:expiry_date>
+    <pfif:source_date>1999-02-03T04:05:06Z</pfif:source_date>
+    <pfif:entry_date>1999-02-03T04:05:06Z</pfif:entry_date>
+  </pfif:person>
+  <pfif:note>
+    <pfif:person_record_id>example.org/id</pfif:person_record_id>
+    <pfif:note_record_id>example.org/note/not/deleted</pfif:note_record_id>
+  </pfif:note>
 </pfif:pfif>"""
 
   XML_NO_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -930,18 +962,18 @@ class ValidatorTests(unittest.TestCase):
 
   # validate_has_mandatory_children
 
-  #TODO(samking): notes that are free floating must have a person record id
   def test_note_has_mandatory_children(self):
     """validate_has_mandatory_children should return an empty list if it is
-    given a note with all mandatory children"""
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_WITH_CHILDREN)
+    given notes with all mandatory children"""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_WITH_CHILDREN)
     self.assertEqual(len(validator.validate_note_has_mandatory_children()), 0)
 
   def test_note_has_no_mandatory_children(self):
-    """validate_has_mandatory_children should return a list with four missing
-    children when given a note with no children"""
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
-    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 4)
+    """validate_has_mandatory_children should return a list with nine missing
+    children when given one child of a person with no children and one top level
+    note (which also must have a person_record_id) with no children."""
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_NO_CHILDREN)
+    self.assertEqual(len(validator.validate_note_has_mandatory_children()), 9)
 
   def test_person_has_mandatory_children_11(self):
     """validate_has_mandatory_children should return an empty list if it is
@@ -977,7 +1009,7 @@ class ValidatorTests(unittest.TestCase):
     improperly formatted."""
     validator = self.set_up_validator(ValidatorTests.XML_PERSON_NO_CHILDREN_13)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
-    validator = self.set_up_validator(ValidatorTests.XML_NOTE_NO_CHILDREN)
+    validator = self.set_up_validator(ValidatorTests.XML_NOTES_NO_CHILDREN)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 0)
 
   def test_all_11_fields_have_correct_format(self):
@@ -1174,6 +1206,15 @@ class ValidatorTests(unittest.TestCase):
 
     validator = self.set_up_validator(
         ValidatorTests.XML_EXPIRE_99_HAS_DATA_SYNCED_DATES)
+    utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
+    self.assertEqual(len(validator.validate_expired_records_removed()), 1)
+
+  def test_expired_records_with_unremoved_top_level_note(self):
+    """validate_expired_records_removed should return a list with messages for
+    each expired record that still had a note referring to its
+    person_record_id"""
+    validator = (
+        self.set_up_validator(ValidatorTests.XML_EXPIRE_99_HAS_NOTE_DATA))
     utils.set_utcnow_for_test(ValidatorTests.EXPIRED_TIME)
     self.assertEqual(len(validator.validate_expired_records_removed()), 1)
 

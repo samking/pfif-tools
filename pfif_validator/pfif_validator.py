@@ -43,17 +43,26 @@ class PfifValidator:
   MANDATORY_CHILDREN = {1.1 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               },
                         1.2 : {'person' : ['person_record_id', 'first_name',
                                            'last_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               },
                         1.3 : {'person' : ['person_record_id', 'source_date',
                                          'full_name'],
                                'note' : ['note_record_id', 'author_name',
-                                         'source_date', 'text']
+                                         'source_date', 'text'],
+                               'top_note' : ['person_record_id',
+                                             'note_record_id', 'author_name',
+                                             'source_date', 'text']
                               }
                        }
 
@@ -68,7 +77,7 @@ class PfifValidator:
   DOMAIN_NAME = r'(' + DOMAIN_LABEL + r'\.)*' + DOMAIN_LABEL + '\.?'
   RECORD_ID = r'^' + DOMAIN_NAME + r'/.+$'
   DATE = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$'
-  TEXT = r'^.*$' #TODO(samking): do we want to do .+?
+  TEXT = r'^.*$'
   EMAIL = r'^.+@.+$' #TODO(samking): make more specific
   # Allow there to be any number of delimiters (space, hyphen, dot, plus, and
   # parentheses) around each digit
@@ -401,11 +410,21 @@ class PfifValidator:
     """returns a list of all persons in the tree"""
     return self.tree.findall(self.add_namespace_to_tag('person'))
 
-  def get_all_notes(self):
-    """returns a list of all notes in the tree"""
-    notes = self.tree.findall(self.add_namespace_to_tag('note'))
+  def get_child_notes(self):
+    """returns a list of all notes that are subnodes of persons"""
+    notes = []
     for person in self.get_all_persons():
       notes.extend(person.findall(self.add_namespace_to_tag('note')))
+    return notes
+
+  def get_top_level_notes(self):
+    """returns a list of all notes that are subnodes of the root node"""
+    return self.tree.findall(self.add_namespace_to_tag('note'))
+
+  def get_all_notes(self):
+    """returns a list of all notes in the tree"""
+    notes = self.get_top_level_notes()
+    notes.extend(self.get_child_notes())
     return notes
 
   @staticmethod
@@ -472,10 +491,22 @@ class PfifValidator:
         self.add_linked_record_mapping(person_record_id, note, linked_records)
     # Top level notes are required to have their person_record_id, so we can
     # just iterate over them
-    for note in self.tree.findall(self.add_namespace_to_tag('note')):
+    for note in self.get_top_level_notes():
       person_record_id = self.get_field_text(note, 'person_record_id')
       self.add_linked_record_mapping(person_record_id, note, linked_records)
     return linked_records
+
+
+  def get_top_level_notes_by_person(self):
+    """Returns a map from person_record_id to a set of top level notes with that
+    person_record_id"""
+    associated_notes = {}
+    for note in self.get_top_level_notes():
+      associated_person_id = self.get_field_text(note, 'person_record_id')
+      if associated_person_id:
+        notes_set = associated_notes.setdefault(associated_person_id, set())
+        notes_set.add(note)
+    return associated_notes
 
   def make_message(self, error_message, record, element=None, is_error=True):
     """Wrapper for initializing a Message that extracts the person_record_id and
@@ -558,15 +589,11 @@ class PfifValidator:
     return [Message('Having a person tag (or a note tag in PFIF 1.2+) as one '
                     'of the children of the root node is mandatory.')]
 
-  def validate_has_mandatory_children(self, parent_tag):
-    """Validates that every parent node has all mandatory children specified by
-    MANDATORY_CHILDREN.  Returns a list with the names of all mandatory children
-    missing from any parent found.
+  def validate_has_mandatory_children(self, parents, mandatory_children):
+    """Validates that every parent node has all mandatory children .  Returns a
+    list with the names of all mandatory children missing from any parent found.
     parent_tag should be a string of the local tag of the node to check."""
     messages = []
-    mandatory_children = PfifValidator.MANDATORY_CHILDREN[self.version]
-    mandatory_children = mandatory_children[parent_tag]
-    parents = self.tree.findall(self.add_namespace_to_tag(parent_tag))
     for parent in parents:
       for child_tag in mandatory_children:
         child = parent.find(self.add_namespace_to_tag(child_tag))
@@ -579,12 +606,27 @@ class PfifValidator:
   def validate_person_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that persons have
     all mandatory children."""
-    return self.validate_has_mandatory_children('person')
+    mandatory_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['person'])
+    persons = self.get_all_persons()
+    return self.validate_has_mandatory_children(persons, mandatory_children)
 
   def validate_note_has_mandatory_children(self):
     """Wrapper for validate_has_mandatory_children.  Validates that notes have
     all mandatory children."""
-    return self.validate_has_mandatory_children('note')
+    messages = []
+    top_level_notes = self.get_top_level_notes()
+    top_note_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['top_note'])
+    messages.extend(self.validate_has_mandatory_children(top_level_notes,
+                                                         top_note_children))
+
+    child_notes = self.get_child_notes()
+    child_note_children = (
+        PfifValidator.MANDATORY_CHILDREN[self.version]['note'])
+    messages.extend(self.validate_has_mandatory_children(child_notes,
+                                                         child_note_children))
+    return messages
 
   def validate_children_have_correct_format(self, parents, formats):
     """validates that every element in parents has valid text, as per the
@@ -594,12 +636,11 @@ class PfifValidator:
       for field, field_format in formats.items():
         elements = parent.findall(self.add_namespace_to_tag(field))
         for element in elements:
-          # TODO(samking): here, an empty node counts as the correct format.
-          # Should an empty note connote failure or success?
           if element.text:
-            # strip the string so that extra whitespace around the edges won't
-            # interfere with matching
-            text = element.text.strip()
+            # note: the text is not stripped.  Some parsers may choke on extra
+            # whitespace, so extra whitespace around text will cause it to fail
+            # to match the field
+            text = element.text
             if field_format == 'URL':
               url = urlparse(text)
               # The URL should be HTTP or HTTPS.  If the netloc is blank, the
@@ -670,7 +711,7 @@ class PfifValidator:
     matches the id of the parent person.  Returns a list of all unmatched
     notes"""
     messages = []
-    top_level_notes = self.tree.findall(self.add_namespace_to_tag('note'))
+    top_level_notes = self.get_top_level_notes()
     for note in top_level_notes:
       person_id = note.find(self.add_namespace_to_tag('person_record_id'))
       if person_id == None:
@@ -782,18 +823,24 @@ class PfifValidator:
     entry_date must be the time that the placeholder was created.  Returns a
     list with the person_record_ids of any persons that violate those
     conditions"""
-    # TODO(samking): if a person is expired, then there should not be any notes
-    # associated with that person
     messages = []
     if self.version >= 1.3:
       persons = self.get_all_persons()
+      top_level_notes_by_person = self.get_top_level_notes_by_person()
       for person in persons:
         expiry_date = self.get_expiry_datetime(person)
         curr_date = utils.get_utcnow()
         # if the record is expired
         if expiry_date != None and expiry_date < curr_date:
+          # the person itself can't have data
           messages.extend(self.validate_personal_data_removed(person))
+          # the placeholder dates must match
           messages.extend(self.validate_placeholder_dates(person, expiry_date))
+          # top level notes associated with the expired person can't have data
+          associated_notes = top_level_notes_by_person.get(
+              self.get_field_text(person, 'person_record_id'), [])
+          for note in associated_notes:
+            messages.extend(self.validate_personal_data_removed(note))
     return messages
 
   def validate_linked_records_matched(self):
