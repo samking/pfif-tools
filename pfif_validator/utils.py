@@ -17,6 +17,7 @@
 
 import re
 from datetime import datetime
+import urllib
 
 # XML Parsing Utilities
 
@@ -38,3 +39,19 @@ def set_utcnow_for_test(now):
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()
+
+# Dependency injection for files
+_file_for_test = None # pylint: disable=c0103
+
+def set_file_for_test(file_for_test):
+  """Set current file or url for debugging purposes."""
+  global _file_for_test # pylint: disable=w0603
+  _file_for_test = file_for_test
+
+def open_file(filename, mode='r'):
+  """Opens the file or returns a debug value if set."""
+  return _file_for_test or open(filename, mode)
+
+def open_url(url):
+  """Opens the url or returns a debug value if set."""
+  return _file_for_test or urllib.urlopen(url)
