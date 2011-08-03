@@ -726,6 +726,19 @@ class PfifValidator:
             else:
               match = re.match(field_format, text)
               failed = (match is None)
+            if 'record_id' in field and not failed:
+              # Record IDs should be in ASCII
+              try:
+                text.encode('ascii')
+              except UnicodeEncodeError:
+                messages.append(self.make_message(
+                    'The text in a record ID has unicode.', is_error=False,
+                    record=parent, element=element))
+              # Record IDs should not contain whitespace
+              if re.search(r'\s', text) != None:
+                messages.append(self.make_message(
+                    'The text in a record ID has whitespace.', is_error=False,
+                    record=parent, element=element))
             if failed:
               messages.append(self.make_message(
                   'The text in one of your fields does not match the '
