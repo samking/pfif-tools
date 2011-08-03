@@ -23,7 +23,6 @@ import datetime
 import inspect
 import sys
 import cgi
-from StringIO import StringIO
 
 class Message:
   """A container for information about an error or warning message"""
@@ -163,6 +162,8 @@ class PfifValidator:
   DATE_OF_BIRTH = r'^\d{4}(-\d{2}(-\d{2})?)?$'
   # one integer or a range between two integers
   AGE = r'^\d+(-\d+)?$'
+  # No whitespace, control, or non-ASCII characters allowed
+  PRINTABLE_ASCII = r'^[\x21-\x7e]+$'
 
   # a map from field name to a regular expression matching valid formats for
   # that field
@@ -420,6 +421,9 @@ class PfifValidator:
                         'entry_date']
 
   def __init__(self, xml_file, initialize=True):
+    """xml_file.readline() must produce a byte string encoded in UTF-8 for
+    compatability with the parser.  If initialize is False, the client must
+    manually call initialize_xml() and initialize_pfif_version()."""
     self.xml_file = xml_file
     self.lines = None
     self.tree = None
@@ -434,13 +438,6 @@ class PfifValidator:
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
-    # the parser expects that the XML file encoding is a bytestring, which it
-    # will interpret based on the encoding field in the XML file.  It will fail
-    # if given a unicode object, so we force the file to be encoded as a string
-    # like object.
-    self.xml_file = utils.to_unicode(self.xml_file.read()).encode('utf-8')
-    self.xml_file = StringIO(self.xml_file)
-
     # store the file's lines so that we know how to print the line associated
     # with an error
     self.lines = self.xml_file.readlines()
@@ -738,18 +735,10 @@ class PfifValidator:
               match = re.match(field_format, text)
               failed = (match is None)
             if 'record_id' in field and not failed:
-              # Record IDs should be in ASCII
-              try:
-                text.encode('ascii')
-              except UnicodeEncodeError:
+              if not re.match(PfifValidator.PRINTABLE_ASCII, text):
                 messages.append(self.make_message(
-                    'The text in a record ID has unicode.', is_error=False,
-                    record=parent, element=element))
-              # Record IDs should not contain whitespace
-              if re.search(r'\s', text) != None:
-                messages.append(self.make_message(
-                    'The text in a record ID has whitespace.', is_error=False,
-                    record=parent, element=element))
+                    'The text in a record ID should only contain printable '
+                    ' ASCII.', is_error=False, record=parent, element=element))
             if failed:
               messages.append(self.make_message(
                   'The text in one of your fields does not match the '

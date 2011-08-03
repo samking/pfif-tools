@@ -37,11 +37,11 @@ class Validator(webapp.RequestHandler):
     xml_file = None
     for file_location in ['pfif_xml', 'pfif_xml_file']:
       if self.request.get(file_location):
-        xml_file = StringIO(self.request.get(file_location))
+        xml_file = StringIO(self.request.get(file_location).encode('utf-8'))
     if self.request.get('pfif_xml_url'):
       url = self.request.get('pfif_xml_url')
       # make a file-like object out of the URL's xml so we can seek on it
-      xml_file = StringIO(utils.open_url(url).read())
+      xml_file = StringIO(utils.open_url(url).read().encode('utf-8'))
     self.response.out.write(Validator.RESULTS_HEADER)
     if xml_file is None:
       self.response.out.write('<body><h1>No Input File</h1></body></html>')
