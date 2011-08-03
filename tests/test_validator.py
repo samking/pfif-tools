@@ -601,13 +601,20 @@ class ValidatorTests(unittest.TestCase):
 
   # unicode
 
-  def test_unicode_works(self):
+  def test_unicode_processing(self):
     """none of the validations should fail when processing a field that includes
     unicode text."""
     validator = self.set_up_validator(PfifXml.XML_UNICODE_12)
     messages = validator.run_validations()
     validator.messages_to_str(messages)
     self.assertEqual(len(messages), 0)
+
+  def test_unicode_printing(self):
+    """messages_to_str should not fail when printing output that includes
+    unicode text."""
+    validator = self.set_up_validator(PfifXml.XML_INCORRECT_FORMAT_11)
+    messages = validator.run_validations()
+    validator.messages_to_str(messages)
 
 if __name__ == '__main__':
   unittest.main()

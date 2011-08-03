@@ -28,6 +28,14 @@ def extract_tag(etree_tag):
     return ""
   return match.group(1)
 
+# String Functions
+def to_unicode(obj, encoding='utf-8'):
+  """Converts a string to unicode if necessary.  From:
+  http://farmdev.com/talks/unicode/"""
+  if isinstance(obj, basestring) and not isinstance(obj, unicode):
+    obj = unicode(obj, encoding)
+  return obj
+
 # Dependency Injection for Time -- from PersonFinder
 _utcnow_for_test = None # pylint: disable=c0103
 
