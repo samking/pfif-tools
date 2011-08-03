@@ -17,6 +17,7 @@
 
 import re
 from datetime import datetime
+import urllib
 
 # XML Parsing Utilities
 
@@ -43,10 +44,14 @@ def get_utcnow():
 _file_for_test = None # pylint: disable=c0103
 
 def set_file_for_test(file_for_test):
-  """Set current file for debugging purposes."""
+  """Set current file or url for debugging purposes."""
   global _file_for_test # pylint: disable=w0603
   _file_for_test = file_for_test
 
 def open_file(filename, mode='r'):
   """Opens the file or returns a debug value if set."""
   return _file_for_test or open(filename, mode)
+
+def open_url(url):
+  """Opens the url or returns a debug value if set."""
+  return _file_for_test or urllib.urlopen(url)

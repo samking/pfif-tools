@@ -20,7 +20,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 from StringIO import StringIO
 import pfif_validator
-import urllib
+import utils
 
 class Validator(webapp.RequestHandler):
   """Displays the validation results page."""
@@ -41,7 +41,7 @@ class Validator(webapp.RequestHandler):
     if self.request.get('pfif_xml_url'):
       url = self.request.get('pfif_xml_url')
       # make a file-like object out of the URL's xml so we can seek on it
-      xml_file = StringIO(urllib.urlopen(url).read())
+      xml_file = StringIO(utils.open_url(url).read())
     self.response.out.write(Validator.RESULTS_HEADER)
     if xml_file is None:
       self.response.out.write('<body><h1>No Input File</h1></body></html>')
@@ -56,9 +56,9 @@ class Validator(webapp.RequestHandler):
           show_errors='show_errors' in print_options,
           show_warnings='show_warnings' in print_options,
           show_line_numbers='show_line_numbers' in print_options,
-          show_line_text='show_line_text' in print_options,
           show_record_ids='show_record_ids' in print_options,
-          show_xml_text='show_xml_text' in print_options,
+          show_xml_element_text='show_xml_element_text' in print_options,
+          show_full_line='show_full_line' in print_options,
           is_html=True)
       # don't escape the message since is_html escapes all input and contains
       # html that should be interpreted as html
