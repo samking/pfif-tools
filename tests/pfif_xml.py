@@ -16,15 +16,12 @@
 
 """PFIF XML for use with tests."""
 
-class PfifXml:
-  """Container for XML strings."""
-
-  XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
+XML_11_SMALL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person />
 </pfif:pfif>"""
 
-  XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
+XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/local-id.3</pfif:person_record_id>
@@ -67,45 +64,45 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_NON_PFIF_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NON_PFIF_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:html xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person />
 </pfif:html>"""
 
-  XML_NO_NAMESPACE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NO_NAMESPACE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif>
   <person />
 </pfif>"""
 
-  XML_BAD_PFIF_VERSION = """<?xml version="1.0" encoding="UTF-8"?>
+XML_BAD_PFIF_VERSION = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/9.9">
   <pfif:person />
 </pfif:pfif>"""
 
-  XML_BAD_PFIF_WEBSITE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_BAD_PFIF_WEBSITE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.com/pfif/1.2">
   <pfif:person />
 </pfif:pfif>"""
 
-  XML_ROOT_LACKS_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+XML_ROOT_LACKS_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />"""
 
-  XML_ROOT_HAS_BAD_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+XML_ROOT_HAS_BAD_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:notAPersonOrNote />
 </pfif:pfif>"""
 
-  XML_TOP_LEVEL_NOTE_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_TOP_LEVEL_NOTE_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:note />
 </pfif:pfif>"""
 
-  XML_TOP_LEVEL_NOTE_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_TOP_LEVEL_NOTE_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note />
 </pfif:pfif>"""
 
-  XML_NOTES_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NOTES_WITH_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:person_record_id />
@@ -124,7 +121,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_NOTES_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NOTES_NO_CHILDREN = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
   <pfif:person>
@@ -132,7 +129,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_PERSON_WITH_CHILDREN_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_PERSON_WITH_CHILDREN_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
@@ -141,7 +138,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_PERSON_WITH_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_PERSON_WITH_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id />
@@ -150,12 +147,12 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_PERSON_NO_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_PERSON_NO_CHILDREN_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person />
 </pfif:pfif>"""
 
-  XML_INCORRECT_FORMAT_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_INCORRECT_FORMAT_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/</pfif:person_record_id>
@@ -188,7 +185,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:sex>male</pfif:sex>
@@ -234,7 +231,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_INCORRECT_FORMAT_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_INCORRECT_FORMAT_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:sex>not-male-or-female-or-other</pfif:sex>
@@ -260,7 +257,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_CORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_CORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:full_name>john doe</pfif:full_name>
@@ -268,14 +265,14 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_INCORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_INCORRECT_FORMAT_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:expiry_date>12a4-56-78T90:12:34Z</pfif:expiry_date>
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_UNIQUE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_UNIQUE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -291,7 +288,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_UNIQUE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_UNIQUE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id>example.org/1</pfif:note_record_id>
@@ -307,7 +304,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_DUPLICATE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DUPLICATE_PERSON_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -323,7 +320,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_DUPLICATE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DUPLICATE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id>example.org/1</pfif:note_record_id>
@@ -341,7 +338,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_NOTES_BELONG_TO_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NOTES_BELONG_TO_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -355,7 +352,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_NOTES_WITHOUT_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NOTES_WITHOUT_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note />
   <pfif:person>
@@ -366,7 +363,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_MISSING_FIELDS_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_MISSING_FIELDS_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id>example.org/1</pfif:person_record_id>
@@ -378,7 +375,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_INCORRECT_FIELD_ORDER_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_INCORRECT_FIELD_ORDER_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
@@ -402,7 +399,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXTRANEOUS_FIELD_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EXTRANEOUS_FIELD_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
     <pfif:person_record_id />
@@ -411,7 +408,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_CORRECT_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_CORRECT_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id />
@@ -446,7 +443,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_INCORRECT_PERSON_FIELD_ORDER_12 = """<?xml version="1.0"
+XML_INCORRECT_PERSON_FIELD_ORDER_12 = """<?xml version="1.0"
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
@@ -466,7 +463,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_INCORRECT_NOTE_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_INCORRECT_NOTE_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:note>
     <pfif:note_record_id />
@@ -488,7 +485,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_ODD_ORDER_13 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_ODD_ORDER_13 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id />
@@ -512,7 +509,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_HAS_DATA_NONSYNCED_DATES = """<?xml version="1.0"
+XML_EXPIRE_99_HAS_DATA_NONSYNCED_DATES = """<?xml version="1.0"
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
@@ -531,7 +528,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_EMPTY_DATA = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EXPIRE_99_EMPTY_DATA = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -545,7 +542,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_NO_DATA = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EXPIRE_99_NO_DATA = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -555,7 +552,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_HAS_NOTE_SYNCED_DATES = """<?xml version="1.0"
+XML_EXPIRE_99_HAS_NOTE_SYNCED_DATES = """<?xml version="1.0"
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
@@ -569,7 +566,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_HAS_DATA_SYNCED_DATES = """<?xml version="1.0"
+XML_EXPIRE_99_HAS_DATA_SYNCED_DATES = """<?xml version="1.0"
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
@@ -581,7 +578,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_NO_DATA_NONSYNCED_DATES = """<?xml version="1.0"
+XML_EXPIRE_99_NO_DATA_NONSYNCED_DATES = """<?xml version="1.0"
   encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
@@ -598,7 +595,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EXPIRE_99_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -609,7 +606,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EXPIRE_99_HAS_NOTE_DATA = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EXPIRE_99_HAS_NOTE_DATA = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id</pfif:person_record_id>
@@ -623,7 +620,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_NO_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_NO_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -633,7 +630,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_EMPTY_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EMPTY_EXPIRY_DATE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -644,7 +641,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_UNLINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_UNLINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/p1</pfif:person_record_id>
@@ -654,7 +651,7 @@ class PfifXml:
   </pfif:person>
 </pfif:pfif>"""
 
-  XML_CORRECTLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_CORRECTLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/p1</pfif:person_record_id>
@@ -670,7 +667,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_ASYMMETRICALLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_ASYMMETRICALLY_LINKED_RECORDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
     <pfif:note_record_id>example.com/n2</pfif:note_record_id>
@@ -679,7 +676,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_GIBBERISH_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_GIBBERISH_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -695,7 +692,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_DUPLICATE_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DUPLICATE_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/id1</pfif:person_record_id>
@@ -716,7 +713,7 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_TOP_LEVEL_NOTE_PERSON_11 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_TOP_LEVEL_NOTE_PERSON_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:note />
   <pfif:person>
@@ -730,13 +727,13 @@ class PfifXml:
   </pfif:note>
 </pfif:pfif>"""
 
-  XML_TWO_DUPLICATE_NO_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+XML_TWO_DUPLICATE_NO_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:foo />
   <pfif:foo />
 </pfif:pfif>"""
 
-  XML_UNICODE_12 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_UNICODE_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
   <pfif:person>
     <pfif:person_record_id>not.unicode/person-id</pfif:person_record_id>
