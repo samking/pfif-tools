@@ -74,8 +74,8 @@ class ValidatorTests(unittest.TestCase):
     output = validator.messages_to_str(messages, show_warnings=False,
                                        show_line_numbers=False,
                                        show_record_ids=False,
-                                       show_xml_text=False,
-                                       show_line_text=False)
+                                       show_xml_element_text=False,
+                                       show_full_line=False)
     self.assertNotEqual(output.find("Message 1"), -1)
     self.assertEqual(output.find("Message 2"), -1)
     # the default value of is_error should be True, so Message 3 should print
@@ -84,8 +84,8 @@ class ValidatorTests(unittest.TestCase):
     # with warnings on, warnings should print
     output = validator.messages_to_str(messages, show_line_numbers=False,
                                        show_record_ids=False,
-                                       show_xml_text=False,
-                                       show_line_text=False)
+                                       show_xml_element_text=False,
+                                       show_full_line=False)
     self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
@@ -93,24 +93,25 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(output.find("11"), -1)
     output = validator.messages_to_str(messages, show_line_numbers=True,
                                        show_record_ids=False,
-                                       show_xml_text=False,
-                                       show_line_text=False)
+                                       show_xml_element_text=False,
+                                       show_full_line=False)
     self.assertNotEqual(output.find("11"), -1)
 
     self.assertEqual(output.find("Text"), -1)
     output = validator.messages_to_str(messages, show_record_ids=False,
-                                       show_xml_text=True, show_line_text=False)
+                                       show_xml_element_text=True,
+                                       show_full_line=False)
     self.assertNotEqual(output.find("Text"), -1)
 
     self.assertEqual(output.find("Person"), -1)
     self.assertEqual(output.find("Note"), -1)
     output = validator.messages_to_str(messages, show_record_ids=True,
-                                       show_line_text=False)
+                                       show_full_line=False)
     self.assertNotEqual(output.find("Person"), -1)
     self.assertNotEqual(output.find("Note"), -1)
 
     self.assertEqual(output.find("ZZZ 11"), -1)
-    output = validator.messages_to_str(messages, show_line_text=True,
+    output = validator.messages_to_str(messages, show_full_line=True,
                                        xml_lines=lines)
     self.assertNotEqual(output.find("ZZZ 11"), -1)
 
