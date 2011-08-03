@@ -183,6 +183,16 @@ XML_INCORRECT_FORMAT_11 = """<?xml version="1.0" encoding="UTF-8"?>
       <pfif:note_record_id>http://foo/bar</pfif:note_record_id>
     </pfif:note>
   </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/యూనికోడ్</pfif:person_record_id>
+    <pfif:note>
+      <pfif:note_record_id>يونيكود/bar</pfif:note_record_id>
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/ao
+                           e u </pfif:person_record_id>
+  </pfif:person>
 </pfif:pfif>"""
 
 XML_FULL_12 = """<?xml version="1.0" encoding="UTF-8"?>
