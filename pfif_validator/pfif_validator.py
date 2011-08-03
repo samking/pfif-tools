@@ -595,9 +595,9 @@ class PfifValidator:
   # printing
 
   def messages_to_str(self, messages, show_errors=True, show_warnings=True,
-                      show_line_numbers=True, show_line_text=True,
-                      show_record_ids=True, show_xml_text=True, is_html=False,
-                      xml_lines=None):
+                      show_line_numbers=True, show_full_line=True,
+                      show_record_ids=True, show_xml_element_text=True,
+                      is_html=False, xml_lines=None):
     """Returns a string containing all messages formatted per the options."""
     if xml_lines is None:
       xml_lines = self.lines
@@ -623,13 +623,13 @@ class PfifValidator:
             output.make_message_part('The relevant note_record_id is: ' +
                                      message.note_record_id + '. ',
                                      'message_note_record_id')
-        if show_xml_text and message.xml_element_text:
+        if show_xml_element_text and message.xml_element_text:
           output.make_message_part('The text of the relevant PFIF XML node: ' +
                                    message.xml_element_text + '. ',
                                    'message_xml_element_text')
-        if (show_line_text and message.xml_line_number != None):
+        if (show_full_line and message.xml_line_number != None):
           output.make_message_part(xml_lines[message.xml_line_number - 1],
-                                   'message_xml_line')
+                                   'message_full_line')
         output.end_new_message()
     return output.get_output()
 
