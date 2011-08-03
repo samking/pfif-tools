@@ -64,7 +64,7 @@ class PfifDiffTool:
       # person_record_ids, so we force-add it.
       if not is_person and parent_person_record_id is not None:
         record_map['person_record_id'] = parent_person_record_id
-      for child in person.getchildren():
+      for child in parent.getchildren():
         field_name = utils.extract_tag(child.tag)
         # We'll deal with all notes together, so skip them for now.
         if is_person and field_name == 'note':
@@ -75,7 +75,7 @@ class PfifDiffTool:
       if is_person:
         self.objectify_parents(
             parent.getchildren(tree.add_namespace_to_tag('note')),
-            False, object_map, parent_person_record_id=record_id)
+            False, object_map, tree, parent_person_record_id=record_id)
 
   def objectify_pfif_xml(self, file_to_objectify):
     """Turns a file of PFIF XML into a map."""
