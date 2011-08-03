@@ -23,6 +23,7 @@ import datetime
 import inspect
 import sys
 import cgi
+from StringIO import StringIO
 
 class Message:
   """A container for information about an error or warning message"""
@@ -67,7 +68,8 @@ class MessagesOutput:
     if self.is_html:
       # closes all_messages div
       self.output.append('</div>')
-    return ''.join(self.output)
+    unicode_output = [utils.to_unicode(string) for string in self.output]
+    return ''.join(unicode_output)
 
   def start_new_message(self):
     """Call once at the start of each message before calling
@@ -432,6 +434,15 @@ class PfifValidator:
     """Reads in the XML tree from the XML file to initialize self.tree.  Returns
     an empty list.  If the XML file is invalid, the XML library will raise an
     exception."""
+    # the parser expects that the XML file encoding is a bytestring, which it
+    # will interpret based on the encoding field in the XML file.  It will fail
+    # if given a unicode object, so we force the file to be encoded as a string
+    # like object.
+    self.xml_file = utils.to_unicode(self.xml_file.read()).encode('utf-8')
+    self.xml_file = StringIO(self.xml_file)
+
+    # store the file's lines so that we know how to print the line associated
+    # with an error
     self.lines = self.xml_file.readlines()
     self.xml_file.seek(0)
 
