@@ -24,7 +24,7 @@ from pfif_validator import PfifValidator, Message
 import pfif_validator # to test main
 import datetime
 import utils
-from pfif_xml import PfifXml
+import tests.pfif_xml as PfifXml
 
 class ValidatorTests(unittest.TestCase):
   """Tests each validation function in pfif_validator.py"""

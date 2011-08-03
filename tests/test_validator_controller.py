@@ -20,7 +20,7 @@ import unittest
 import validator_controller
 from StringIO import StringIO
 from google.appengine.ext import webapp
-from pfif_xml import PfifXml
+import tests.pfif_xml as PfifXml
 import utils
 
 class ValidatorControllerTests(unittest.TestCase):
