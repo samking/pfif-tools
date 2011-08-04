@@ -17,7 +17,8 @@
 
 import re
 from datetime import datetime
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
+import urllib
 
 # XML Parsing Utilities
 
@@ -36,9 +37,38 @@ def set_utcnow_for_test(now):
   global _utcnow_for_test # pylint: disable=w0603
   _utcnow_for_test = now
 
+# Dependency injection for files
+_file_for_test = None # pylint: disable=c0103
+
+def set_file_for_test(file_for_test):
+  """Set current file or url for debugging purposes."""
+  global _file_for_test # pylint: disable=w0603
+  _file_for_test = file_for_test
+
+def open_file(filename, mode='r'):
+  """Opens the file or returns a debug value if set."""
+  return _file_for_test or open(filename, mode)
+
+def open_url(url):
+  """Opens the url or returns a debug value if set."""
+  return _file_for_test or urllib.urlopen(url)
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()
+
+class FileWithLines:
+  """A file that keeps track of its line number.  From
+  http://bytes.com/topic/python/answers/535191-elementtree-line-numbers-iterparse
+  """
+
+  def __init__(self, source):
+    self.source = source
+    self.line_number = 0
+
+  def read(self, num_bytes): # pylint: disable=W0613
+    """Wrapper around file.readLine that keeps track of line number"""
+    self.line_number += 1
+    return self.source.readline()
 
 # Doesn't inherit from ET.ElementTree to avoid messing with the
 # ET.ElementTree.parse factory method
@@ -46,11 +76,26 @@ class PfifXmlTree():
   """An XML tree with PFIF-XML-specific helper functions."""
 
   def __init__(self, xml_file):
-    parser = ET.XMLParser(remove_comments=True)
-    self.tree = ET.parse(xml_file, parser=parser)
+    """Reads in the XML tree from the XML file .  If the
+    XML file is invalid, the XML library will raise an exception."""
     self.namespace = None
+    self.line_numbers = {}
+    self.lines = xml_file.readlines()
+    xml_file.seek(0)
+
+    file_with_lines = FileWithLines(xml_file)
+    tree_parser = iter(ET.iterparse(file_with_lines, events=['start']))
+    event, root = tree_parser.next() # pylint: disable=W0612
+    self.line_numbers[root] = file_with_lines.line_number
+
+    for event, elem in tree_parser:
+      self.line_numbers[elem] = file_with_lines.line_number
+    self.tree = ET.ElementTree(root)
 
   def initialize_pfif_version(self):
+    """Returns the PFIF version associated with the file.  Initializes the
+    namespace.  Raises an exception of the XML root does not specify a namespace
+    or tag, if the tag isn't pfif, or if the version isn't supported."""
     root = self.tree.getroot()
     tag = root.tag
     # xml.etree.Element.tag is formatted like: {namespace}tag

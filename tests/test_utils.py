@@ -15,14 +15,15 @@
 
 """Tests for utils.py"""
 
-import sys
-# TODO(samking): remove this after adding a test running script
-sys.path.append(sys.path[0] + '/../pfif_validator')
 import utils
 import unittest
+from StringIO import StringIO
+import tests.pfif_xml as PfifXml
 
 class UtilTests(unittest.TestCase):
   """Defines tests for utils.py"""
+
+  # extract_tag
 
   def test_blank_input(self):
     """extract_tag should return an empty string on blank input"""
@@ -37,6 +38,57 @@ class UtilTests(unittest.TestCase):
     """extract_tag should return the local tag when the string starts with a
     namespace"""
     self.assertEqual(utils.extract_tag("{foo}bar"), "bar")
+
+  # PfifXmlTree initialization
+
+  def test_valid_xml(self):
+    """initialize_xml should turn a string of valid XML into an object."""
+    valid_xml_file = StringIO(PfifXml.XML_11_SMALL)
+    tree = utils.PfifXmlTree(valid_xml_file)
+    self.assertTrue(tree)
+    self.assertTrue(tree.lines)
+    self.assertTrue(tree.line_numbers)
+
+  def test_invalid_xml(self):
+    """initialize_xml should raise an error on a string of invalid XML."""
+    invalid_xml_file = StringIO(PfifXml.XML_INVALID)
+    self.assertRaises(Exception, utils.PfifXmlTree, invalid_xml_file)
+
+  # PfifXmlTree.initialize_pfif_version
+
+  def test_root_is_pfif(self):
+    """initialize_pfif_version should return the version if the root is PFIF."""
+    pfif_11_xml_file = StringIO(PfifXml.XML_11_SMALL)
+    tree = utils.PfifXmlTree(pfif_11_xml_file)
+    self.assertEqual(tree.initialize_pfif_version(), 1.1)
+
+  def test_root_is_not_pfif(self):
+    """initialize_pfif_version should raise an exception if the XML root
+    is not PFIF."""
+    non_pfif_xml_file = StringIO(PfifXml.XML_NON_PFIF_ROOT)
+    tree = utils.PfifXmlTree(non_pfif_xml_file)
+    self.assertRaises(Exception, tree.initialize_pfif_version)
+
+  def test_root_lacks_namespace(self):
+    """initialize_pfif_version should raise an exception if the XML root
+    doesn't specify a namespace."""
+    no_namespace_xml_file = StringIO(PfifXml.XML_NO_NAMESPACE)
+    tree = utils.PfifXmlTree(no_namespace_xml_file)
+    self.assertRaises(Exception, tree.initialize_pfif_version)
+
+  def test_root_is_bad_pfif_version(self):
+    """initialize_pfif_version should raise an exception if the PFIF
+    version is not supported."""
+    pfif_99_xml_file = StringIO(PfifXml.XML_BAD_PFIF_VERSION)
+    tree = utils.PfifXmlTree(pfif_99_xml_file)
+    self.assertRaises(Exception, tree.initialize_pfif_version)
+
+  def test_root_is_bad_pfif_website(self):
+    """initialize_pfif_version should raise an exception if the PFIF
+    website is wrong."""
+    pfif_bad_website_xml_file = StringIO(PfifXml.XML_BAD_PFIF_WEBSITE)
+    tree = utils.PfifXmlTree(pfif_bad_website_xml_file)
+    self.assertRaises(Exception, tree.initialize_pfif_version)
 
 if __name__ == '__main__':
   unittest.main()
