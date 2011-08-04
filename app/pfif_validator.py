@@ -15,13 +15,13 @@
 
 """Validates that text follows the PFIF XML Specification at zesty.ca/pfif"""
 
-import lxml.etree as ET
 import re
 import utils
 from urlparse import urlparse
 import datetime
 import inspect
 import sys
+import cgi
 
 class Message:
   """A container for information about an error or warning message"""
@@ -35,6 +35,49 @@ class Message:
     self.xml_element_text = xml_element_text
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
+
+class MessagesOutput:
+  """A container that allows for outputting either a plain string or HTML
+  easily"""
+
+  def __init__(self, is_html):
+    self.is_html = is_html
+    self.output = []
+    if is_html:
+      self.output.append('<div class="all_messages">')
+
+  def get_output(self):
+    """Turns the stored data into a string.  Call at most once per instance of
+    MessagesOutput."""
+    if self.is_html:
+      # closes all_messages div
+      self.output.append('</div>')
+    return ''.join(self.output)
+
+  def start_new_message(self):
+    """Call once at the start of each message before calling
+    make_message_part"""
+    if self.is_html:
+      self.output.append('<div class="message">')
+
+  def end_new_message(self):
+    """Call once at the end of each message after all calls to
+    make_message_part"""
+    if self.is_html:
+      # clases message div
+      self.output.append('</div>')
+    self.output.append('\n')
+
+  def make_message_part(self, text, html_class):
+    """Call once for each different part of the message (ie, the main text, the
+    line number).  text is the body of the message.  html_class is the class of
+    the span that will contain the text."""
+    if self.is_html:
+      self.output.append('<span class="' + html_class + '">')
+      self.output.append(cgi.escape(text))
+      self.output.append('</span>')
+    else:
+      self.output.append(text)
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
@@ -359,29 +402,9 @@ class PfifValidator:
   PLACEHOLDER_FIELDS = ['person_record_id', 'expiry_date', 'source_date',
                         'entry_date']
 
-  def __init__(self, xml_file, initialize=True):
-    self.xml_file = xml_file
-    self.tree = None
-    self.version = None
-    if initialize:
-      self.initialize_xml()
-      self.initialize_pfif_version()
-
-  def initialize_xml(self):
-    """Reads in the XML tree from the XML file to initialize self.tree.  Returns
-    an empty list.  If the XML file is invalid, the XML library will raise an
-    exception."""
-    self.tree = utils.PfifXmlTree(self.xml_file)
-
-    return []
-
-  def initialize_pfif_version(self):
-    """Validates that tree refers to a PFIF XML file with a supported version
-    and initializes self.namespace and self.version.  Returns an empty list.
-    Raises an exception if unsuccessful."""
+  def __init__(self, xml_file):
+    self.tree = utils.PfifXmlTree(xml_file)
     self.version = self.tree.initialize_pfif_version()
-
-    return []
 
   # helpers
 
@@ -469,45 +492,51 @@ class PfifValidator:
     text = None
     if element != None:
       text = element.text
-      line = element.sourceline
+      line = self.tree.line_numbers[element]
     return Message(error_message, is_error=is_error, xml_line_number=line,
                    xml_element_text=text, person_record_id=person_record_id,
                    note_record_id=note_record_id)
 
   # printing
 
-  @staticmethod
-  def print_messages(messages, test_name=None, show_errors=True,
-                     show_warnings=True, show_line_numbers=True,
-                     show_record_ids=True, show_xml_text=False):
-    """Prints out all errors from the current test, per the options in
-    set_printing_options"""
-    if test_name != None:
-      print "****" + test_name + "****"
+  def messages_to_str(self, messages, show_errors=True, show_warnings=True,
+                      show_line_numbers=True, show_full_line=True,
+                      show_record_ids=True, show_xml_element_text=True,
+                      is_html=False, xml_lines=None):
+    """Returns a string containing all messages formatted per the options."""
+    if xml_lines is None:
+      xml_lines = self.tree.lines
+    output = MessagesOutput(is_html)
     for message in messages:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
-        output = []
+        output.start_new_message()
         if message.is_error:
-          output.append("ERROR: ")
+          output.make_message_part('ERROR ', 'message_type')
         else:
-          output.append("WARNING: ")
-        output.append(message.main_text + " ")
+          output.make_message_part('WARNING ', 'message_type')
         if (show_line_numbers and message.xml_line_number != None):
-          output.append("XML Line " + str(message.xml_line_number) + ". ")
+          output.make_message_part('Line ' + str(message.xml_line_number) +
+                                   ': ', 'message_line_number')
+        output.make_message_part(message.main_text + '. ', 'message_text')
         if show_record_ids:
           if message.person_record_id != None:
-            output.append("The relevant person_record_id is: " +
-                           message.person_record_id)
+            output.make_message_part('The relevant person_record_id is: ' +
+                                     message.person_record_id + '. ',
+                                     'message_person_record_id')
           if message.note_record_id != None:
-            output.append("The relevant note_record_id is: " +
-                           message.note_record_id)
-        if show_xml_text and message.xml_element_text:
-          output.append("The text of the relevant PFIF XML node: " +
-                         message.xml_element_text)
-        print ''.join(output)
-    if test_name != None:
-      print
+            output.make_message_part('The relevant note_record_id is: ' +
+                                     message.note_record_id + '. ',
+                                     'message_note_record_id')
+        if show_xml_element_text and message.xml_element_text:
+          output.make_message_part('The text of the relevant PFIF XML node: ' +
+                                   message.xml_element_text + '. ',
+                                   'message_xml_element_text')
+        if (show_full_line and message.xml_line_number != None):
+          output.make_message_part(xml_lines[message.xml_line_number - 1],
+                                   'message_full_line')
+        output.end_new_message()
+    return output.get_output()
 
   # validation
   # Each validate method can only be run on an initialized validator (the
@@ -523,7 +552,7 @@ class PfifValidator:
     root = self.tree.getroot()
     children = root.getchildren()
     if not children:
-      return [Message("The root node must have at least one child")]
+      return [Message('The root node must have at least one child')]
     return []
 
   def validate_root_has_mandatory_children(self):
@@ -684,10 +713,10 @@ class PfifValidator:
             messages.append(Message(
                 'You have a note that has a person_record_id that does not '
                 'match the person_record_id of the person that owns the note.',
-                xml_line_number=note_person_id.sourceline,
+                xml_line_number=self.tree.line_numbers[note_person_id],
                 xml_element_text=note_person_id.text,
                 person_record_id=self.tree.get_field_text(person,
-                                                     'person_record_id'),
+                                                          'person_record_id'),
                 note_record_id=self.tree.get_field_text(note,
                                                         'note_record_id')))
     return messages
@@ -767,8 +796,8 @@ class PfifValidator:
           if tag == 'note':
             messages.extend(self.validate_personal_data_removed(child))
           else:
-            messages.append(self.make_message("An expired record still has "
-                                              "personal data.", record=record,
+            messages.append(self.make_message('An expired record still has '
+                                              'personal data.', record=record,
                                               element=child))
     return messages
 
@@ -858,28 +887,26 @@ class PfifValidator:
 
     return messages
 
-  @staticmethod
-  def run_validations(file_path):
+  def run_validations(self):
     """Runs all validations on the file specified by file_path.  Returns a list
     of all errors generated.  file_path can be anything that lxml will accept,
     including file objects and file-like objects."""
-    validator = PfifValidator(file_path)
-    methods = inspect.getmembers(validator, inspect.ismethod)
+    methods = inspect.getmembers(self, inspect.ismethod)
     messages = []
     for name, method in methods:
       # run all validation methods except for any validation method that takes
       # more than one argument (self), because that will have a wrapper method.
       if (name.find('validate_') != -1 and
-          len(inspect.getargspec(method).args) == 1):
+          len(inspect.getargspec(method)[0]) == 1):
         messages.extend(method())
     return messages
 
 def main():
   """Runs all validations on the provided PFIF XML file"""
-  if (not len(sys.argv) == 2):
-    print 'Usage: python pfif-validator.py my-pyif-xml-file'
-  messages = PfifValidator.run_validations(sys.argv[1])
-  PfifValidator.print_messages(messages)
+  assert len(sys.argv) == 2, 'Usage: python pfif_validator.py my-pyif-xml-file'
+  validator = PfifValidator(utils.open_file(sys.argv[1], 'r'))
+  messages = validator.run_validations()
+  print validator.messages_to_str(messages)
 
 if __name__ == '__main__':
   main()
