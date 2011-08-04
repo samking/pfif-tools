@@ -119,10 +119,6 @@ class PfifXmlTree():
     """wrapper for ET.ElementTree.getroot."""
     return self.tree.getroot()
 
-  def findall(self, tag_to_find):
-    """wrapper for ET.ElementTree.findall."""
-    return self.tree.findall(tag_to_find)
-
   def add_namespace_to_tag(self, tag):
     """turns a local tag into a fully qualified tag by adding a namespace """
     return '{' + self.namespace + '}' + tag

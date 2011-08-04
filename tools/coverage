@@ -1,0 +1,7 @@
+#!/bin/bash
+
+pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
+
+# Run coverage testing on every python file in the root of the app directory.
+# Give line numbers for missing coverage.
+coverage report --show-missing --rcfile=$TOOLS_DIR/.coveragerc $APP_DIR/*.py
