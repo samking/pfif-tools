@@ -92,7 +92,8 @@ def objectify_parents(parents, is_person, object_map, tree,
       if is_person and field_name == 'note':
         continue
       else:
-        field_value = child.text
+        # if there is no text in the node, use the empty string rather than None
+        field_value = child.text or ''
         record_map[field_name] = field_value
     if is_person:
       sub_notes = parent.findall(tree.add_namespace_to_tag('note'))
