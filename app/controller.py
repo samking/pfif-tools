@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provides a web interface for pfif_validator"""
+"""Provides a web interface for pfif_tools."""
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -66,7 +66,8 @@ class Validator(webapp.RequestHandler):
       self.response.out.write(marked_up_message)
       self.response.out.write('</body></html>')
 
-APPLICATION = webapp.WSGIApplication([('/validate', Validator)], debug=True)
+APPLICATION = webapp.WSGIApplication([('/validate/results', Validator)],
+                                     debug=True)
 
 def main():
   """Sets up the controller."""
