@@ -109,7 +109,8 @@ class ValidatorControllerTests(unittest.TestCase):
                                         '&print_options=show_warnings')
     self.assertTrue('message_full_line' in response.out.getvalue())
 
-  def test_main(self):
+  @staticmethod
+  def test_main():
     """main should not crash."""
     validator_controller.main()
 

@@ -60,35 +60,31 @@ class UtilTests(unittest.TestCase):
     """initialize_pfif_version should return the version if the root is PFIF."""
     pfif_11_xml_file = StringIO(PfifXml.XML_11_SMALL)
     tree = utils.PfifXmlTree(pfif_11_xml_file)
-    self.assertEqual(tree.initialize_pfif_version(), 1.1)
+    self.assertEqual(tree.version, 1.1)
 
   def test_root_is_not_pfif(self):
     """initialize_pfif_version should raise an exception if the XML root
     is not PFIF."""
     non_pfif_xml_file = StringIO(PfifXml.XML_NON_PFIF_ROOT)
-    tree = utils.PfifXmlTree(non_pfif_xml_file)
-    self.assertRaises(Exception, tree.initialize_pfif_version)
+    self.assertRaises(Exception, utils.PfifXmlTree, non_pfif_xml_file)
 
   def test_root_lacks_namespace(self):
     """initialize_pfif_version should raise an exception if the XML root
     doesn't specify a namespace."""
     no_namespace_xml_file = StringIO(PfifXml.XML_NO_NAMESPACE)
-    tree = utils.PfifXmlTree(no_namespace_xml_file)
-    self.assertRaises(Exception, tree.initialize_pfif_version)
+    self.assertRaises(Exception, utils.PfifXmlTree, no_namespace_xml_file)
 
   def test_root_is_bad_pfif_version(self):
     """initialize_pfif_version should raise an exception if the PFIF
     version is not supported."""
     pfif_99_xml_file = StringIO(PfifXml.XML_BAD_PFIF_VERSION)
-    tree = utils.PfifXmlTree(pfif_99_xml_file)
-    self.assertRaises(Exception, tree.initialize_pfif_version)
+    self.assertRaises(Exception, utils.PfifXmlTree, pfif_99_xml_file)
 
   def test_root_is_bad_pfif_website(self):
     """initialize_pfif_version should raise an exception if the PFIF
     website is wrong."""
     pfif_bad_website_xml_file = StringIO(PfifXml.XML_BAD_PFIF_WEBSITE)
-    tree = utils.PfifXmlTree(pfif_bad_website_xml_file)
-    self.assertRaises(Exception, tree.initialize_pfif_version)
+    self.assertRaises(Exception, utils.PfifXmlTree, pfif_bad_website_xml_file)
 
 if __name__ == '__main__':
   unittest.main()

@@ -766,3 +766,37 @@ XML_UNICODE_12 = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:text>యూనికోడ్ టెక్స్ట్</pfif:text>
   </pfif:note>
 </pfif:pfif>"""
+
+XML_MANDATORY_13 = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:full_name>Full Name</pfif:full_name>
+    <pfif:note>
+      <pfif:note_record_id>example.org/sub-note</pfif:note_record_id>
+      <pfif:author_name>Author Name</pfif:author_name>
+      <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+      <pfif:text>Lots of Text</pfif:text>
+    </pfif:note>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.org/non-sub-note</pfif:note_record_id>
+    <pfif:author_name>Author Name</pfif:author_name>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:text>Lots of Text</pfif:text>
+  </pfif:note>
+</pfif:pfif>"""
+
+XML_MANDATORY_13_MAP = {
+    'example.org/person' : {'person_record_id' : 'example.org/person',
+                            'source_date' : '1234-56-78T90:12:34Z',
+                            'full_name' : 'Full Name'},
+    'example.org/sub-note' : {'note_record_id' : 'example.org/sub-note',
+                              'source_date' : '1234-56-78T90:12:34Z',
+                              'author_name' : 'Author Name',
+                              'text' : 'Lots of Text'},
+    'example.org/non-sub-note' : {'note_record_id' : 'example.org/non-sub-note',
+                                  'source_date' : '1234-56-78T90:12:34Z',
+                                  'author_name' : 'Author Name',
+                                  'text' : 'Lots of Text'}}
