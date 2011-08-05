@@ -51,6 +51,17 @@ def record_id_to_key(record_id, is_person):
   else:
     return NOTE_PREFIX + record_id
 
+def is_key_person(key):
+  """Returns True if the key corresponds to a person or False if the key
+  corresponds to a note."""
+  return key.startswith(PERSON_PREFIX)
+
+def key_to_record_id(key):
+  """Undoes record_id_to_key."""
+  # This function will need to change if the prefixes are more than 1 character
+  assert len(PERSON_PREFIX) == 1 and len(NOTE_PREFIX) == 1
+  return key[1:]
+
 def change_record_ids(reference_map):
   """Call this method on a map to transform all keys as per record_id_to_key.
   This can change a reference map into a map suitable for comparison with a map
@@ -111,8 +122,16 @@ def objectify_pfif_xml(file_to_objectify):
   objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
   return object_map
 
-def make_diff_message():
-
+def make_diff_message(message_text, record_id, xml_element_tag=None):
+  """Returns a Message object with the provided information."""
+  is_person = is_key_person(record_id)
+  real_record_id = key_to_record_id(record_id)
+  if is_person:
+    return utils.Message(message_text, xml_element_tag=xml_element_tag,
+                         person_record_id=real_record_id)
+  else:
+    return utils.Message(message_text, xml_element_tag=xml_element_tag,
+                         note_record_id=record_id)
 
 def pfif_obj_diff(records_1, records_2):
   """Compares if records_1 and records_2 contain the same data.  Returns a
@@ -129,21 +148,25 @@ def pfif_obj_diff(records_1, records_2):
   for record, field_map_1 in records_1.items():
     field_map_2 = records_2.get(record)
     if field_map_2 is None:
-      messages.append('Record Deleted')
+      messages.append(make_diff_message('Record Deleted.', record))
     else:
       for field, value_1 in field_map_1.items():
         value_2 = field_map_2.get(field)
         if value_2 is None:
-          messages.append('Field Deleted')
+          messages.append(make_diff_message('Field Deleted.', record,
+                                            xml_element_tag=field))
         else:
           if value_1 != value_2:
-            messages.append('Value Changed')
+            message_text = ('Value Changed: "' + value_1 + '" is now "' +
+                            value_2 + '".')
+            messages.append(message_text, record, xml_element_tag=field)
       for field in field_map_2:
         if field not in field_map_1:
-          messages.append('Field Added')
+          messages.append(make_diff_message('Field Added.', record,
+                                            xml_element_tag=field))
   for record in records_2:
     if record not in records_1:
-      messages.append('Record Added')
+      messages.append(make_diff_message('Record Added.', record))
   return messages
 
 def pfif_file_diff(file_1, file_2):
