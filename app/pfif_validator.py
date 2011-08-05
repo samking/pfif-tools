@@ -21,63 +21,6 @@ from urlparse import urlparse
 import datetime
 import inspect
 import sys
-import cgi
-
-class Message:
-  """A container for information about an error or warning message"""
-
-  def __init__(self, main_text, is_error=True, xml_line_number=None,
-               xml_element_text=None, person_record_id=None,
-               note_record_id=None):
-    self.main_text = main_text
-    self.is_error = is_error
-    self.xml_line_number = xml_line_number
-    self.xml_element_text = xml_element_text
-    self.person_record_id = person_record_id
-    self.note_record_id  = note_record_id
-
-class MessagesOutput:
-  """A container that allows for outputting either a plain string or HTML
-  easily"""
-
-  def __init__(self, is_html):
-    self.is_html = is_html
-    self.output = []
-    if is_html:
-      self.output.append('<div class="all_messages">')
-
-  def get_output(self):
-    """Turns the stored data into a string.  Call at most once per instance of
-    MessagesOutput."""
-    if self.is_html:
-      # closes all_messages div
-      self.output.append('</div>')
-    return ''.join(self.output)
-
-  def start_new_message(self):
-    """Call once at the start of each message before calling
-    make_message_part"""
-    if self.is_html:
-      self.output.append('<div class="message">')
-
-  def end_new_message(self):
-    """Call once at the end of each message after all calls to
-    make_message_part"""
-    if self.is_html:
-      # clases message div
-      self.output.append('</div>')
-    self.output.append('\n')
-
-  def make_message_part(self, text, html_class):
-    """Call once for each different part of the message (ie, the main text, the
-    line number).  text is the body of the message.  html_class is the class of
-    the span that will contain the text."""
-    if self.is_html:
-      self.output.append('<span class="' + html_class + '">')
-      self.output.append(cgi.escape(text))
-      self.output.append('</span>')
-    else:
-      self.output.append(text)
 
 class PfifValidator:
   """A validator that can run tests on a PFIF XML file."""
@@ -493,9 +436,10 @@ class PfifValidator:
     if element != None:
       text = element.text
       line = self.tree.line_numbers[element]
-    return Message(error_message, is_error=is_error, xml_line_number=line,
-                   xml_element_text=text, person_record_id=person_record_id,
-                   note_record_id=note_record_id)
+    return utils.Message(error_message, is_error=is_error, xml_line_number=line,
+                         xml_element_text=text,
+                         person_record_id=person_record_id,
+                         note_record_id=note_record_id)
 
   # printing
 
@@ -506,7 +450,7 @@ class PfifValidator:
     """Returns a string containing all messages formatted per the options."""
     if xml_lines is None:
       xml_lines = self.tree.lines
-    output = MessagesOutput(is_html)
+    output = utils.MessagesOutput(is_html)
     for message in messages:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
@@ -552,7 +496,7 @@ class PfifValidator:
     root = self.tree.getroot()
     children = root.getchildren()
     if not children:
-      return [Message('The root node must have at least one child')]
+      return [utils.Message('The root node must have at least one child')]
     return []
 
   def validate_root_has_mandatory_children(self):
@@ -566,8 +510,8 @@ class PfifValidator:
       tag = utils.extract_tag(child.tag)
       if tag == 'person' or (self.version >= 1.2 and tag == 'note'):
         return []
-    return [Message('Having a person tag (or a note tag in PFIF 1.2+) as one '
-                    'of the children of the root node is mandatory.')]
+    return [utils.Message('Having a person tag (or a note tag in PFIF 1.2+) as '
+                          'one of the children of the root node is mandatory.')]
 
   def validate_has_mandatory_children(self, parents, mandatory_children):
     """Validates that every parent node has all mandatory children .  Returns a
@@ -710,7 +654,7 @@ class PfifValidator:
           note_person_id = note.find(
               self.tree.add_namespace_to_tag('person_record_id'))
           if note_person_id != None and note_person_id.text != person_id.text:
-            messages.append(Message(
+            messages.append(utils.Message(
                 'You have a note that has a person_record_id that does not '
                 'match the person_record_id of the person that owns the note.',
                 xml_line_number=self.tree.line_numbers[note_person_id],
