@@ -234,7 +234,7 @@ class MessagesOutput:
         if (show_line_numbers and message.xml_line_number != None):
           output.make_message_part('Line ' + str(message.xml_line_number) +
                                    ': ', 'message_line_number')
-        output.make_message_part(message.main_text + '. ', 'message_text')
+        output.make_message_part(message.main_text + ' ', 'message_text')
         if show_record_ids:
           if message.person_record_id != None:
             output.make_message_part('The relevant person_record_id is: ' +
