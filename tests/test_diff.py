@@ -51,15 +51,16 @@ class DiffTests(unittest.TestCase):
     self.compare_reference_object(PfifXml.XML_EXTRANEOUS_FIELD_11,
                                   PfifXml.XML_EXTRANEOUS_FIELD_11_MAP)
 
+  def test_objectify_accepts_persons_and_notes_with_similar_ids(self):
+    """objectify_pfif_xml should store unique entries if there is a note and a
+    person with the same record_id."""
+    xml_file = StringIO(PfifXml.XML_DUPLICATE_PERSON_AND_NOTE_ID)
+    xml_object = pfif_diff.objectify_pfif_xml(xml_file)
+    self.assertEqual(len(xml_object), 2)
+
   #def test_objectify_fails_gracefully_without_record_id(self):
   #  """objectify_pfif_xml should fail gracefully when presented with a record
   #  that has no record_id."""
-
-
-  #def test_objectify_accepts_persons_and_notes_with_similar_ids(self):
-  #  """objectify_pfif_xml should store unique entries if there is a note and a
-  #  person with the same record_id."""
-
 
   #TODO(samking): implement these tests.  And more.
 
