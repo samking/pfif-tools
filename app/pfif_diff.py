@@ -114,38 +114,34 @@ def objectify_pfif_xml(file_to_objectify):
 def pfif_obj_diff(records_1, records_2):
   """Compares if records_1 and records_2 contain the same data.  Returns a
   list of messages containing one message for each of the following scenarios:
-   * Missing Records: records_1 contains a record that is not in records_2,
-   * Extra Records: records_2 contains a record that is not in records_1,
-   * Missing Fields: a record in records_1 contains a field that is not in the
+   * Deleted Records: records_1 contains a record that is not in records_2,
+   * Added Records: records_2 contains a record that is not in records_1,
+   * Deleted Fields: a record in records_1 contains a field that is not in the
      corresponding record in records_2
-   * Extra Fields: a record in records_2 contains a field that is not in the
+   * Added Fields: a record in records_2 contains a field that is not in the
      corresponding record in records_1
-   * Different Values: a field value in records_1 is not the same as the
+   * Changed Values: a field value in records_1 is not the same as the
      corresponding field value in records_2"""
   messages = []
   for record, field_map_1 in records_1.items():
     field_map_2 = records_2.get(record)
-    # Are there any missing records?
     if field_map_2 is None:
-      messages.append('missing record')
+      messages.append('Record Deleted')
     else:
       for field, value_1 in field_map_1.items():
         value_2 = field_map_2.get(field)
-        # Are there any missing fields?
         if value_2 is None:
-          messages.append('missing field')
+          messages.append('Field Deleted')
         else:
-          # Are there any different values?
           if value_1 != value_2:
-            messages.append('different values')
-      # Are there any extra fields?
+            messages.append('Value Changed')
       for field in field_map_2:
         if field not in field_map_1:
-          messages.append('extra field')
-  # Are there any extra records?
+          messages.append('Field Added')
   for record in records_2:
     if record not in records_1:
-      messages.append('extra record')
+      messages.append('Record Added')
+  return messages
 
 def pfif_file_diff(file_1, file_2):
   """Compares file_1 and file_2.  Returns a list of messages as per

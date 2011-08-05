@@ -23,6 +23,8 @@ import pfif_diff
 class DiffTests(unittest.TestCase):
   """Defines tests for pfif_diff.py"""
 
+  # objectify
+
   @staticmethod
   def xml_to_object(xml_string):
     """Objectifies the xml_string."""
@@ -69,6 +71,14 @@ class DiffTests(unittest.TestCase):
     despite having no id or if the record is not included at all."""
     xml_object = self.xml_to_object(PfifXml.XML_ONE_BLANK_RECORD_ID)
     self.assertTrue(len(xml_object) == 1 or len(xml_object) == 2)
+
+  # diff
+
+  def test_diff_same_file(self):
+    """pfif_obj_diffing a file against itself should return no differences."""
+    xml_file = StringIO(PfifXml.XML_11_FULL)
+    messages = pfif_diff.pfif_file_diff(xml_file, xml_file)
+    self.assertEqual(len(messages), 0)
 
 if __name__ == '__main__':
   unittest.main()
