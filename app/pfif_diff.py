@@ -175,5 +175,3 @@ def pfif_file_diff(file_1, file_2):
   records_1 = objectify_pfif_xml(file_1)
   records_2 = objectify_pfif_xml(file_2)
   return pfif_obj_diff(records_1, records_2)
-
-def pfif_diff_to_str(messages):
