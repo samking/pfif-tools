@@ -215,6 +215,8 @@ class MessagesOutput:
     else:
       self.output.append(text)
 
+  # TODO(samking): Add finer granularity on output.  The data part should be in
+  # a diferent span than the rest of the message.
   @staticmethod
   def messages_to_str(messages, show_errors=True, show_warnings=True,
                       show_line_numbers=True, show_full_line=True,
