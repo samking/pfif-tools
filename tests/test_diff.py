@@ -48,6 +48,8 @@ class DiffTests(unittest.TestCase):
     """objectify_pfif_xml should be agnostic to the names of fields (except for
     person, note, person_record_id, and note_record_id), so it should accept
     fields with weird names."""
+    self.compare_reference_object(PfifXml.XML_EXTRANEOUS_FIELD_11,
+                                  PfifXml.XML_EXTRANEOUS_FIELD_11_MAP)
 
   #def test_objectify_fails_gracefully_without_record_id(self):
   #  """objectify_pfif_xml should fail gracefully when presented with a record
