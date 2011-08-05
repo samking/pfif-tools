@@ -75,28 +75,30 @@ def objectify_parents(parents, is_person, object_map, tree,
     record_id_tag = 'note_record_id'
   for parent in parents:
     record_id = tree.get_field_text(parent, record_id_tag)
-    assert record_id is not None, ('Invalid PFIF XML: a record is missing '
-                                   'its ' + record_id_tag + ' field.')
-    record_map = object_map.setdefault(
-        record_id_to_key(record_id, is_person), {})
-    # If this note is a child of a person, it isn't required to have a
-    # person_record_id, but it's easier to deal with notes that have
-    # person_record_ids, so we force-add it.
-    if not is_person and parent_person_record_id is not None:
-      record_map['person_record_id'] = parent_person_record_id
-    for child in parent.getchildren():
-      field_name = utils.extract_tag(child.tag)
-      # We'll deal with all notes together, so skip them for now.
-      if is_person and field_name == 'note':
-        continue
-      else:
-        # if there is no text in the node, use the empty string rather than None
-        field_value = child.text or ''
-        record_map[field_name] = field_value
-    if is_person:
-      sub_notes = parent.findall(tree.add_namespace_to_tag('note'))
-      objectify_parents(sub_notes, False, object_map, tree,
-                        parent_person_record_id=record_id)
+    if record_id is None:
+      # TODO(samking): better handling of this error?
+      print 'Invalid PFIF XML: a record is missing its ' + record_id_tag
+    else:
+      record_map = object_map.setdefault(
+          record_id_to_key(record_id, is_person), {})
+      # If this note is a child of a person, it isn't required to have a
+      # person_record_id, but it's easier to deal with notes that have
+      # person_record_ids, so we force-add it.
+      if not is_person and parent_person_record_id is not None:
+        record_map['person_record_id'] = parent_person_record_id
+      for child in parent.getchildren():
+        field_name = utils.extract_tag(child.tag)
+        # We'll deal with all notes together, so skip them for now.
+        if is_person and field_name == 'note':
+          continue
+        else:
+          # if there is no text in the node, use the empty string, not None
+          field_value = child.text or ''
+          record_map[field_name] = field_value
+      if is_person:
+        sub_notes = parent.findall(tree.add_namespace_to_tag('note'))
+        objectify_parents(sub_notes, False, object_map, tree,
+                          parent_person_record_id=record_id)
 
 def objectify_pfif_xml(file_to_objectify):
   """Turns a file of PFIF XML into a map."""
