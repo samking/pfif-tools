@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>PFIF Diff</title>
+  </head>
+  <body>
+    <form action="/diff/results" method="post"
+        enctype="multipart/form-data">
+
+      <h1>First File to Diff</h1>
+      <p>Put PFIF XML here to validate it:</p>
+      <div><textarea name="pfif_xml" rows="3" cols="60"></textarea></div>
+      <div>Or, upload a file: <input name="pfif_xml_file" type="file" />
+            </div>
+      <div>Or, choose the URL of a PFIF XML file: <input type="text"
+            name="pfif_xml_url" /> </div>
+
+      <h1>Second File to Diff</h1>
+      <p>Put PFIF XML here to validate it:</p>
+      <div><textarea name="pfif_xml_2" rows="3" cols="60"></textarea></div>
+      <div>Or, upload a file: <input name="pfif_xml_file_2" type="file" />
+            </div>
+      <div>Or, choose the URL of a PFIF XML file: <input type="text"
+            name="pfif_xml_url_2" /> </div>
+
+      <br />
+      <div><input type="submit" value="Find Differences"></div>
+    </form>
+  </body>
+</html>
