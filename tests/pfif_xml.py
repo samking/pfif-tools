@@ -841,3 +841,36 @@ XML_ONE_BLANK_RECORD_ID = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:person_record_id></pfif:person_record_id>
   </pfif:person>
 </pfif:pfif>"""
+
+XML_ONE_PERSON_ONE_FIELD = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+  </pfif:person>
+</pfif:pfif>"""
+
+XML_TWO_PERSONS_ONE_FIELD = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/person2</pfif:person_record_id>
+  </pfif:person>
+</pfif:pfif>"""
+
+XML_ONE_PERSON_TWO_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+  </pfif:person>
+</pfif:pfif>"""
+
+XML_ONE_PERSON_TWO_FIELDS_NEW_VALUE = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+    <pfif:source_date>abcd1234-56-78T90:12:34Z</pfif:source_date>
+  </pfif:person>
+</pfif:pfif>"""

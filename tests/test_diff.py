@@ -74,11 +74,53 @@ class DiffTests(unittest.TestCase):
 
   # diff
 
+  @staticmethod
+  def run_diff(xml_str_1, xml_str_2):
+    """Runs pfif_file_diff on the two xml strings.  Returns the message list of
+    differences."""
+    xml_file_1 = StringIO(xml_str_1)
+    xml_file_2 = StringIO(xml_str_2)
+    return pfif_diff.pfif_file_diff(xml_file_1, xml_file_2)
+
   def test_diff_same_file(self):
     """pfif_obj_diffing a file against itself should return no differences."""
-    xml_file = StringIO(PfifXml.XML_11_FULL)
-    messages = pfif_diff.pfif_file_diff(xml_file, xml_file)
+    messages = self.run_diff(PfifXml.XML_11_FULL, PfifXml.XML_11_FULL)
     self.assertEqual(len(messages), 0)
+
+  def test_diff_added_record(self):
+    """pfif_obj_diffing a file against a file with one extra record should
+    return one message."""
+    messages = self.run_diff(PfifXml.XML_ONE_PERSON_ONE_FIELD,
+                             PfifXml.XML_TWO_PERSONS_ONE_FIELD)
+    self.assertEqual(len(messages), 1)
+
+  def test_diff_deleted_record(self):
+    """pfif_obj_diffing a file against a file with one fewer record should
+    return one message."""
+    messages = self.run_diff(PfifXml.XML_TWO_PERSONS_ONE_FIELD,
+                             PfifXml.XML_ONE_PERSON_ONE_FIELD)
+    self.assertEqual(len(messages), 1)
+
+  def test_diff_added_field(self):
+    """pfif_obj_diffing a file against a file with one extra field should
+    return one message."""
+    messages = self.run_diff(PfifXml.XML_ONE_PERSON_ONE_FIELD,
+                             PfifXml.XML_ONE_PERSON_TWO_FIELDS)
+    self.assertEqual(len(messages), 1)
+
+  def test_diff_deleted_field(self):
+    """pfif_obj_diffing a file against a file with one fewer field should
+    return one message."""
+    messages = self.run_diff(PfifXml.XML_ONE_PERSON_TWO_FIELDS,
+                             PfifXml.XML_ONE_PERSON_ONE_FIELD)
+    self.assertEqual(len(messages), 1)
+
+  def test_diff_changed_value(self):
+    """pfif_obj_diffing a file against a file with one changed value should
+    return one message."""
+    messages = self.run_diff(PfifXml.XML_ONE_PERSON_TWO_FIELDS,
+                             PfifXml.XML_ONE_PERSON_TWO_FIELDS_NEW_VALUE)
+    self.assertEqual(len(messages), 1)
 
 if __name__ == '__main__':
   unittest.main()
