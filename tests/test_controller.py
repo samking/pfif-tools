@@ -17,14 +17,16 @@
 """Tests for validator_controller.py"""
 
 import unittest
-import validator_controller
+import controller
 from StringIO import StringIO
 from google.appengine.ext import webapp
 import tests.pfif_xml as PfifXml
 import utils
 
 class ValidatorControllerTests(unittest.TestCase):
-  """Tests for validator_controller."""
+  """Tests for the controller."""
+
+  # validator
 
   # pylint: disable=C0301
   # advice from
@@ -40,7 +42,7 @@ class ValidatorControllerTests(unittest.TestCase):
                               "PATH_INFO": "/validator",
                               "QUERY_STRING" : content})
     response = webapp.Response()
-    handler = validator_controller.Validator()
+    handler = controller.Validator()
     handler.initialize(request, response)
     handler.post()
     return response
@@ -118,7 +120,7 @@ class ValidatorControllerTests(unittest.TestCase):
   @staticmethod
   def test_main():
     """main should not crash."""
-    validator_controller.main()
+    controller.main()
 
 if __name__ == '__main__':
   unittest.main()

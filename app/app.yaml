@@ -6,8 +6,11 @@ api_version: 1
 handlers:
 - url: /static
   static_dir: static
-- url: /
+- url: /validate
   static_files: static/validator.html
   upload: static/validator.html
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
 - url: /.*
-  script: validator_controller.py
+  script: controller.py
