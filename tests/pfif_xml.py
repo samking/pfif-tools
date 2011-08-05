@@ -406,11 +406,16 @@ XML_INCORRECT_FIELD_ORDER_11 = """<?xml version="1.0" encoding="UTF-8"?>
 XML_EXTRANEOUS_FIELD_11 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.1">
   <pfif:person>
-    <pfif:person_record_id />
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
     <pfif:foo />
     <pfif:other />
   </pfif:person>
 </pfif:pfif>"""
+
+XML_EXTRANEOUS_FIELD_11_MAP = {
+    'example.org/person' : {'person_record_id' : 'example.org/person',
+                            'foo' : '',
+                            'other' : ''}}
 
 XML_CORRECT_FIELD_ORDER_12 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
