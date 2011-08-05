@@ -804,3 +804,15 @@ XML_MANDATORY_13_MAP = {
                                   'source_date' : '1234-56-78T90:12:34Z',
                                   'author_name' : 'Author Name',
                                   'text' : 'Lots of Text'}}
+
+XML_BLANK_FIELDS = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person</pfif:person_record_id>
+    <pfif:source_date></pfif:source_date>
+  </pfif:person>
+</pfif:pfif>"""
+
+XML_BLANK_FIELDS_MAP =  {
+    'example.org/person' : {'person_record_id' : 'example.org/person',
+                            'source_date' : ''}}
