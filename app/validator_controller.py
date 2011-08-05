@@ -51,7 +51,7 @@ class Validator(webapp.RequestHandler):
       messages = validator.run_validations()
       self.response.out.write('<body><h1>Validation: ' +
                               str(len(messages)) + ' Messages</h1>')
-      marked_up_message = validator.messages_to_str(
+      marked_up_message = validator.validator_messages_to_str(
           messages,
           show_errors='show_errors' in print_options,
           show_warnings='show_warnings' in print_options,

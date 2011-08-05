@@ -69,12 +69,12 @@ class ValidatorTests(unittest.TestCase):
     messages.append(Message("Message 3"))
 
     # With no errors or warnings, nothing should print
-    output = validator.messages_to_str(messages, show_errors=False,
+    output = validator.validator_messages_to_str(messages, show_errors=False,
                                        show_warnings=False)
     self.assertEqual(len(output), 0)
 
     # with only errors on, only errors should print
-    output = validator.messages_to_str(messages, show_warnings=False,
+    output = validator.validator_messages_to_str(messages, show_warnings=False,
                                        show_line_numbers=False,
                                        show_record_ids=False,
                                        show_xml_element_text=False,
@@ -85,42 +85,41 @@ class ValidatorTests(unittest.TestCase):
     self.assertNotEqual(output.find("Message 3"), -1)
 
     # with warnings on, warnings should print
-    output = validator.messages_to_str(messages, show_line_numbers=False,
-                                       show_record_ids=False,
-                                       show_xml_element_text=False,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_line_numbers=False, show_record_ids=False,
+        show_xml_element_text=False, show_full_line=False)
     self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
     # should print with them on
     self.assertEqual(output.find("11"), -1)
-    output = validator.messages_to_str(messages, show_line_numbers=True,
-                                       show_record_ids=False,
-                                       show_xml_element_text=False,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_line_numbers=True, show_record_ids=False,
+        show_xml_element_text=False, show_full_line=False)
     self.assertNotEqual(output.find("11"), -1)
 
     self.assertEqual(output.find("Text"), -1)
-    output = validator.messages_to_str(messages, show_record_ids=False,
-                                       show_xml_element_text=True,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_record_ids=False, show_xml_element_text=True,
+        show_full_line=False)
     self.assertNotEqual(output.find("Text"), -1)
 
     self.assertEqual(output.find("Person"), -1)
     self.assertEqual(output.find("Note"), -1)
-    output = validator.messages_to_str(messages, show_record_ids=True,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_record_ids=True, show_full_line=False)
     self.assertNotEqual(output.find("Person"), -1)
     self.assertNotEqual(output.find("Note"), -1)
 
     self.assertEqual(output.find("ZZZ 11"), -1)
-    output = validator.messages_to_str(messages, show_full_line=True,
-                                       xml_lines=lines)
+    output = validator.validator_messages_to_str(
+        messages, show_full_line=True, xml_lines=lines)
     self.assertNotEqual(output.find("ZZZ 11"), -1)
 
     # is_html should output a div somewhere
     self.assertEqual(output.find("div"), -1)
-    output = validator.messages_to_str(messages, is_html=True, xml_lines=lines)
+    output = validator.validator_messages_to_str(
+        messages, is_html=True, xml_lines=lines)
     self.assertNotEqual(output.find("div"), -1)
 
   # validate_root_has_child
@@ -552,7 +551,7 @@ class ValidatorTests(unittest.TestCase):
     unicode text."""
     validator = self.set_up_validator(PfifXml.XML_UNICODE_12)
     messages = validator.run_validations()
-    validator.messages_to_str(messages)
+    validator.validator_messages_to_str(messages)
     self.assertEqual(len(messages), 0)
 
 if __name__ == '__main__':
