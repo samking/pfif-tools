@@ -111,6 +111,9 @@ def objectify_pfif_xml(file_to_objectify):
   objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
   return object_map
 
+def make_diff_message():
+
+
 def pfif_obj_diff(records_1, records_2):
   """Compares if records_1 and records_2 contain the same data.  Returns a
   list of messages containing one message for each of the following scenarios:
@@ -150,5 +153,4 @@ def pfif_file_diff(file_1, file_2):
   records_2 = objectify_pfif_xml(file_2)
   return pfif_obj_diff(records_1, records_2)
 
-# def output_diff(self, messages):
-  # Output the Diff
+def pfif_diff_to_str(messages):

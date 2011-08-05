@@ -19,6 +19,7 @@ import re
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import urllib
+import cgi
 
 # XML Parsing Utilities
 
@@ -156,3 +157,59 @@ class PfifXmlTree():
     if child != None:
       return child.text
     return None
+
+class Message:
+  """A container for information about an error or warning message"""
+
+  def __init__(self, main_text, is_error=True, xml_line_number=None,
+               xml_element_text=None, person_record_id=None,
+               note_record_id=None):
+    self.main_text = main_text
+    self.is_error = is_error
+    self.xml_line_number = xml_line_number
+    self.xml_element_text = xml_element_text
+    self.person_record_id = person_record_id
+    self.note_record_id  = note_record_id
+
+class MessagesOutput:
+  """A container that allows for outputting either a plain string or HTML
+  easily"""
+
+  def __init__(self, is_html):
+    self.is_html = is_html
+    self.output = []
+    if is_html:
+      self.output.append('<div class="all_messages">')
+
+  def get_output(self):
+    """Turns the stored data into a string.  Call at most once per instance of
+    MessagesOutput."""
+    if self.is_html:
+      # closes all_messages div
+      self.output.append('</div>')
+    return ''.join(self.output)
+
+  def start_new_message(self):
+    """Call once at the start of each message before calling
+    make_message_part"""
+    if self.is_html:
+      self.output.append('<div class="message">')
+
+  def end_new_message(self):
+    """Call once at the end of each message after all calls to
+    make_message_part"""
+    if self.is_html:
+      # clases message div
+      self.output.append('</div>')
+    self.output.append('\n')
+
+  def make_message_part(self, text, html_class):
+    """Call once for each different part of the message (ie, the main text, the
+    line number).  text is the body of the message.  html_class is the class of
+    the span that will contain the text."""
+    if self.is_html:
+      self.output.append('<span class="' + html_class + '">')
+      self.output.append(cgi.escape(text))
+      self.output.append('</span>')
+    else:
+      self.output.append(text)
