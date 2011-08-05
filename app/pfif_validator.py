@@ -547,8 +547,7 @@ class PfifValidator:
             if failed:
               messages.append(self.make_message(
                   'The text in one of your fields does not match the '
-                  'requirement in the specification.  The field: ' + field +
-                  '.  The text: ' + element.text,
+                  'requirement in the specification.',
                   record=parent, element=element))
           else:
             messages.append(self.make_message('You had an empty field.',
@@ -658,7 +657,7 @@ class PfifValidator:
               curr_max = field_order_num
             else:
               messages.append(self.make_message(
-                  'One of your fields was out of order.  The field: ' + tag,
+                  'One of your fields was out of order.',
                   record=record, element=field))
               break
     return messages
@@ -710,9 +709,9 @@ class PfifValidator:
           if tag == 'note':
             messages.extend(self.validate_personal_data_removed(child))
           else:
-            messages.append(self.make_message('An expired record still has '
-                                              'personal data.', record=record,
-                                              element=child))
+            messages.append(self.make_message(
+                'An expired record still has personal data.',
+                record=record, element=child))
     return messages
 
   def validate_expired_records_removed(self):
@@ -758,8 +757,8 @@ class PfifValidator:
           messages.append(self.make_message(
               'There is an asymmetric linked record.  That is, a note has a'
               'linked_person_record_id to another person, but that person '
-              'does not link back.', record=linking_note, element=link_field,
-              is_error=False))
+              'does not link back.',
+              record=linking_note, element=link_field, is_error=False))
     return messages
 
   def validate_extraneous_children(self, parents, approved_tags):
