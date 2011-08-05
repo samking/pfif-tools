@@ -75,8 +75,6 @@ def objectify_parents(parents, is_person, object_map, tree,
     record_id_tag = 'note_record_id'
   for parent in parents:
     record_id = tree.get_field_text(parent, record_id_tag)
-    # TODO(samking): what should we do here?  Silently ignore, print a
-    # warning, or assert?
     assert record_id is not None, ('Invalid PFIF XML: a record is missing '
                                    'its ' + record_id_tag + ' field.')
     record_map = object_map.setdefault(
