@@ -77,6 +77,8 @@ class PfifXmlTree():
 
   def __init__(self, xml_file):
     self.namespace = None
+    self.version = None
+    self.tree = None
     self.line_numbers = {}
     self.lines = xml_file.readlines()
     xml_file.seek(0)
