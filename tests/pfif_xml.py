@@ -342,6 +342,16 @@ XML_DUPLICATE_NOTE_IDS = """<?xml version="1.0" encoding="UTF-8"?>
   </pfif:note>
 </pfif:pfif>"""
 
+XML_DUPLICATE_PERSON_AND_NOTE_ID = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/1</pfif:person_record_id>
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.org/1</pfif:note_record_id>
+  </pfif:note>
+</pfif:pfif>"""
+
 XML_NOTES_BELONG_TO_PEOPLE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:note>
