@@ -46,7 +46,7 @@ span.message_text {
   font-weight:bold;
 }
 
-span.message_xml_line {
+span.message_xml_full_line {
   color: black;
   background-color: #EAEBEE;
   font-family: monospace;

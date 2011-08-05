@@ -122,15 +122,15 @@ def objectify_pfif_xml(file_to_objectify):
   objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
   return object_map
 
-def make_diff_message(message_text, record_id, xml_element_tag=None):
+def make_diff_message(message_text, record_id, xml_tag=None):
   """Returns a Message object with the provided information."""
   is_person = is_key_person(record_id)
   real_record_id = key_to_record_id(record_id)
   if is_person:
-    return utils.Message(message_text, xml_element_tag=xml_element_tag,
+    return utils.Message(message_text, xml_tag=xml_tag,
                          person_record_id=real_record_id)
   else:
-    return utils.Message(message_text, xml_element_tag=xml_element_tag,
+    return utils.Message(message_text, xml_tag=xml_tag,
                          note_record_id=record_id)
 
 def pfif_obj_diff(records_1, records_2):
@@ -154,17 +154,17 @@ def pfif_obj_diff(records_1, records_2):
         value_2 = field_map_2.get(field)
         if value_2 is None:
           messages.append(make_diff_message('Field Deleted.', record,
-                                            xml_element_tag=field))
+                                            xml_tag=field))
         else:
           if value_1 != value_2:
             message_text = ('Value Changed: "' + value_1 + '" is now "' +
                             value_2 + '".')
             messages.append(make_diff_message(message_text, record,
-                                              xml_element_tag=field))
+                                              xml_tag=field))
       for field in field_map_2:
         if field not in field_map_1:
           messages.append(make_diff_message('Field Added.', record,
-                                            xml_element_tag=field))
+                                            xml_tag=field))
   for record in records_2:
     if record not in records_1:
       messages.append(make_diff_message('Record Added.', record))
