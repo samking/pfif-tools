@@ -441,46 +441,13 @@ class PfifValidator:
                          person_record_id=person_record_id,
                          note_record_id=note_record_id)
 
-  # printing
-
-  def messages_to_str(self, messages, show_errors=True, show_warnings=True,
-                      show_line_numbers=True, show_full_line=True,
-                      show_record_ids=True, show_xml_element_text=True,
-                      is_html=False, xml_lines=None):
-    """Returns a string containing all messages formatted per the options."""
-    if xml_lines is None:
-      xml_lines = self.tree.lines
-    output = utils.MessagesOutput(is_html)
-    for message in messages:
-      if (message.is_error and show_errors) or (
-          not message.is_error and show_warnings):
-        output.start_new_message()
-        if message.is_error:
-          output.make_message_part('ERROR ', 'message_type')
-        else:
-          output.make_message_part('WARNING ', 'message_type')
-        if (show_line_numbers and message.xml_line_number != None):
-          output.make_message_part('Line ' + str(message.xml_line_number) +
-                                   ': ', 'message_line_number')
-        output.make_message_part(message.main_text + '. ', 'message_text')
-        if show_record_ids:
-          if message.person_record_id != None:
-            output.make_message_part('The relevant person_record_id is: ' +
-                                     message.person_record_id + '. ',
-                                     'message_person_record_id')
-          if message.note_record_id != None:
-            output.make_message_part('The relevant note_record_id is: ' +
-                                     message.note_record_id + '. ',
-                                     'message_note_record_id')
-        if show_xml_element_text and message.xml_element_text:
-          output.make_message_part('The text of the relevant PFIF XML node: ' +
-                                   message.xml_element_text + '. ',
-                                   'message_xml_element_text')
-        if (show_full_line and message.xml_line_number != None):
-          output.make_message_part(xml_lines[message.xml_line_number - 1],
-                                   'message_full_line')
-        output.end_new_message()
-    return output.get_output()
+  def validator_messages_to_str(self, messages, **optional_args):
+    """Wrapper for MessagesOutput.messages_to_str that adds in xml_lines if it's
+    not specified."""
+    if optional_args is None:
+      optional_args = {}
+    optional_args.setdefault('xml_lines', self.tree.lines)
+    return utils.MessagesOutput.messages_to_str(messages, **optional_args)
 
   # validation
   # Each validate method can only be run on an initialized validator (the
@@ -850,7 +817,7 @@ def main():
   assert len(sys.argv) == 2, 'Usage: python pfif_validator.py my-pyif-xml-file'
   validator = PfifValidator(utils.open_file(sys.argv[1], 'r'))
   messages = validator.run_validations()
-  print validator.messages_to_str(messages)
+  print validator.validator_messages_to_str(messages)
 
 if __name__ == '__main__':
   main()
