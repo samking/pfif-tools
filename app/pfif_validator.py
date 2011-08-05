@@ -431,13 +431,15 @@ class PfifValidator:
     an element"""
     person_record_id = self.tree.get_field_text(record, 'person_record_id')
     note_record_id = self.tree.get_field_text(record, 'note_record_id')
-    line = None
+    tag = None
     text = None
+    line = None
     if element != None:
+      tag = utils.extract_tag(element.tag)
       text = element.text
       line = self.tree.line_numbers[element]
     return utils.Message(error_message, is_error=is_error, xml_line_number=line,
-                         xml_element_text=text,
+                         xml_tag=tag, xml_text=text,
                          person_record_id=person_record_id,
                          note_record_id=note_record_id)
 
@@ -625,7 +627,8 @@ class PfifValidator:
                 'You have a note that has a person_record_id that does not '
                 'match the person_record_id of the person that owns the note.',
                 xml_line_number=self.tree.line_numbers[note_person_id],
-                xml_element_text=note_person_id.text,
+                xml_tag=utils.extract_tag(note_person_id.tag),
+                xml_text=note_person_id.text,
                 person_record_id=self.tree.get_field_text(person,
                                                           'person_record_id'),
                 note_record_id=self.tree.get_field_text(note,

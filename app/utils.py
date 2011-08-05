@@ -162,13 +162,13 @@ class Message:
   """A container for information about an error or warning message"""
 
   def __init__(self, main_text, is_error=True, xml_line_number=None,
-               xml_element_tag=None, xml_element_text=None,
-               person_record_id=None, note_record_id=None):
+               xml_tag=None, xml_text=None, person_record_id=None,
+               note_record_id=None):
     self.main_text = main_text
     self.is_error = is_error
     self.xml_line_number = xml_line_number
-    self.xml_element_text = xml_element_text
-    self.xml_element_tag = xml_element_tag
+    self.xml_text = xml_text
+    self.xml_tag = xml_tag
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
 
@@ -218,8 +218,9 @@ class MessagesOutput:
   @staticmethod
   def messages_to_str(messages, show_errors=True, show_warnings=True,
                       show_line_numbers=True, show_full_line=True,
-                      show_record_ids=True, show_xml_element_text=True,
-                      is_html=False, xml_lines=None):
+                      show_record_ids=True, show_xml_tag=True,
+                      show_xml_text=True, is_html=False,
+                      xml_lines=None):
     """Returns a string containing all messages formatted per the options."""
     output = MessagesOutput(is_html)
     for message in messages:
@@ -243,12 +244,14 @@ class MessagesOutput:
             output.make_message_part('The relevant note_record_id is: ' +
                                      message.note_record_id + '. ',
                                      'message_note_record_id')
-        if show_xml_element_text and message.xml_element_text:
+        if show_xml_tag and message.xml_tag:
+          output.make_message_part('The tag of the relevant PFIF XML node: ' +
+                                   message.xml_tag + '. ', 'message_xml_tag')
+        if show_xml_text and message.xml_text:
           output.make_message_part('The text of the relevant PFIF XML node: ' +
-                                   message.xml_element_text + '. ',
-                                   'message_xml_element_text')
+                                   message.xml_text + '. ', 'message_xml_text')
         if (show_full_line and message.xml_line_number != None):
           output.make_message_part(xml_lines[message.xml_line_number - 1],
-                                   'message_full_line')
+                                   'message_xml_full_line')
         output.end_new_message()
     return output.get_output()

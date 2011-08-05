@@ -63,7 +63,7 @@ class ValidatorTests(unittest.TestCase):
       lines.append('ZZZ ' + str(i))
     messages = []
     messages.append(Message("Message 1", is_error=True, xml_line_number=11,
-                            xml_element_text="Text", person_record_id="Person",
+                            xml_text="Text", person_record_id="Person",
                             note_record_id="Note"))
     messages.append(Message("Message 2", is_error=False))
     messages.append(Message("Message 3"))
@@ -77,7 +77,7 @@ class ValidatorTests(unittest.TestCase):
     output = validator.validator_messages_to_str(messages, show_warnings=False,
                                        show_line_numbers=False,
                                        show_record_ids=False,
-                                       show_xml_element_text=False,
+                                       show_xml_text=False,
                                        show_full_line=False)
     self.assertNotEqual(output.find("Message 1"), -1)
     self.assertEqual(output.find("Message 2"), -1)
@@ -87,7 +87,7 @@ class ValidatorTests(unittest.TestCase):
     # with warnings on, warnings should print
     output = validator.validator_messages_to_str(
         messages, show_line_numbers=False, show_record_ids=False,
-        show_xml_element_text=False, show_full_line=False)
+        show_xml_text=False, show_full_line=False)
     self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
@@ -95,12 +95,12 @@ class ValidatorTests(unittest.TestCase):
     self.assertEqual(output.find("11"), -1)
     output = validator.validator_messages_to_str(
         messages, show_line_numbers=True, show_record_ids=False,
-        show_xml_element_text=False, show_full_line=False)
+        show_xml_text=False, show_full_line=False)
     self.assertNotEqual(output.find("11"), -1)
 
     self.assertEqual(output.find("Text"), -1)
     output = validator.validator_messages_to_str(
-        messages, show_record_ids=False, show_xml_element_text=True,
+        messages, show_record_ids=False, show_xml_text=True,
         show_full_line=False)
     self.assertNotEqual(output.find("Text"), -1)
 

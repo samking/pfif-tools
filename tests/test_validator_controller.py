@@ -91,13 +91,19 @@ class ValidatorControllerTests(unittest.TestCase):
                                         '&print_options=show_warnings')
     self.assertTrue('message_line_number' in response.out.getvalue())
 
-    # EXPIRE_99 doesn't have any errors with xml element text, so we use a
-    # different XML file
+    # EXPIRE_99 doesn't have any errors with xml element text or tag, so we use
+    # a different XML file
     response = self.make_webapp_request('pfif_xml_file=' +
                                         PfifXml.XML_INCORRECT_FORMAT_11 +
-                                        '&print_options=show_xml_element_text'
+                                        '&print_options=show_xml_tag'
                                         '&print_options=show_errors')
-    self.assertTrue('message_xml_element_text' in response.out.getvalue())
+    self.assertTrue('message_xml_tag' in response.out.getvalue())
+
+    response = self.make_webapp_request('pfif_xml_file=' +
+                                        PfifXml.XML_INCORRECT_FORMAT_11 +
+                                        '&print_options=show_xml_text'
+                                        '&print_options=show_errors')
+    self.assertTrue('message_xml_text' in response.out.getvalue())
 
     response = self.make_webapp_request(request_base +
                                         '&print_options=show_record_ids'
@@ -107,7 +113,7 @@ class ValidatorControllerTests(unittest.TestCase):
     response = self.make_webapp_request(request_base +
                                         '&print_options=show_full_line'
                                         '&print_options=show_warnings')
-    self.assertTrue('message_full_line' in response.out.getvalue())
+    self.assertTrue('message_xml_full_line' in response.out.getvalue())
 
   @staticmethod
   def test_main():

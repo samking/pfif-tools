@@ -57,7 +57,8 @@ class Validator(webapp.RequestHandler):
           show_warnings='show_warnings' in print_options,
           show_line_numbers='show_line_numbers' in print_options,
           show_record_ids='show_record_ids' in print_options,
-          show_xml_element_text='show_xml_element_text' in print_options,
+          show_xml_tag='show_xml_tag' in print_options,
+          show_xml_text='show_xml_text' in print_options,
           show_full_line='show_full_line' in print_options,
           is_html=True)
       # don't escape the message since is_html escapes all input and contains
