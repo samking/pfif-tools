@@ -162,12 +162,13 @@ class Message:
   """A container for information about an error or warning message"""
 
   def __init__(self, main_text, is_error=True, xml_line_number=None,
-               xml_element_text=None, person_record_id=None,
-               note_record_id=None):
+               xml_element_tag=None, xml_element_text=None,
+               person_record_id=None, note_record_id=None):
     self.main_text = main_text
     self.is_error = is_error
     self.xml_line_number = xml_line_number
     self.xml_element_text = xml_element_text
+    self.xml_element_tag = xml_element_tag
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
 

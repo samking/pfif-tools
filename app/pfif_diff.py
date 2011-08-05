@@ -159,7 +159,8 @@ def pfif_obj_diff(records_1, records_2):
           if value_1 != value_2:
             message_text = ('Value Changed: "' + value_1 + '" is now "' +
                             value_2 + '".')
-            messages.append(message_text, record, xml_element_tag=field)
+            messages.append(make_diff_message(message_text, record,
+                                              xml_element_tag=field))
       for field in field_map_2:
         if field not in field_map_1:
           messages.append(make_diff_message('Field Added.', record,
