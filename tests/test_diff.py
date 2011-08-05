@@ -19,6 +19,8 @@ import unittest
 from StringIO import StringIO
 import tests.pfif_xml as PfifXml
 import pfif_diff
+import sys
+import utils
 
 class DiffTests(unittest.TestCase):
   """Defines tests for pfif_diff.py"""
@@ -121,6 +123,35 @@ class DiffTests(unittest.TestCase):
     messages = self.run_diff(PfifXml.XML_ONE_PERSON_TWO_FIELDS,
                              PfifXml.XML_ONE_PERSON_TWO_FIELDS_NEW_VALUE)
     self.assertEqual(len(messages), 1)
+
+  # main
+
+  def test_main(self):
+    """main should not raise an exception under normal circumstances."""
+    old_argv = sys.argv
+    old_stdout = sys.stdout
+    sys.argv = ['pfif_diff.py', 'mocked_file', 'same_mocked_file']
+    sys.stdout = StringIO('')
+
+    utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
+    pfif_diff.main()
+    # There should be one newline but no content printed
+    self.assertEqual(len(sys.stdout.getvalue()), 1)
+
+    sys.stdout = old_stdout
+    sys.argv = old_argv
+
+  def test_main_no_args(self):
+    """main should give an assertion if it is given the wrong number of args."""
+    old_argv = sys.argv
+
+    sys.argv = ['pfif_diff.py']
+    self.assertRaises(Exception, pfif_diff.main)
+
+    sys.argv = ['pfif_diff.py', 'a_file']
+    self.assertRaises(Exception, pfif_diff.main)
+
+    sys.argv = old_argv
 
 if __name__ == '__main__':
   unittest.main()

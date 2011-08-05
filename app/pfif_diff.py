@@ -34,6 +34,7 @@
 __author__ = 'samking@google.com (Sam King)'
 
 import utils
+import sys
 
 # TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
 
@@ -131,7 +132,7 @@ def make_diff_message(message_text, record_id, xml_tag=None):
                          person_record_id=real_record_id)
   else:
     return utils.Message(message_text, xml_tag=xml_tag,
-                         note_record_id=record_id)
+                         note_record_id=real_record_id)
 
 def pfif_obj_diff(records_1, records_2):
   """Compares if records_1 and records_2 contain the same data.  Returns a
@@ -176,3 +177,13 @@ def pfif_file_diff(file_1, file_2):
   records_1 = objectify_pfif_xml(file_1)
   records_2 = objectify_pfif_xml(file_2)
   return pfif_obj_diff(records_1, records_2)
+
+def main():
+  """Prints a diff between two files."""
+  assert len(sys.argv) == 3, 'Usage: python pfif_diff.py file_1 file_2'
+  messages = pfif_file_diff(utils.open_file(sys.argv[1], 'r'),
+                            utils.open_file(sys.argv[2]))
+  print utils.MessagesOutput.messages_to_str(messages)
+
+if __name__ == '__main__':
+  main()
