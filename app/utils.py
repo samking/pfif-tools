@@ -76,13 +76,17 @@ class PfifXmlTree():
   """An XML tree with PFIF-XML-specific helper functions."""
 
   def __init__(self, xml_file):
-    """Reads in the XML tree from the XML file .  If the
-    XML file is invalid, the XML library will raise an exception."""
     self.namespace = None
     self.line_numbers = {}
     self.lines = xml_file.readlines()
     xml_file.seek(0)
+    self.initialize_tree(xml_file)
+    self.initialize_pfif_version()
 
+
+  def initialize_tree(self, xml_file):
+    """Reads in the XML tree from the XML file.  If the XML file is invalid,
+    the XML library will raise an exception."""
     file_with_lines = FileWithLines(xml_file)
     tree_parser = iter(ET.iterparse(file_with_lines, events=['start']))
     event, root = tree_parser.next() # pylint: disable=W0612
@@ -93,9 +97,9 @@ class PfifXmlTree():
     self.tree = ET.ElementTree(root)
 
   def initialize_pfif_version(self):
-    """Returns the PFIF version associated with the file.  Initializes the
-    namespace.  Raises an exception of the XML root does not specify a namespace
-    or tag, if the tag isn't pfif, or if the version isn't supported."""
+    """Initializes the namespace and version.  Raises an exception of the XML
+    root does not specify a namespace or tag, if the tag isn't pfif, or if the
+    version isn't supported."""
     root = self.tree.getroot()
     tag = root.tag
     # xml.etree.Element.tag is formatted like: {namespace}tag
@@ -110,10 +114,9 @@ class PfifXmlTree():
     match = re.match(r'http://zesty\.ca/pfif/(\d\.\d)', self.namespace)
     assert match, ('The XML namespace specified is not correct.  It should be '
                    'in the following format: http://zesty.ca/pfif/VERSION')
-    version = float(match.group(1))
-    assert (version >= 1.1 and version <= 1.3), (
+    self.version = float(match.group(1))
+    assert (self.version >= 1.1 and self.version <= 1.3), (
            'This validator only supports versions 1.1-1.3.')
-    return version
 
   def getroot(self):
     """wrapper for ET.ElementTree.getroot."""

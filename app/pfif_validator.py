@@ -404,7 +404,7 @@ class PfifValidator:
 
   def __init__(self, xml_file):
     self.tree = utils.PfifXmlTree(xml_file)
-    self.version = self.tree.initialize_pfif_version()
+    self.version = self.tree.version
 
   # helpers
 
