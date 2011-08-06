@@ -874,3 +874,27 @@ XML_ONE_PERSON_TWO_FIELDS_NEW_VALUE = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:source_date>abcd1234-56-78T90:12:34Z</pfif:source_date>
   </pfif:person>
 </pfif:pfif>"""
+
+XML_ADDED_DELETED_CHANGED_1 = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person1</pfif:person_record_id>
+    <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:foo />
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/person2</pfif:person_record_id>
+  </pfif:person>
+</pfif:pfif>"""
+
+XML_ADDED_DELETED_CHANGED_2 = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/person1</pfif:person_record_id>
+    <pfif:source_date>abcd1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:bar />
+  </pfif:person>
+  <pfif:note>
+    <pfif:note_record_id>example.org/person2</pfif:note_record_id>
+  </pfif:note>
+</pfif:pfif>"""
