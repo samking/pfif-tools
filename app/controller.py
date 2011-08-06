@@ -22,27 +22,43 @@ from StringIO import StringIO
 import pfif_validator
 import utils
 
-class Validator(webapp.RequestHandler):
-  """Displays the validation results page."""
-
-  RESULTS_HEADER = """<!DOCTYPE HTML>
+def generate_header(title):
+  """Generates an HTML page header."""
+  return ("""<!DOCTYPE HTML>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>PFIF Validator: Results</title>
+    <title>""" + title + """</title>
     <link rel="stylesheet" type="text/css" href="/static/style.css" />
-  </head>"""
+  </head>""")
+
+def get_file(controller, file_number=1):
+  """Gets a file that was pasted in, uploaded, or given by a URL.  If multiple
+  files are provided, specify the number of the desired file as file_number.
+  Returns None if there is no file."""
+  paste_name = 'pfif_xml_' + str(file_number)
+  upload_name = 'pfif_xml_file_' + str(file_number)
+  url_name = 'pfif_xml_url_' + str(file_number)
+
+  for file_location in [paste_name, upload_name]:
+    if controller.request.get(file_location):
+      return StringIO(controller.request.get(file_location))
+  if controller.request.get(url_name):
+    url = controller.request.get(url_name)
+    # make a file-like object out of the URL's xml so we can seek on it
+    return StringIO(utils.open_url(url).read())
+
+  return None
+
+class DiffController(webapp.RequestHandler):
+  """Displays the diff results page."""
+
+class ValidatorController(webapp.RequestHandler):
+  """Displays the validation results page."""
 
   def post(self):
-    xml_file = None
-    for file_location in ['pfif_xml', 'pfif_xml_file']:
-      if self.request.get(file_location):
-        xml_file = StringIO(self.request.get(file_location))
-    if self.request.get('pfif_xml_url'):
-      url = self.request.get('pfif_xml_url')
-      # make a file-like object out of the URL's xml so we can seek on it
-      xml_file = StringIO(utils.open_url(url).read())
-    self.response.out.write(Validator.RESULTS_HEADER)
+    xml_file = get_file(self)
+    self.response.out.write(generate_header('PFIF Validator: Results'))
     if xml_file is None:
       self.response.out.write('<body><h1>No Input File</h1></body></html>')
     else:
@@ -66,8 +82,10 @@ class Validator(webapp.RequestHandler):
       self.response.out.write(marked_up_message)
       self.response.out.write('</body></html>')
 
-APPLICATION = webapp.WSGIApplication([('/validate/results', Validator)],
-                                     debug=True)
+APPLICATION = webapp.WSGIApplication(
+    [('/validate/results', ValidatorController),
+     ('/diff/results', DiffController)],
+    debug=True)
 
 def main():
   """Sets up the controller."""
