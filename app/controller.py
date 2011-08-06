@@ -20,47 +20,73 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 from StringIO import StringIO
 import pfif_validator
+import pfif_diff
 import utils
 
-def generate_header(title):
-  """Generates an HTML page header."""
-  return ("""<!DOCTYPE HTML>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>""" + title + """</title>
-    <link rel="stylesheet" type="text/css" href="/static/style.css" />
-  </head>""")
+class PfifController(webapp.RequestHandler):
+  """Provides common functionality to the different PFIF Tools controllers."""
 
-def get_file(controller, file_number=1):
-  """Gets a file that was pasted in, uploaded, or given by a URL.  If multiple
-  files are provided, specify the number of the desired file as file_number.
-  Returns None if there is no file."""
-  paste_name = 'pfif_xml_' + str(file_number)
-  upload_name = 'pfif_xml_file_' + str(file_number)
-  url_name = 'pfif_xml_url_' + str(file_number)
+  def write_header(self, title):
+    """Writes an HTML page header."""
+    self.response.out.write("""<!DOCTYPE HTML>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>""" + title + """</title>
+      <link rel="stylesheet" type="text/css" href="/static/style.css" />
+    </head>""")
 
-  for file_location in [paste_name, upload_name]:
-    if controller.request.get(file_location):
-      return StringIO(controller.request.get(file_location))
-  if controller.request.get(url_name):
-    url = controller.request.get(url_name)
-    # make a file-like object out of the URL's xml so we can seek on it
-    return StringIO(utils.open_url(url).read())
+  def write_footer(self):
+    """Closes the body and html tags."""
+    self.response.out.write('</body></html>')
 
-  return None
+  def write_missing_input_file(self):
+    """Writes that there is a missing input file."""
+    self.response.out.write('<body><h1>Missing Input File</h1>')
 
-class DiffController(webapp.RequestHandler):
+  def get_file(self, file_number=1):
+    """Gets a file that was pasted in, uploaded, or given by a URL.  If multiple
+    files are provided, specify the number of the desired file as file_number.
+    Returns None if there is no file."""
+    paste_name = 'pfif_xml_' + str(file_number)
+    upload_name = 'pfif_xml_file_' + str(file_number)
+    url_name = 'pfif_xml_url_' + str(file_number)
+
+    for file_location in [paste_name, upload_name]:
+      if self.request.get(file_location):
+        return StringIO(self.request.get(file_location))
+    if self.request.get(url_name):
+      url = self.request.get(url_name)
+      # make a file-like object out of the URL's xml so we can seek on it
+      return StringIO(utils.open_url(url).read())
+
+    return None
+
+class DiffController(PfifController):
   """Displays the diff results page."""
 
-class ValidatorController(webapp.RequestHandler):
+  def post(self):
+    file_1 = self.get_file(1)
+    file_2 = self.get_file(2)
+    self.write_header('PFIF Diff: Results')
+    if file_1 is None or file_2 is None:
+      self.write_missing_input_file()
+    else:
+      messages = pfif_diff.pfif_file_diff(file_1, file_2)
+      self.response.out.write(
+          '<body><h1>Diff: ' + str(len(messages)) + ' messages</h1>')
+      self.response.out.write(
+          utils.MessagesOutput.messages_to_str(messages, is_html=True))
+    self.write_footer()
+
+class ValidatorController(PfifController):
   """Displays the validation results page."""
 
   def post(self):
-    xml_file = get_file(self)
-    self.response.out.write(generate_header('PFIF Validator: Results'))
+    xml_file = self.get_file()
+    self.write_header('PFIF Validator: Results')
     if xml_file is None:
-      self.response.out.write('<body><h1>No Input File</h1></body></html>')
+      self.write_missing_input_file()
     else:
       print_options = self.request.get_all('print_options')
       validator = pfif_validator.PfifValidator(xml_file)
@@ -80,7 +106,7 @@ class ValidatorController(webapp.RequestHandler):
       # don't escape the message since is_html escapes all input and contains
       # html that should be interpreted as html
       self.response.out.write(marked_up_message)
-      self.response.out.write('</body></html>')
+    self.write_footer()
 
 APPLICATION = webapp.WSGIApplication(
     [('/validate/results', ValidatorController),
