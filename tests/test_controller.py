@@ -42,7 +42,7 @@ class ValidatorControllerTests(unittest.TestCase):
                               "PATH_INFO": "/validator",
                               "QUERY_STRING" : content})
     response = webapp.Response()
-    handler = controller.Validator()
+    handler = controller.ValidatorController()
     handler.initialize(request, response)
     handler.post()
     return response
@@ -55,28 +55,28 @@ class ValidatorControllerTests(unittest.TestCase):
 
   def test_pasting_xml(self):
     """The page should have the correct number of errors in the header when
-    using the pfif_xml POST variable to send PFIF XML."""
-    response = self.make_webapp_request('pfif_xml=' +
+    using the pfif_xml_1 POST variable to send PFIF XML."""
+    response = self.make_webapp_request('pfif_xml_1=' +
                                         PfifXml.XML_TWO_DUPLICATE_NO_CHILD)
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   def test_file_upload(self):
     """The page should have the correct number of errors in the header when
-    using the pfif_xml_file POST variable to send PFIF XML."""
-    response = self.make_webapp_request('pfif_xml_file=' +
+    using the pfif_xml_file_1 POST variable to send PFIF XML."""
+    response = self.make_webapp_request('pfif_xml_file_1=' +
                                         PfifXml.XML_TWO_DUPLICATE_NO_CHILD)
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   def test_url_upload(self):
     """The page should have the correct number of errors in the header when
-    using the pfif_xml_url POST variable to send PFIF XML."""
+    using the pfif_xml_url_1 POST variable to send PFIF XML."""
     utils.set_file_for_test(StringIO(PfifXml.XML_TWO_DUPLICATE_NO_CHILD))
-    response = self.make_webapp_request('pfif_xml_url=dummy_url')
+    response = self.make_webapp_request('pfif_xml_url_1=dummy_url')
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   def test_options(self):
     """The page should have a span or div for each print option."""
-    request_base = 'pfif_xml_file=' + PfifXml.XML_EXPIRE_99_EMPTY_DATA
+    request_base = 'pfif_xml_file_1=' + PfifXml.XML_EXPIRE_99_EMPTY_DATA
 
     response = self.make_webapp_request(request_base +
                                         '&print_options=show_errors')
@@ -95,13 +95,13 @@ class ValidatorControllerTests(unittest.TestCase):
 
     # EXPIRE_99 doesn't have any errors with xml element text or tag, so we use
     # a different XML file
-    response = self.make_webapp_request('pfif_xml_file=' +
+    response = self.make_webapp_request('pfif_xml_file_1=' +
                                         PfifXml.XML_INCORRECT_FORMAT_11 +
                                         '&print_options=show_xml_tag'
                                         '&print_options=show_errors')
     self.assertTrue('message_xml_tag' in response.out.getvalue())
 
-    response = self.make_webapp_request('pfif_xml_file=' +
+    response = self.make_webapp_request('pfif_xml_file_1=' +
                                         PfifXml.XML_INCORRECT_FORMAT_11 +
                                         '&print_options=show_xml_text'
                                         '&print_options=show_errors')
