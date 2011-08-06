@@ -74,7 +74,7 @@ class DiffController(PfifController):
     else:
       messages = pfif_diff.pfif_file_diff(file_1, file_2)
       self.response.out.write(
-          '<body><h1>Diff: ' + str(len(messages)) + ' messages</h1>')
+          '<body><h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
       self.response.out.write(
           utils.MessagesOutput.messages_to_str(messages, is_html=True))
     self.write_footer()

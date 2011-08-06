@@ -124,6 +124,14 @@ class DiffTests(unittest.TestCase):
                              PfifXml.XML_ONE_PERSON_TWO_FIELDS_NEW_VALUE)
     self.assertEqual(len(messages), 1)
 
+  def test_diff_stress_test(self):
+    """pfif_obj_diffing a file against a file with one record added, one record
+    deleted, one field added, one field deleted, and one field changed should
+    result in five messages."""
+    messages = self.run_diff(PfifXml.XML_ADDED_DELETED_CHANGED_1,
+                             PfifXml.XML_ADDED_DELETED_CHANGED_2)
+    self.assertEqual(len(messages), 5)
+
   # main
 
   def test_main(self):

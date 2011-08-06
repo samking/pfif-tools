@@ -446,8 +446,6 @@ class PfifValidator:
   def validator_messages_to_str(self, messages, **optional_args):
     """Wrapper for MessagesOutput.messages_to_str that adds in xml_lines if it's
     not specified."""
-    if optional_args is None:
-      optional_args = {}
     optional_args.setdefault('xml_lines', self.tree.lines)
     return utils.MessagesOutput.messages_to_str(messages, **optional_args)
 
