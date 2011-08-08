@@ -77,12 +77,16 @@ class DiffTests(unittest.TestCase):
   # diff
 
   @staticmethod
-  def run_diff(xml_str_1, xml_str_2):
+  def run_diff(xml_str_1, xml_str_2, text_is_case_sensitive=None):
     """Runs pfif_file_diff on the two xml strings.  Returns the message list of
     differences."""
     xml_file_1 = StringIO(xml_str_1)
     xml_file_2 = StringIO(xml_str_2)
-    return pfif_diff.pfif_file_diff(xml_file_1, xml_file_2)
+    if text_is_case_sensitive is not None:
+      return pfif_diff.pfif_file_diff(xml_file_1, xml_file_2,
+                                      text_is_case_sensitive)
+    else:
+      return pfif_diff.pfif_file_diff(xml_file_1, xml_file_2)
 
   def test_diff_same_file(self):
     """pfif_obj_diffing a file against itself should return no differences."""
@@ -131,6 +135,15 @@ class DiffTests(unittest.TestCase):
     messages = self.run_diff(PfifXml.XML_ADDED_DELETED_CHANGED_1,
                              PfifXml.XML_ADDED_DELETED_CHANGED_2)
     self.assertEqual(len(messages), 5)
+
+  def test_diff_case_insensitive(self):
+    """pfif_obj_diffing the files described in test_diff_stress_test should
+    result in 4 messages when the text_is_case_sensitive flag is off and the
+    change is from a difference is case."""
+    messages = self.run_diff(PfifXml.XML_ADDED_DELETED_CHANGED_1,
+                             PfifXml.XML_ADDED_DELETED_CHANGED_2,
+                             text_is_case_sensitive=False)
+    self.assertEqual(len(messages), 4)
 
   # main
 
