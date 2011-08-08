@@ -69,6 +69,9 @@ class DiffController(PfifController):
     file_1 = self.get_file(1)
     file_2 = self.get_file(2)
     self.write_header('PFIF Diff: Results')
+    # TODO(samking): Add description of 'old' verses 'new' file.  Custom name?
+    # TODO(samking): Add summary-by-record (6 records in A but not B, 11 are
+    # present in both but different...)
     if file_1 is None or file_2 is None:
       self.write_missing_input_file()
     else:
