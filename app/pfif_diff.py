@@ -38,7 +38,6 @@ import sys
 import optparse
 
 # TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
-# TODO(samking): Add --case-insensitive-text flag.
 # TODO(samking): Add line numbers and xml lines.
 
 # To allow person_record_ids and note_record_ids (which could be the same) to
