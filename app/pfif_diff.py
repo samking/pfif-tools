@@ -34,7 +34,6 @@
 __author__ = 'samking@google.com (Sam King)'
 
 import utils
-import sys
 import optparse
 
 # TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
