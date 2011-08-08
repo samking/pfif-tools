@@ -891,7 +891,7 @@ XML_ADDED_DELETED_CHANGED_2 = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/person1</pfif:person_record_id>
-    <pfif:source_date>abcd1234-56-78T90:12:34Z</pfif:source_date>
+    <pfif:source_date>1234-56-78t90:12:34z</pfif:source_date>
     <pfif:bar />
   </pfif:person>
   <pfif:note>

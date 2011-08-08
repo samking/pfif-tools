@@ -35,9 +35,10 @@ __author__ = 'samking@google.com (Sam King)'
 
 import utils
 import sys
+import optparse
 
 # TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
-# TODO(samking): Add --case-insensitive-field-comparsions flag.
+# TODO(samking): Add --case-insensitive-text flag.
 # TODO(samking): Add line numbers and xml lines.
 
 # To allow person_record_ids and note_record_ids (which could be the same) to
@@ -136,55 +137,64 @@ def make_diff_message(message_text, record_id, xml_tag=None):
     return utils.Message(message_text, xml_tag=xml_tag,
                          note_record_id=real_record_id)
 
-def pfif_obj_diff(records_1, records_2):
-  """Compares if records_1 and records_2 contain the same data.  Returns a
+def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
+  """Compares if records_a and records_b contain the same data.  Returns a
   list of messages containing one message for each of the following scenarios:
-   * Deleted Records: records_1 contains a record that is not in records_2,
-   * Added Records: records_2 contains a record that is not in records_1,
-   * Deleted Fields: a record in records_1 contains a field that is not in the
-     corresponding record in records_2
-   * Added Fields: a record in records_2 contains a field that is not in the
-     corresponding record in records_1
-   * Changed Values: a field value in records_1 is not the same as the
-     corresponding field value in records_2"""
+   * Deleted Records: records_a contains a record that is not in records_b,
+   * Added Records: records_b contains a record that is not in records_a,
+   * Deleted Fields: a record in records_a contains a field that is not in the
+     corresponding record in records_b
+   * Added Fields: a record in records_b contains a field that is not in the
+     corresponding record in records_a
+   * Changed Values: a field value in records_a is not the same as the
+     corresponding field value in records_b"""
   messages = []
-  for record, field_map_1 in records_1.items():
-    field_map_2 = records_2.get(record)
-    if field_map_2 is None:
+  for record, field_map_a in records_a.items():
+    field_map_b = records_b.get(record)
+    if field_map_b is None:
       messages.append(make_diff_message('Record Deleted.', record))
     else:
-      for field, value_1 in field_map_1.items():
-        value_2 = field_map_2.get(field)
-        if value_2 is None:
+      for field, value_a in field_map_a.items():
+        value_b = field_map_b.get(field)
+        if value_b is None:
           messages.append(make_diff_message('Field Deleted.', record,
                                             xml_tag=field))
         else:
-          if value_1 != value_2:
-            message_text = ('Value Changed: "' + value_1 + '" is now "' +
-                            value_2 + '".')
+          if not text_is_case_sensitive:
+            value_a = value_a.lower()
+            value_b = value_b.lower()
+          if value_a != value_b:
+            message_text = ('Value Changed: "' + value_a + '" is now "' +
+                            value_b + '".')
             messages.append(make_diff_message(message_text, record,
                                               xml_tag=field))
-      for field in field_map_2:
-        if field not in field_map_1:
+      for field in field_map_b:
+        if field not in field_map_a:
           messages.append(make_diff_message('Field Added.', record,
                                             xml_tag=field))
-  for record in records_2:
-    if record not in records_1:
+  for record in records_b:
+    if record not in records_a:
       messages.append(make_diff_message('Record Added.', record))
   return messages
 
-def pfif_file_diff(file_1, file_2):
-  """Compares file_1 and file_2.  Returns a list of messages as per
+def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True):
+  """Compares file_a and file_b.  Returns a list of messages as per
   pfif_obj_diff."""
-  records_1 = objectify_pfif_xml(file_1)
-  records_2 = objectify_pfif_xml(file_2)
-  return pfif_obj_diff(records_1, records_2)
+  records_a = objectify_pfif_xml(file_a)
+  records_b = objectify_pfif_xml(file_b)
+  return pfif_obj_diff(records_a, records_b, text_is_case_sensitive)
 
 def main():
   """Prints a diff between two files."""
-  assert len(sys.argv) == 3, 'Usage: python pfif_diff.py file_1 file_2'
-  messages = pfif_file_diff(utils.open_file(sys.argv[1], 'r'),
-                            utils.open_file(sys.argv[2]))
+  parser = optparse.OptionParser(usage='usage: %prog file-a file-b [options]')
+  parser.add_option('--text-is-case-insensitive', action='store_false',
+                    dest='text_is_case_sensitive',  default=True,
+                    help='<pfif:full_name>Jane</pfif:full_name> is the same as '
+                    '<pfif:full_name>JANE</pfif:full_name>')
+  (options, args) = parser.parse_args()
+
+  messages = pfif_file_diff(utils.open_file(args[0]), utils.open_file(args[1]),
+                            options.text_is_case_sensitive)
   print utils.MessagesOutput.messages_to_str(messages)
 
 if __name__ == '__main__':
