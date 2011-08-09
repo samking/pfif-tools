@@ -27,14 +27,15 @@ class PfifController(webapp.RequestHandler):
   """Provides common functionality to the different PFIF Tools controllers."""
 
   def write_header(self, title):
-    """Writes an HTML page header."""
+    """Writes an HTML page header and open the body."""
     self.response.out.write("""<!DOCTYPE HTML>
   <html>
     <head>
       <meta charset="utf-8">
       <title>""" + title + """</title>
       <link rel="stylesheet" type="text/css" href="/static/style.css" />
-    </head>""")
+    </head>
+    <body>""")
 
   def write_footer(self):
     """Closes the body and html tags."""
@@ -42,34 +43,64 @@ class PfifController(webapp.RequestHandler):
 
   def write_missing_input_file(self):
     """Writes that there is a missing input file."""
-    self.response.out.write('<body><h1>Missing Input File</h1>')
+    self.response.out.write('<h1>Missing Input File</h1>')
 
-  def get_file(self, file_number=1):
+  def get_file(self, file_number=1, return_filename=False):
     """Gets a file that was pasted in, uploaded, or given by a URL.  If multiple
     files are provided, specify the number of the desired file as file_number.
-    Returns None if there is no file."""
+    Returns None if there is no file.  If return_filename is True, returns a
+    tuple: (desired_file, filename)."""
     paste_name = 'pfif_xml_' + str(file_number)
     upload_name = 'pfif_xml_file_' + str(file_number)
     url_name = 'pfif_xml_url_' + str(file_number)
+    desired_file = None
+    filename = None
 
     for file_location in [paste_name, upload_name]:
       if self.request.get(file_location):
-        return StringIO(self.request.get(file_location))
+        desired_file = StringIO(self.request.get(file_location))
+        if file_location is upload_name:
+          filename = self.request.POST[file_location].filename
     if self.request.get(url_name):
       url = self.request.get(url_name)
       # make a file-like object out of the URL's xml so we can seek on it
-      return StringIO(utils.open_url(url).read())
+      desired_file = StringIO(utils.open_url(url).read())
+      filename = url
 
-    return None
+    if desired_file is not None:
+      if return_filename and filename is not None:
+        return (desired_file, filename)
+      elif return_filename:
+        return (desired_file, None)
+      else:
+        return desired_file
+    else:
+      if return_filename:
+        return (None, None)
+      else:
+        return None
+
+  def write_filename(self, filename, shorthand_name):
+    """Writes out a mapping from shorthand_name to filename."""
+    self.response.out.write('<p>File ' + shorthand_name + ': ')
+    if filename is None:
+      self.response.out.write('pasted in')
+    else:
+      self.response.out.write(filename)
+    self.response.out.write('</p>\n')
+
+  def write_filenames(self, filename_1, filename_2):
+    """Writes the names of filename_1 and filename_2."""
+    self.write_filename(filename_1, 'A')
+    self.write_filename(filename_2, 'B')
 
 class DiffController(PfifController):
   """Displays the diff results page."""
 
   def post(self):
-    file_1 = self.get_file(1)
-    file_2 = self.get_file(2)
+    file_1, filename_1 = self.get_file(1, return_filename=True)
+    file_2, filename_2 = self.get_file(2, return_filename=True)
     self.write_header('PFIF Diff: Results')
-    # TODO(samking): Add description of 'old' verses 'new' file.  Custom name?
     # TODO(samking): Add summary-by-record (6 records in A but not B, 11 are
     # present in both but different...)
     if file_1 is None or file_2 is None:
@@ -77,7 +108,8 @@ class DiffController(PfifController):
     else:
       messages = pfif_diff.pfif_file_diff(file_1, file_2)
       self.response.out.write(
-          '<body><h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
+          '<h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
+      self.write_filenames(filename_1, filename_2)
       self.response.out.write(
           utils.MessagesOutput.messages_to_str(messages, is_html=True))
     self.write_footer()
@@ -94,7 +126,7 @@ class ValidatorController(PfifController):
       print_options = self.request.get_all('print_options')
       validator = pfif_validator.PfifValidator(xml_file)
       messages = validator.run_validations()
-      self.response.out.write('<body><h1>Validation: ' +
+      self.response.out.write('<h1>Validation: ' +
                               str(len(messages)) + ' Messages</h1>')
       marked_up_message = validator.validator_messages_to_str(
           messages,
