@@ -22,6 +22,17 @@ from StringIO import StringIO
 from google.appengine.ext import webapp
 import tests.pfif_xml as PfifXml
 import utils
+from webob.multidict import MultiDict
+
+class FakeFieldStorage(object):
+  """A mock to test Field Storage files used in WebOb requests."""
+
+  def __init__(self, filename, value):
+    self.filename = filename
+    self.value = value
+
+  def __repr__(self):
+    return self.value
 
 class ValidatorControllerTests(unittest.TestCase):
   """Tests for the controller."""
@@ -37,10 +48,11 @@ class ValidatorControllerTests(unittest.TestCase):
     content.  Returns the response."""
     if handler_init_method is None:
       handler_init_method = controller.ValidatorController
-    request = webapp.Request({"wsgi.input": StringIO(content),
-                              "CONTENT_LENGTH": len(content), "METHOD": "POST",
-                              "PATH_INFO": "/validator",
-                              "QUERY_STRING" : content})
+    request = webapp.Request({'wsgi.input' : StringIO(),
+                              'REQUEST_METHOD' : 'POST',
+                              'PATH_INFO' : '/validator'})
+    for key, val in content.items():
+      request.POST.add(key, val)
     response = webapp.Response()
     handler = handler_init_method()
     handler.initialize(request, response)
@@ -55,28 +67,30 @@ class ValidatorControllerTests(unittest.TestCase):
     for handler_method in [controller.ValidatorController,
                            controller.DiffController]:
       response = self.make_webapp_request(
-          '', handler_init_method=handler_method)
+          {}, handler_init_method=handler_method)
       self.assertTrue("html" in response.out.getvalue())
 
   def test_pasting_xml(self):
     """The page should have the correct number of errors in the header when
     using the pfif_xml_1 POST variable to send PFIF XML."""
-    response = self.make_webapp_request('pfif_xml_1=' +
-                                        PfifXml.XML_TWO_DUPLICATE_NO_CHILD)
+    response = self.make_webapp_request({'pfif_xml_1' :
+                                         PfifXml.XML_TWO_DUPLICATE_NO_CHILD})
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   def test_file_upload(self):
     """The page should have the correct number of errors in the header when
     using the pfif_xml_file_1 POST variable to send PFIF XML."""
-    response = self.make_webapp_request('pfif_xml_file_1=' +
-                                        PfifXml.XML_TWO_DUPLICATE_NO_CHILD)
+    fake_file = FakeFieldStorage('two_duplicate_no_child.xml',
+                                 PfifXml.XML_TWO_DUPLICATE_NO_CHILD)
+    response = self.make_webapp_request({'pfif_xml_file_1' :
+                                         fake_file})
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   def test_url_upload(self):
     """The page should have the correct number of errors in the header when
     using the pfif_xml_url_1 POST variable to send PFIF XML."""
     utils.set_file_for_test(StringIO(PfifXml.XML_TWO_DUPLICATE_NO_CHILD))
-    response = self.make_webapp_request('pfif_xml_url_1=dummy_url')
+    response = self.make_webapp_request({'pfif_xml_url_1' : 'dummy_url'})
     self.assertTrue("3 Messages" in response.out.getvalue())
 
   # validator
@@ -84,62 +98,63 @@ class ValidatorControllerTests(unittest.TestCase):
   def test_validator_options(self):
     """The validator results page should have a span or div for each print
     option."""
-    request_base = 'pfif_xml_file_1=' + PfifXml.XML_EXPIRE_99_EMPTY_DATA
+    fake_file = FakeFieldStorage('xml_expire_99_empty_data.xml',
+                                 PfifXml.XML_EXPIRE_99_EMPTY_DATA)
+    request = MultiDict({'pfif_xml_file_1' : fake_file})
 
-    response = self.make_webapp_request(request_base +
-                                        '&print_options=show_errors')
+    request['print_options'] = 'show_errors'
+    response = self.make_webapp_request(request)
     self.assertTrue('ERROR' in response.out.getvalue())
     self.assertTrue('message_type' in response.out.getvalue())
     self.assertTrue('message_text' in response.out.getvalue())
 
-    response = self.make_webapp_request(request_base +
-                                        '&print_options=show_warnings')
+    request.add('print_options', 'show_warnings')
+    response = self.make_webapp_request(request)
     self.assertTrue('WARNING' in response.out.getvalue())
 
-    response = self.make_webapp_request(request_base +
-                                        '&print_options=show_line_numbers'
-                                        '&print_options=show_warnings')
+    request.add('print_options', 'show_line_numbers')
+    response = self.make_webapp_request(request)
     self.assertTrue('message_line_number' in response.out.getvalue())
+
+    request.add('print_options', 'show_record_ids')
+    response = self.make_webapp_request(request)
+    self.assertTrue('record_id' in response.out.getvalue())
+
+    request.add('print_options', 'show_full_line')
+    response = self.make_webapp_request(request)
+    self.assertTrue('message_xml_full_line' in response.out.getvalue())
 
     # EXPIRE_99 doesn't have any errors with xml element text or tag, so we use
     # a different XML file
-    response = self.make_webapp_request('pfif_xml_file_1=' +
-                                        PfifXml.XML_INCORRECT_FORMAT_11 +
-                                        '&print_options=show_xml_tag'
-                                        '&print_options=show_errors')
+    fake_file = FakeFieldStorage('xml_incorrect_format_11.xml',
+                                 PfifXml.XML_INCORRECT_FORMAT_11)
+    request['pfif_xml_file_1'] = fake_file
+    request.add('print_options', 'show_xml_tag')
+    response = self.make_webapp_request(request)
     self.assertTrue('message_xml_tag' in response.out.getvalue())
 
-    response = self.make_webapp_request('pfif_xml_file_1=' +
-                                        PfifXml.XML_INCORRECT_FORMAT_11 +
-                                        '&print_options=show_xml_text'
-                                        '&print_options=show_errors')
+    request.add('print_options', 'show_xml_text')
+    response = self.make_webapp_request(request)
     self.assertTrue('message_xml_text' in response.out.getvalue())
-
-    response = self.make_webapp_request(request_base +
-                                        '&print_options=show_record_ids'
-                                        '&print_options=show_warnings')
-    self.assertTrue('record_id' in response.out.getvalue())
-
-    response = self.make_webapp_request(request_base +
-                                        '&print_options=show_full_line'
-                                        '&print_options=show_warnings')
-    self.assertTrue('message_xml_full_line' in response.out.getvalue())
 
   # diff
 
   def test_diff(self):
     """The diff results page should have a header and a div for each message."""
+    fake_file_1 = FakeFieldStorage('added_deleted_changed_1.xml',
+                                   PfifXml.XML_ADDED_DELETED_CHANGED_1)
+    fake_file_2 = FakeFieldStorage('added_deleted_changed_2.xml',
+                                   PfifXml.XML_ADDED_DELETED_CHANGED_2)
     response = self.make_webapp_request(
-        'pfif_xml_file_1=' + PfifXml.XML_ADDED_DELETED_CHANGED_1 +
-        '&pfif_xml_file_2=' + PfifXml.XML_ADDED_DELETED_CHANGED_2,
+        {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_file_2' : fake_file_2},
         handler_init_method=controller.DiffController)
     response_str = response.out.getvalue()
 
     # The header should have 'Diff' and 'Messages' in it.
-    # The body should have 'all_messages', 'Added', 'Deleted', 'Field',
-    # 'Record', 'Value', 'Changed' in it.
-    for message in ['Diff', 'Messages', 'Added', 'Deleted', 'Field', 'Record',
-                    'Value', 'Changed']:
+    # The body should have the rest in one of the five message types from
+    # pfif_object_diff
+    for message in ['Diff', 'Messages', 'extra', 'missing', 'field', 'record',
+                    'Value', 'changed', 'A', 'B']:
       self.assertTrue(message in  response_str, 'The diff was missing the '
                       'following message: ' + message + '.  The diff: ' +
                       response_str)
