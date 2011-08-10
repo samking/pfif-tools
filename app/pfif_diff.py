@@ -190,11 +190,20 @@ def main():
                     dest='text_is_case_sensitive',  default=True,
                     help='<pfif:full_name>Jane</pfif:full_name> is the same as '
                     '<pfif:full_name>JANE</pfif:full_name>')
+  parser.add_option('--no-grouping', action='store_false',
+                    default=True, dest='group_by_record_id',
+                    help='Rather than grouping all differences pertaining to '
+                    'the same record together, every difference will be '
+                    'displayed individually.')
   (options, args) = parser.parse_args()
 
+  assert len(args) >= 2, 'Must provide two files to diff.'
   messages = pfif_file_diff(utils.open_file(args[0]), utils.open_file(args[1]),
                             options.text_is_case_sensitive)
-  print utils.MessagesOutput.messages_to_str(messages)
+  if options.group_by_record_id:
+    print utils.MessagesOutput.messages_to_str_by_id(messages)
+  else:
+    print utils.MessagesOutput.messages_to_str(messages)
 
 if __name__ == '__main__':
   main()
