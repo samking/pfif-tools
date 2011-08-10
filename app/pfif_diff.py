@@ -150,29 +150,30 @@ def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
   for record, field_map_a in records_a.items():
     field_map_b = records_b.get(record)
     if field_map_b is None:
-      messages.append(make_diff_message('B is missing a record', record))
+      messages.append(make_diff_message(utils.Categories.DELETED_RECORD,
+                                        record))
     else:
       for field, value_a in field_map_a.items():
         value_b = field_map_b.get(field)
         if value_b is None:
-          messages.append(make_diff_message('B is missing a field', record,
-                                            xml_tag=field))
+          messages.append(make_diff_message(utils.Categories.DELETED_FIELD,
+                                            record, xml_tag=field))
         else:
           if not text_is_case_sensitive:
             value_a = value_a.lower()
             value_b = value_b.lower()
           if value_a != value_b:
             extra_data = 'A:"' + value_a + '" is now B:"' + value_b + '"'
-            messages.append(make_diff_message('Value changed', record,
-                                              extra_data=extra_data,
+            messages.append(make_diff_message(utils.Categories.CHANGED_FIELD,
+                                              record, extra_data=extra_data,
                                               xml_tag=field))
       for field in field_map_b:
         if field not in field_map_a:
-          messages.append(make_diff_message('B has an extra field', record,
-                                            xml_tag=field))
+          messages.append(make_diff_message(utils.Categories.ADDED_FIELD,
+                                            record, xml_tag=field))
   for record in records_b:
     if record not in records_a:
-      messages.append(make_diff_message('B has an extra record', record))
+      messages.append(make_diff_message(utils.Categories.ADDED_RECORD, record))
   return messages
 
 def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True):
