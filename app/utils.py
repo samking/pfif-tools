@@ -177,11 +177,11 @@ class Message: # pylint: disable=R0902
 class Categories: # pylint: disable=W0232
   """Constants representing message categories."""
 
-  ADDED_RECORD  = 'B has an extra record.'
-  DELETED_RECORD = 'B is missing a record.'
-  ADDED_FIELD = 'B has an extra field.'
-  DELETED_FIELD = 'B is missing a field.'
-  CHANGED_FIELD = 'Value changed.'
+  ADDED_RECORD  = 'B has extra records'
+  DELETED_RECORD = 'B is missing records'
+  ADDED_FIELD = 'B has extra fields'
+  DELETED_FIELD = 'B is missing fields'
+  CHANGED_FIELD = 'Values changed'
 
 
 class MessagesOutput:
@@ -216,7 +216,17 @@ class MessagesOutput:
       self.output.append('</div>')
     self.output.append('\n')
 
-  def make_message_part(self, text, html_class):
+  def make_message_part_division(self, text, html_class):
+    """Same as make_message_part_inline, except this adds a new line and a <div>
+    instead of no new line and a <span>."""
+    if self.is_html:
+      self.output.append('<div class="' + html_class + '">')
+      self.output.append(cgi.escape(text))
+      self.output.append('</div>')
+    else:
+      self.output.append('\n' + text)
+
+  def make_message_part_inline(self, text, html_class):
     """Call once for each different part of the message (ie, the main text, the
     line number).  text is the body of the message.  html_class is the class of
     the span that will contain the text."""
@@ -277,13 +287,14 @@ class MessagesOutput:
       changed_records_messages = messages_by_category.get(category)
       if changed_records_messages:
         output.start_new_message()
-        output.make_message_part(
+        output.make_message_part_division(
             category + ': ' + str(len(changed_records_messages)) + ' messages.',
             'grouped_record_header')
         record_ids_changed = MessagesOutput.get_field_from_messages(
             changed_records_messages, 'record_id')
-        output.make_message_part('Record IDs: ' + ', '.join(record_ids_changed),
-                                 'grouped_record_list')
+        output.make_message_part_division(
+            'Record IDs: ' + ', '.join(record_ids_changed),
+            'grouped_record_list')
         output.end_new_message()
 
     # Extract Messages with Changed Records
@@ -296,20 +307,20 @@ class MessagesOutput:
     # Output Records Changed
     for record, record_list in messages_by_record.items():
       output.start_new_message()
-      output.make_message_part(str(len(record_list)) + ' messages for record: '
-                               + record, 'grouped_record_header')
+      output.make_message_part_division(
+          str(len(record_list)) + ' messages for record: ' + record,
+          'grouped_record_header')
       record_messages_by_category = MessagesOutput.group_messages_by_category(
           record_list)
       for category in list_fields_categories:
         tag_list = MessagesOutput.get_field_from_messages(
             record_messages_by_category.get(category, []), 'xml_tag')
-        output.make_message_part(category + 'Tags: ' + ', '.join(tag_list),
-                                 'grouped_record_list')
+        output.make_message_part_division(
+            category + '.  Tags: ' + ', '.join(tag_list), 'grouped_record_list')
       output.end_new_message()
 
     return output.get_output()
 
-  # TODO(samking): Add the ability to make 'header' like things.  Stuff in divs.
   # TODO(samking): Add finer granularity on output.  The data part should be in
   # a diferent span than the rest of the message.
   # TODO(Samking): Add finer granuality than is_error.  Diffs aren't errors.
@@ -326,33 +337,36 @@ class MessagesOutput:
           not message.is_error and show_warnings):
         output.start_new_message()
         if message.is_error:
-          output.make_message_part('ERROR ', 'message_type')
+          output.make_message_part_inline('ERROR ', 'message_type')
         else:
-          output.make_message_part('WARNING ', 'message_type')
+          output.make_message_part_inline('WARNING ', 'message_type')
         if (show_line_numbers and message.xml_line_number != None):
-          output.make_message_part('Line ' + str(message.xml_line_number) +
-                                   ': ', 'message_line_number')
-        output.make_message_part(message.category + ' ', 'message_category')
+          output.make_message_part_inline('Line ' + str(message.xml_line_number)
+                                          + ': ', 'message_line_number')
+        output.make_message_part_inline(message.category + ' ',
+                                        'message_category')
         if message.extra_data != None:
-          output.make_message_part(message.extra_data + ' ',
-                                   'message_extra_data')
+          output.make_message_part_inline(message.extra_data + ' ',
+                                          'message_extra_data')
         if show_record_ids:
           if message.person_record_id != None:
-            output.make_message_part('The relevant person_record_id is: ' +
-                                     message.person_record_id + '. ',
-                                     'message_person_record_id')
+            output.make_message_part_division(
+                'The relevant person_record_id is: ' + message.person_record_id
+                + '.  ', 'message_person_record_id')
           if message.note_record_id != None:
-            output.make_message_part('The relevant note_record_id is: ' +
-                                     message.note_record_id + '. ',
-                                     'message_note_record_id')
+            output.make_message_part_division(
+                'The relevant note_record_id is: ' + message.note_record_id +
+                '.  ', 'message_note_record_id')
         if show_xml_tag and message.xml_tag:
-          output.make_message_part('The tag of the relevant PFIF XML node: ' +
-                                   message.xml_tag + '. ', 'message_xml_tag')
+          output.make_message_part_division(
+              'The tag of the relevant PFIF XML node: ' + message.xml_tag +
+              '.  ', 'message_xml_tag')
         if show_xml_text and message.xml_text:
-          output.make_message_part('The text of the relevant PFIF XML node: ' +
-                                   message.xml_text + '. ', 'message_xml_text')
+          output.make_message_part_division(
+              'The text of the relevant PFIF XML node: ' + message.xml_text +
+              '.  ', 'message_xml_text')
         if (show_full_line and message.xml_line_number != None):
-          output.make_message_part(xml_lines[message.xml_line_number - 1],
-                                   'message_xml_full_line')
+          output.make_message_part_division(
+              xml_lines[message.xml_line_number - 1], 'message_xml_full_line')
         output.end_new_message()
     return output.get_output()
