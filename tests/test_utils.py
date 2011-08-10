@@ -153,7 +153,7 @@ class UtilTests(unittest.TestCase):
     self.assertTrue('source_date' in output_str)
 
     # when a field is added but no field is changed or deleted, there should
-    # only be one section.
+    # only be one section with one list.
     messages = pfif_diff.pfif_file_diff(
         StringIO(PfifXml.XML_ONE_PERSON_ONE_FIELD),
         StringIO(PfifXml.XML_ONE_PERSON_TWO_FIELDS))
@@ -161,6 +161,7 @@ class UtilTests(unittest.TestCase):
                                                             is_html=True)
     self.assertEqual(output_str.count('grouped_record_header'), 1)
     self.assertEqual(output_str.count('"message"'), 1)
+    self.assertEqual(output_str.count('grouped_record_list'), 1)
 
 if __name__ == '__main__':
   unittest.main()

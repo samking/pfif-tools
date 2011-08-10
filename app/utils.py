@@ -315,8 +315,10 @@ class MessagesOutput:
       for category in list_fields_categories:
         tag_list = MessagesOutput.get_field_from_messages(
             record_messages_by_category.get(category, []), 'xml_tag')
-        output.make_message_part_division(
-            category + '.  Tags: ' + ', '.join(tag_list), 'grouped_record_list')
+        if tag_list:
+          output.make_message_part_division(
+              category + '.  Tags: ' + ', '.join(tag_list),
+              'grouped_record_list')
       output.end_new_message()
 
     return output.get_output()
