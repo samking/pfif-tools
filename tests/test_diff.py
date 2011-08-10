@@ -147,11 +147,11 @@ class DiffTests(unittest.TestCase):
 
   # main
 
-  def test_main(self):
-    """main should not raise an exception under normal circumstances."""
+  def run_main(self, argv):
+    """Mocks files and runs main after setting sys.argv to the provided argv."""
     old_argv = sys.argv
     old_stdout = sys.stdout
-    sys.argv = ['pfif_diff.py', 'mocked_file', 'same_mocked_file']
+    sys.argv = argv
     sys.stdout = StringIO('')
 
     utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
@@ -161,6 +161,16 @@ class DiffTests(unittest.TestCase):
 
     sys.stdout = old_stdout
     sys.argv = old_argv
+
+  def test_main(self):
+    """main should not raise an exception under normal circumstances."""
+    self.run_main(['pfif_diff.py', 'mocked_file', 'same_mocked_file'])
+
+  def test_main_options(self):
+    """main should not raise an exception when passed the --no-grouping
+    or --text-is-case-insensitive options."""
+    self.run_main(['pfif_diff.py', 'mocked_file', 'same_mocked_file',
+                   '--no-grouping', '--text-is-case-insensitive'])
 
   def test_main_no_args(self):
     """main should give an assertion if it is given the wrong number of args."""

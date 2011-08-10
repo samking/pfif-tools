@@ -34,7 +34,7 @@ class FakeFieldStorage(object):
   def __repr__(self):
     return self.value
 
-class ValidatorControllerTests(unittest.TestCase):
+class ControllerTests(unittest.TestCase):
   """Tests for the controller."""
 
   # pylint: disable=C0301
@@ -143,21 +143,33 @@ class ValidatorControllerTests(unittest.TestCase):
     """The diff results page should have a header and a div for each message."""
     fake_file_1 = FakeFieldStorage('added_deleted_changed_1.xml',
                                    PfifXml.XML_ADDED_DELETED_CHANGED_1)
+    utils.set_file_for_test(StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
     fake_file_2 = FakeFieldStorage('added_deleted_changed_2.xml',
                                    PfifXml.XML_ADDED_DELETED_CHANGED_2)
     response = self.make_webapp_request(
-        {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_file_2' : fake_file_2},
+        {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url'},
         handler_init_method=controller.DiffController)
     response_str = response.out.getvalue()
 
-    # The header should have 'Diff' and 'Messages' in it.
-    # The body should have the rest in one of the five message types from
-    # pfif_object_diff
-    for message in ['Diff', 'Messages', 'extra', 'missing', 'field', 'record',
-                    'Value', 'changed', 'A', 'B']:
+    # The header should have 'Diff' and 'Messages' in it along with the filename
+    # or url.
+    # The body should have each of five message types from pfif_object_diff
+    for message in ['Diff', 'Messages', 'added_deleted_changed_1.xml',
+                    'fake_url', 'extra', 'missing', 'field', 'record', 'Value',
+                    'changed', 'A', 'B']:
       self.assertTrue(message in  response_str, 'The diff was missing the '
                       'following message: ' + message + '.  The diff: ' +
                       response_str)
+
+  def test_missing_filenames(self):
+    """The diff results page should fail gracefully when diffing a pasted in
+    file, which has no filename."""
+    response = self.make_webapp_request(
+        {'pfif_xml_1' : PfifXml.XML_ADDED_DELETED_CHANGED_1,
+         'pfif_xml_2' : PfifXml.XML_ADDED_DELETED_CHANGED_2},
+        handler_init_method=controller.DiffController)
+    response_str = response.out.getvalue()
+    self.assertTrue('pasted in' in response_str)
 
   @staticmethod
   def test_main():
