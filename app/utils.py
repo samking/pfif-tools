@@ -327,10 +327,10 @@ class MessagesOutput:
   # a diferent span than the rest of the message.
   # TODO(Samking): Add finer granuality than is_error.  Diffs aren't errors.
   @staticmethod
-  def messages_to_str(messages, show_errors=True, show_warnings=True,
-                      show_line_numbers=True, show_full_line=True,
-                      show_record_ids=True, show_xml_tag=True,
-                      show_xml_text=True, is_html=False,
+  def messages_to_str(messages, show_error_type=True, show_errors=True,
+                      show_warnings=True, show_line_numbers=True,
+                      show_full_line=True, show_record_ids=True,
+                      show_xml_tag=True, show_xml_text=True, is_html=False,
                       xml_lines=None):
     """Returns a string containing all messages formatted per the options."""
     output = MessagesOutput(is_html)
@@ -338,17 +338,17 @@ class MessagesOutput:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
         output.start_new_message()
-        if message.is_error:
+        if show_error_type and message.is_error:
           output.make_message_part_inline('ERROR ', 'message_type')
-        else:
+        if show_error_type and not message.is_error:
           output.make_message_part_inline('WARNING ', 'message_type')
         if (show_line_numbers and message.xml_line_number != None):
           output.make_message_part_inline('Line ' + str(message.xml_line_number)
                                           + ': ', 'message_line_number')
-        output.make_message_part_inline(message.category + ' ',
+        output.make_message_part_inline(message.category,
                                         'message_category')
         if message.extra_data != None:
-          output.make_message_part_inline(message.extra_data + ' ',
+          output.make_message_part_inline(': ' + message.extra_data + ' ',
                                           'message_extra_data')
         if show_record_ids:
           if message.person_record_id != None:
