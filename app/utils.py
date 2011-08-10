@@ -260,7 +260,7 @@ class MessagesOutput:
       return [message.__dict__()[field] for message in messages]
 
   @staticmethod
-  def messages_to_str_by_id(messages, is_html):
+  def messages_to_str_by_id(messages, is_html=False):
     """Returns a string containing all messages grouped together by record.
     Only works on diff messages."""
     output = MessagesOutput(is_html)
