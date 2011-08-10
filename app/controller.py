@@ -123,11 +123,15 @@ class ValidatorController(PfifController):
     if xml_file is None:
       self.write_missing_input_file()
     else:
-      print_options = self.request.get_all('print_options')
       validator = pfif_validator.PfifValidator(xml_file)
       messages = validator.run_validations()
       self.response.out.write('<h1>Validation: ' +
                               str(len(messages)) + ' Messages</h1>')
+      # print_options is a list of all printing options passed in via
+      # checkboxes.  It will contain 'show_errors' if the user checked that box,
+      # for instance.  Thus, saying show_errors='show_errors' in print_options
+      # will set show_errors to True if the box was checked and false otherwise.
+      print_options = self.request.get_all('print_options')
       marked_up_message = validator.validator_messages_to_str(
           messages,
           show_errors='show_errors' in print_options,
