@@ -124,15 +124,15 @@ def objectify_pfif_xml(file_to_objectify):
   objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
   return object_map
 
-def make_diff_message(message_text, record_id, xml_tag=None):
+def make_diff_message(category, record_id, extra_data=None, xml_tag=None):
   """Returns a Message object with the provided information."""
   is_person = is_key_person(record_id)
   real_record_id = key_to_record_id(record_id)
   if is_person:
-    return utils.Message(message_text, xml_tag=xml_tag,
+    return utils.Message(category, extra_data=extra_data, xml_tag=xml_tag,
                          person_record_id=real_record_id)
   else:
-    return utils.Message(message_text, xml_tag=xml_tag,
+    return utils.Message(category, extra_data=extra_data, xml_tag=xml_tag,
                          note_record_id=real_record_id)
 
 def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
@@ -150,29 +150,29 @@ def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
   for record, field_map_a in records_a.items():
     field_map_b = records_b.get(record)
     if field_map_b is None:
-      messages.append(make_diff_message('B is missing a record.', record))
+      messages.append(make_diff_message('B is missing a record', record))
     else:
       for field, value_a in field_map_a.items():
         value_b = field_map_b.get(field)
         if value_b is None:
-          messages.append(make_diff_message('B is missing a field.', record,
+          messages.append(make_diff_message('B is missing a field', record,
                                             xml_tag=field))
         else:
           if not text_is_case_sensitive:
             value_a = value_a.lower()
             value_b = value_b.lower()
           if value_a != value_b:
-            message_text = ('Value changed: A:"' + value_a + '" is now B:"' +
-                            value_b + '".')
-            messages.append(make_diff_message(message_text, record,
+            extra_data = 'A:"' + value_a + '" is now B:"' + value_b + '"'
+            messages.append(make_diff_message('Value changed', record,
+                                              extra_data=extra_data,
                                               xml_tag=field))
       for field in field_map_b:
         if field not in field_map_a:
-          messages.append(make_diff_message('B has an extra field.', record,
+          messages.append(make_diff_message('B has an extra field', record,
                                             xml_tag=field))
   for record in records_b:
     if record not in records_a:
-      messages.append(make_diff_message('B has an extra record.', record))
+      messages.append(make_diff_message('B has an extra record', record))
   return messages
 
 def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True):

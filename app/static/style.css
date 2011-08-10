@@ -42,7 +42,11 @@ span.message_line_number {
   font-style:italic;
 }
 
-span.message_text {
+span.message_category {
+  font-weight:bold;
+}
+
+span.message_extra_data {
   font-weight:bold;
 }
 
