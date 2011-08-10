@@ -50,10 +50,14 @@ span.message_extra_data {
   font-weight:bold;
 }
 
-span.message_xml_full_line {
+div.message_xml_full_line {
   color: black;
   background-color: #EAEBEE;
   font-family: monospace;
   white-space: pre;
   display: block;
+}
+
+div.grouped_record_header {
+  font-weight:bold;
 }
