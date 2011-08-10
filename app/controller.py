@@ -117,7 +117,8 @@ class DiffController(PfifController):
             utils.MessagesOutput.messages_to_str_by_id(messages, is_html=True))
       else:
         self.response.out.write(
-            utils.MessagesOutput.messages_to_str(messages, is_html=True))
+            utils.MessagesOutput.messages_to_str(
+                messages, show_error_type=False, is_html=True))
     self.write_footer()
 
 class ValidatorController(PfifController):
