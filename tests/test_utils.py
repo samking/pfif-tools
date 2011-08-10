@@ -148,6 +148,9 @@ class UtilTests(unittest.TestCase):
                                                             is_html=True)
     self.assertEqual(output_str.count('grouped_record_header'), 3)
     self.assertEqual(output_str.count('"message"'), 3)
+    self.assertTrue('foo' in output_str)
+    self.assertTrue('bar' in output_str)
+    self.assertTrue('source_date' in output_str)
 
     # when a field is added but no field is changed or deleted, there should
     # only be one section.
