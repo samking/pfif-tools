@@ -317,7 +317,7 @@ class MessagesOutput:
             record_messages_by_category.get(category, []), 'xml_tag')
         if tag_list:
           output.make_message_part_division(
-              category + '.  Tags: ' + ', '.join(tag_list),
+              category + ': ' + ', '.join(tag_list),
               'grouped_record_list')
       output.end_new_message()
 
