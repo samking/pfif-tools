@@ -134,10 +134,6 @@ class UtilTests(unittest.TestCase):
   def test_messages_to_str_by_id(self):
     """messages_to_str_by_id should create one message for added records, one
     message for removed records, and one message for each other record."""
-    messages = pfif_diff.pfif_file_diff(
-        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
-        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
-
     # an empty messages list should produce no errors and return a string with
     # no messages
     output_str = utils.MessagesOutput.messages_to_str_by_id([], is_html=True)
@@ -145,10 +141,23 @@ class UtilTests(unittest.TestCase):
 
     # there should be an added section, a deleted section, and one section for
     # each of the records that had fields added, removed, or changed
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
     output_str = utils.MessagesOutput.messages_to_str_by_id(messages,
                                                             is_html=True)
     self.assertEqual(output_str.count('grouped_record_header'), 3)
     self.assertEqual(output_str.count('"message"'), 3)
+
+    # when a field is added but no field is changed or deleted, there should
+    # only be one section.
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ONE_PERSON_ONE_FIELD),
+        StringIO(PfifXml.XML_ONE_PERSON_TWO_FIELDS))
+    output_str = utils.MessagesOutput.messages_to_str_by_id(messages,
+                                                            is_html=True)
+    self.assertEqual(output_str.count('grouped_record_header'), 1)
+    self.assertEqual(output_str.count('"message"'), 1)
 
 if __name__ == '__main__':
   unittest.main()

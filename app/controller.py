@@ -111,8 +111,13 @@ class DiffController(PfifController):
       self.response.out.write(
           '<h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
       self.write_filenames(filename_1, filename_2)
-      self.response.out.write(
-          utils.MessagesOutput.messages_to_str(messages, is_html=True))
+      print_options = self.request.get_all('print_options')
+      if 'group_messages_by_record' in print_options:
+        self.response.out.write(
+            utils.MessagesOutput.messages_to_str_by_id(messages, is_html=True))
+      else:
+        self.response.out.write(
+            utils.MessagesOutput.messages_to_str(messages, is_html=True))
     self.write_footer()
 
 class ValidatorController(PfifController):
