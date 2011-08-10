@@ -216,26 +216,37 @@ class MessagesOutput:
       self.output.append('</div>')
     self.output.append('\n')
 
-  def make_message_part_division(self, text, html_class):
-    """Same as make_message_part_inline, except this adds a new line and a <div>
-    instead of no new line and a <span>."""
-    if self.is_html:
-      self.output.append('<div class="' + html_class + '">')
-      self.output.append(cgi.escape(text))
-      self.output.append('</div>')
-    else:
-      self.output.append('\n' + text)
-
-  def make_message_part_inline(self, text, html_class):
+  def make_message_part(self, text, html_class, inline, data=None):
     """Call once for each different part of the message (ie, the main text, the
     line number).  text is the body of the message.  html_class is the class of
-    the span that will contain the text."""
+    the span or div that will contain the text.  inline should be True if spans
+    are desired and False if divs are desired.  data will be enclosed in a
+    message_data span regardless of whethether the message part as a whole is
+    inline or not."""
     if self.is_html:
-      self.output.append('<span class="' + html_class + '">')
+      if inline:
+        tag_type = 'span'
+      else:
+        tag_type = 'div'
+      self.output.append('<' + tag_type + ' class="' + html_class + '">')
       self.output.append(cgi.escape(text))
-      self.output.append('</span>')
+      if data != None:
+        self.output.append('<span class="message_data">' + data + '</span>')
+      self.output.append('</' + tag_type + '>')
     else:
+      if not inline:
+        self.output.append('\n')
       self.output.append(text)
+      if data != None:
+        self.output.append(data)
+
+  def make_message_part_division(self, text, html_class, data=None):
+    """Wrapper for make_message_part that is not inline."""
+    self.make_message_part(text, html_class, inline=False, data=data)
+
+  def make_message_part_inline(self, text, html_class, data=None):
+    """Wrapper for make_message_part that is inline."""
+    self.make_message_part(text, html_class, inline=True, data=data)
 
   @staticmethod
   def group_messages_by_record(messages):
@@ -293,8 +304,8 @@ class MessagesOutput:
         record_ids_changed = MessagesOutput.get_field_from_messages(
             changed_records_messages, 'record_id')
         output.make_message_part_division(
-            'Record IDs: ' + ', '.join(record_ids_changed),
-            'grouped_record_list')
+            'Record IDs: ', 'grouped_record_list',
+            data=', '.join(record_ids_changed))
         output.end_new_message()
 
     # Extract Messages with Changed Records
@@ -317,21 +328,19 @@ class MessagesOutput:
             record_messages_by_category.get(category, []), 'xml_tag')
         if tag_list:
           output.make_message_part_division(
-              category + ': ' + ', '.join(tag_list),
-              'grouped_record_list')
+              category + ': ', 'grouped_record_list', data=', '.join(tag_list))
       output.end_new_message()
 
     return output.get_output()
 
-  # TODO(samking): Add finer granularity on output.  The data part should be in
-  # a diferent span than the rest of the message.
-  # TODO(Samking): Add finer granuality than is_error.  Diffs aren't errors.
   @staticmethod
+  # pylint: disable=R0912
   def messages_to_str(messages, show_error_type=True, show_errors=True,
                       show_warnings=True, show_line_numbers=True,
                       show_full_line=True, show_record_ids=True,
                       show_xml_tag=True, show_xml_text=True, is_html=False,
                       xml_lines=None):
+    # pylint: enable=R0912
     """Returns a string containing all messages formatted per the options."""
     output = MessagesOutput(is_html)
     for message in messages:
@@ -345,28 +354,29 @@ class MessagesOutput:
         if (show_line_numbers and message.xml_line_number != None):
           output.make_message_part_inline('Line ' + str(message.xml_line_number)
                                           + ': ', 'message_line_number')
-        output.make_message_part_inline(message.category,
-                                        'message_category')
-        if message.extra_data != None:
-          output.make_message_part_inline(': ' + message.extra_data + ' ',
-                                          'message_extra_data')
+        if message.extra_data == None:
+          output.make_message_part_inline(message.category,
+                                          'message_category')
+        else:
+          output.make_message_part_inline(message.category, 'message_category',
+                                          data=': ' + message.extra_data)
         if show_record_ids:
           if message.person_record_id != None:
             output.make_message_part_division(
-                'The relevant person_record_id is: ' + message.person_record_id
-                + '.  ', 'message_person_record_id')
+                'The relevant person_record_id is: ',
+                'message_person_record_id', data=message.person_record_id)
           if message.note_record_id != None:
             output.make_message_part_division(
-                'The relevant note_record_id is: ' + message.note_record_id +
-                '.  ', 'message_note_record_id')
+                'The relevant note_record_id is: ',
+                'message_note_record_id', data=message.note_record_id)
         if show_xml_tag and message.xml_tag:
           output.make_message_part_division(
-              'The tag of the relevant PFIF XML node: ' + message.xml_tag +
-              '.  ', 'message_xml_tag')
+              'The tag of the relevant PFIF XML node: ', 'message_xml_tag',
+              data=message.xml_tag)
         if show_xml_text and message.xml_text:
           output.make_message_part_division(
-              'The text of the relevant PFIF XML node: ' + message.xml_text +
-              '.  ', 'message_xml_text')
+              'The text of the relevant PFIF XML node: ', 'message_xml_text',
+              data=message.xml_text)
         if (show_full_line and message.xml_line_number != None):
           output.make_message_part_division(
               xml_lines[message.xml_line_number - 1], 'message_xml_full_line')
