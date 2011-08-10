@@ -173,6 +173,16 @@ class Message: # pylint: disable=R0902
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
 
+class Categories: # pylint: disable=W0232
+  """Constants representing message categories."""
+
+  ADDED_RECORD  = 'B has an extra record.'
+  DELETED_RECORD = 'B is missing a record.'
+  ADDED_FIELD = 'B has an extra field.'
+  DELETED_FIELD = 'B is missing a field.'
+  CHANGED_FIELD = 'Value changed.'
+
+
 class MessagesOutput:
   """A container that allows for outputting either a plain string or HTML
   easily"""
@@ -249,15 +259,16 @@ class MessagesOutput:
       # object than using the __dict__ method?
       return [message.__dict__()[field] for message in messages]
 
-
   @staticmethod
   def messages_to_str_by_id(messages, is_html):
     """Returns a string containing all messages grouped together by record.
     Only works on diff messages."""
     output = MessagesOutput(is_html)
-    list_records_categories = [ADDED_RECORD_CATEGORY, DELETED_RECORD_CATEGORY]
-    list_fields_categories =  [ADDED_FIELD_CATEGORY, DELETED_FIELD_CATEGORY,
-                               CHANGED_FIELD_CATEGORY]
+    list_records_categories = [Categories.ADDED_RECORD,
+                               Categories.DELETED_RECORD]
+    list_fields_categories =  [Categories.ADDED_FIELD,
+                               Categories.DELETED_FIELD,
+                               Categories.CHANGED_FIELD]
     messages_by_category = MessagesOutput.group_messages_by_category(messages)
 
     # Output Records Added and Deleted
@@ -288,9 +299,13 @@ class MessagesOutput:
       record_messages_by_category = MessagesOutput.group_messages_by_category(
           record_list)
       for category in list_fields_categories:
-        MessagesOutput.make_grouped_message_output(
-            output, record_messages_by_category, category)
+        tag_list = MessagesOutput.get_field_from_messages(
+            record_messages_by_category[category], 'xml_tag')
+        output.make_message_part(category + 'Tags: ' + ', '.join(tag_list),
+                                 'grouped_record_list')
       output.end_new_message()
+
+    return output.get_output()
 
   # TODO(samking): Add the ability to make 'header' like things.  Stuff in divs.
   # TODO(samking): Add finer granularity on output.  The data part should be in
