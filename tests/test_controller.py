@@ -156,7 +156,7 @@ class ControllerTests(unittest.TestCase):
         {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url',
          'print_options' : 'group_messages_by_record'},
         handler_init_method=controller.DiffController)
-    grouped_response_str = response.out.getvalue()
+    grouped_response_str = grouped_response.out.getvalue()
 
     # The header should have 'Diff' and 'Messages' in it along with the filename
     # or url.
