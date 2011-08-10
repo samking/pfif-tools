@@ -106,7 +106,7 @@ class ValidatorControllerTests(unittest.TestCase):
     response = self.make_webapp_request(request)
     self.assertTrue('ERROR' in response.out.getvalue())
     self.assertTrue('message_type' in response.out.getvalue())
-    self.assertTrue('message_text' in response.out.getvalue())
+    self.assertTrue('message_category' in response.out.getvalue())
 
     request.add('print_options', 'show_warnings')
     response = self.make_webapp_request(request)

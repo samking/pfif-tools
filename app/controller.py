@@ -26,6 +26,7 @@ import utils
 class PfifController(webapp.RequestHandler):
   """Provides common functionality to the different PFIF Tools controllers."""
 
+  # TODO(samking): maybe use Django?
   def write_header(self, title):
     """Writes an HTML page header and open the body."""
     self.response.out.write("""<!DOCTYPE HTML>

@@ -158,13 +158,14 @@ class PfifXmlTree():
       return child.text
     return None
 
-class Message:
+class Message: # pylint: disable=R0902
   """A container for information about an error or warning message"""
 
-  def __init__(self, main_text, is_error=True, xml_line_number=None,
-               xml_tag=None, xml_text=None, person_record_id=None,
-               note_record_id=None):
-    self.main_text = main_text
+  def __init__(self, category, extra_data=None, is_error=True,
+               xml_line_number=None, xml_tag=None, xml_text=None,
+               person_record_id=None, note_record_id=None):
+    self.category = category
+    self.extra_data = extra_data
     self.is_error = is_error
     self.xml_line_number = xml_line_number
     self.xml_text = xml_text
@@ -215,6 +216,83 @@ class MessagesOutput:
     else:
       self.output.append(text)
 
+  @staticmethod
+  def group_messages_by_record(messages):
+    """Returns a dict from record_id to a list of messages with that id.
+    person_record_id and note_record_id are treated the same."""
+    grouped_messages = {}
+    for message in messages:
+      record_id = (message.person_record_id or message.note_record_id or
+                   'None Specified')
+      record_message_list = grouped_messages.setdefault(record_id, [])
+      record_message_list.append(message)
+    return grouped_messages
+
+  @staticmethod
+  def group_messages_by_category(messages):
+    """Returns a dict from category to a list of messages with that category."""
+    grouped_messages = {}
+    for message in messages:
+      grouped_messages.setdefault(message.category, []).append(message)
+    return grouped_messages
+
+  @staticmethod
+  def get_field_from_messages(messages, field):
+    """Returns a list of the value of field for each message."""
+    if field == 'record_id':
+      fields = []
+      for message in messages:
+        fields.append(message.note_record_id or message.person_record_id)
+      return fields
+    else:
+      # TODO(samking): is there a better way to dynamically access a field of an
+      # object than using the __dict__ method?
+      return [message.__dict__()[field] for message in messages]
+
+
+  @staticmethod
+  def messages_to_str_by_id(messages, is_html):
+    """Returns a string containing all messages grouped together by record.
+    Only works on diff messages."""
+    output = MessagesOutput(is_html)
+    list_records_categories = [ADDED_RECORD_CATEGORY, DELETED_RECORD_CATEGORY]
+    list_fields_categories =  [ADDED_FIELD_CATEGORY, DELETED_FIELD_CATEGORY,
+                               CHANGED_FIELD_CATEGORY]
+    messages_by_category = MessagesOutput.group_messages_by_category(messages)
+
+    # Output Records Added and Deleted
+    for category in list_records_categories:
+      output.start_new_message()
+      changed_records_messages = messages_by_category[category]
+      output.make_message_part(
+          category + ': ' + str(len(changed_records_messages)) + ' messages.',
+          'grouped_record_header')
+      record_ids_changed = MessagesOutput.get_field_from_messages(
+          changed_records_messages, 'record_id')
+      output.make_message_part('Record IDs: ' + ', '.join(record_ids_changed),
+                               'grouped_record_list')
+      output.end_new_message()
+
+    # Extract Messages with Changed Records
+    messages_by_record = []
+    for category in list_fields_categories:
+      messages_by_record.extend(messages_by_category[category])
+    messages_by_record = MessagesOutput.group_messages_by_record(
+        messages_by_record)
+
+    # Output Records Changed
+    for record, record_list in messages_by_record.items():
+      output.start_new_message()
+      output.make_message_part(str(len(record_list)) + ' messages for record: '
+                               + record, 'grouped_record_header')
+      record_messages_by_category = MessagesOutput.group_messages_by_category(
+          record_list)
+      for category in list_fields_categories:
+        MessagesOutput.make_grouped_message_output(
+            output, record_messages_by_category, category)
+      output.end_new_message()
+
+  # TODO(samking): Add the ability to make 'header' like things.  Stuff in divs.
   # TODO(samking): Add finer granularity on output.  The data part should be in
   # a diferent span than the rest of the message.
   # TODO(Samking): Add finer granuality than is_error.  Diffs aren't errors.
@@ -241,7 +319,10 @@ class MessagesOutput:
         if (show_line_numbers and message.xml_line_number != None):
           output.make_message_part('Line ' + str(message.xml_line_number) +
                                    ': ', 'message_line_number')
-        output.make_message_part(message.main_text + ' ', 'message_text')
+        output.make_message_part(message.category + ' ', 'message_category')
+        if message.extra_data != None:
+          output.make_message_part(message.extra_data + ' ',
+                                   'message_extra_data')
         if show_record_ids:
           if message.person_record_id != None:
             output.make_message_part('The relevant person_record_id is: ' +

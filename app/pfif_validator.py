@@ -425,20 +425,21 @@ class PfifValidator:
         notes_set.add(note)
     return associated_notes
 
-  def make_message(self, error_message, record, element=None, is_error=True):
+  def make_message(self, category, record, element=None,
+                   xml_tag=None, is_error=True):
     """Wrapper for initializing a Message that extracts the person_record_id and
     note_record_id, if present, from a record and the text and line number from
     an element"""
     person_record_id = self.tree.get_field_text(record, 'person_record_id')
     note_record_id = self.tree.get_field_text(record, 'note_record_id')
-    tag = None
+    tag = xml_tag
     text = None
     line = None
     if element != None:
       tag = utils.extract_tag(element.tag)
       text = element.text
       line = self.tree.line_numbers[element]
-    return utils.Message(error_message, is_error=is_error, xml_line_number=line,
+    return utils.Message(category, is_error=is_error, xml_line_number=line,
                          xml_tag=tag, xml_text=text,
                          person_record_id=person_record_id,
                          note_record_id=note_record_id)
@@ -490,8 +491,8 @@ class PfifValidator:
         child = parent.find(self.tree.add_namespace_to_tag(child_tag))
         if child is None:
           messages.append(self.make_message(
-              'You do not have all mandatory children.  You were missing the '
-              'following tag: ' + child_tag, record=parent))
+              'You do not have all mandatory children.  You were missing a tag',
+              xml_tag=child_tag, record=parent))
     return messages
 
   def validate_person_has_mandatory_children(self):
