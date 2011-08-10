@@ -19,6 +19,7 @@ import utils
 import unittest
 from StringIO import StringIO
 import tests.pfif_xml as PfifXml
+import pfif_diff
 
 class UtilTests(unittest.TestCase):
   """Defines tests for utils.py"""
@@ -85,6 +86,69 @@ class UtilTests(unittest.TestCase):
     website is wrong."""
     pfif_bad_website_xml_file = StringIO(PfifXml.XML_BAD_PFIF_WEBSITE)
     self.assertRaises(Exception, utils.PfifXmlTree, pfif_bad_website_xml_file)
+
+  # MessagesOutput
+
+  def test_group_messages_by_record(self):
+    """group_messages_by_record should return a map from record_id to
+    message."""
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+    grouped_messages = utils.MessagesOutput.group_messages_by_record(messages)
+    self.assertTrue('example.org/person1' in grouped_messages)
+    self.assertTrue('example.org/person2' in grouped_messages)
+
+  def test_group_messages_by_category(self):
+    """group_messages_by_category should return a map from category to
+    message."""
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+    grouped_messages = utils.MessagesOutput.group_messages_by_category(messages)
+    self.assertTrue(utils.Categories.ADDED_RECORD in grouped_messages)
+    self.assertTrue(utils.Categories.ADDED_FIELD in grouped_messages)
+    self.assertTrue(utils.Categories.DELETED_RECORD in grouped_messages)
+    self.assertTrue(utils.Categories.DELETED_FIELD in grouped_messages)
+    self.assertTrue(utils.Categories.CHANGED_FIELD in grouped_messages)
+
+  def test_get_field_from_messages(self):
+    """get_field_from_messages should return a list of all fields in the
+    messages."""
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+
+    # record_id should get person and note records
+    record_ids = utils.MessagesOutput.get_field_from_messages(messages,
+                                                              'record_id')
+    self.assertTrue('example.org/person1' in record_ids)
+    self.assertTrue('example.org/person2' in record_ids)
+
+    # xml_tag should get all tags
+    tags = utils.MessagesOutput.get_field_from_messages(messages, 'xml_tag')
+    self.assertTrue('foo' in tags)
+    self.assertTrue('bar' in tags)
+    self.assertTrue('source_date' in tags)
+
+  def test_messages_to_str_by_id(self):
+    """messages_to_str_by_id should create one message for added records, one
+    message for removed records, and one message for each other record."""
+    messages = pfif_diff.pfif_file_diff(
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_1),
+        StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+
+    # an empty messages list should produce no errors and return a string with
+    # no messages
+    output_str = utils.MessagesOutput.messages_to_str_by_id([], is_html=True)
+    self.assertEqual(output_str.count('"message"'), 0)
+
+    # there should be an added section, a deleted section, and one section for
+    # each of the records that had fields added, removed, or changed
+    output_str = utils.MessagesOutput.messages_to_str_by_id(messages,
+                                                            is_html=True)
+    self.assertEqual(output_str.count('grouped_record_header'), 3)
+    self.assertEqual(output_str.count('"message"'), 3)
 
 if __name__ == '__main__':
   unittest.main()

@@ -53,6 +53,7 @@ def open_file(filename, mode='r'):
 def open_url(url):
   """Opens the url or returns a debug value if set."""
   return _file_for_test or urllib.urlopen(url)
+
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()
@@ -256,8 +257,8 @@ class MessagesOutput:
       return fields
     else:
       # TODO(samking): is there a better way to dynamically access a field of an
-      # object than using the __dict__ method?
-      return [message.__dict__()[field] for message in messages]
+      # object than using the __dict__ object?
+      return [message.__dict__[field] for message in messages]
 
   @staticmethod
   def messages_to_str_by_id(messages, is_html=False):
@@ -273,21 +274,22 @@ class MessagesOutput:
 
     # Output Records Added and Deleted
     for category in list_records_categories:
-      output.start_new_message()
-      changed_records_messages = messages_by_category[category]
-      output.make_message_part(
-          category + ': ' + str(len(changed_records_messages)) + ' messages.',
-          'grouped_record_header')
-      record_ids_changed = MessagesOutput.get_field_from_messages(
-          changed_records_messages, 'record_id')
-      output.make_message_part('Record IDs: ' + ', '.join(record_ids_changed),
-                               'grouped_record_list')
-      output.end_new_message()
+      changed_records_messages = messages_by_category.get(category)
+      if changed_records_messages:
+        output.start_new_message()
+        output.make_message_part(
+            category + ': ' + str(len(changed_records_messages)) + ' messages.',
+            'grouped_record_header')
+        record_ids_changed = MessagesOutput.get_field_from_messages(
+            changed_records_messages, 'record_id')
+        output.make_message_part('Record IDs: ' + ', '.join(record_ids_changed),
+                                 'grouped_record_list')
+        output.end_new_message()
 
     # Extract Messages with Changed Records
     messages_by_record = []
     for category in list_fields_categories:
-      messages_by_record.extend(messages_by_category[category])
+      messages_by_record.extend(messages_by_category.get(category, []))
     messages_by_record = MessagesOutput.group_messages_by_record(
         messages_by_record)
 
