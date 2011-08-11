@@ -63,10 +63,9 @@ class DiffTests(unittest.TestCase):
   def test_objectify_ignores_specified_fields(self):
     """objectify_pfif_xml should ignore fields specified by the ignore_fields
     flag."""
-    self.compare_reference_object(PfifXml.XML_EXTRANEOUS_FIELD_11,
-                                  PfifXml.XML_ONLY_RECORD_MAP,
-                                  ignore_fields=['foo', 'other'])
-
+    self.compare_reference_object(PfifXml.XML_MANDATORY_13,
+                                  PfifXml.XML_MANDATORY_13_IGNORE_NAMES_MAP,
+                                  ignore_fields=['full_name', 'author_name'])
 
   def test_objectify_accepts_persons_and_notes_with_similar_ids(self):
     """objectify_pfif_xml should store unique entries if there is a note and a

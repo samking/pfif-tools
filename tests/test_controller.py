@@ -170,6 +170,20 @@ class ControllerTests(unittest.TestCase):
                       'following message: ' + message + '.  The diff: ' +
                       response_str)
 
+  def test_ignore_fields(self):
+    """The diff results page should not include any fields that were passed in
+    with ignore_fields."""
+    request = {'pfif_xml_1' : PfifXml.XML_ADDED_DELETED_CHANGED_1,
+               'pfif_xml_2' : PfifXml.XML_ADDED_DELETED_CHANGED_2,
+               'options' : 'text_is_case_sensitive',
+               'ignore_fields' : 'foo bar source_date'}
+    response = self.make_webapp_request(
+        request, handler_init_method=controller.DiffController)
+    response_str = response.out.getvalue()
+    for field in ['foo', 'bar', 'source_date']:
+      self.assertFalse(field in response_str, field + ' is ignored and should '
+                       'not be in the response.')
+
   def test_missing_filenames(self):
     """The diff results page should fail gracefully when diffing a pasted in
     file, which has no filename."""

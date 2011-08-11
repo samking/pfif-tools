@@ -115,7 +115,8 @@ def objectify_parents(parents, is_person, object_map, tree,
       if is_person:
         sub_notes = parent.findall(tree.add_namespace_to_tag('note'))
         objectify_parents(sub_notes, False, object_map, tree,
-                          parent_person_record_id=record_id)
+                          parent_person_record_id=record_id,
+                          ignore_fields=ignore_fields)
 
 def objectify_pfif_xml(file_to_objectify, ignore_fields=None):
   """Turns a file of PFIF XML into a map."""
