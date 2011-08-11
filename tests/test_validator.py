@@ -525,8 +525,7 @@ class ValidatorTests(unittest.TestCase):
 
     utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
     pfif_validator.main()
-    # There should be one newline but no content printed
-    self.assertEqual(len(sys.stdout.getvalue()), 1)
+    self.assertFalse('all_messages' in sys.stdout.getvalue())
 
     sys.stdout = old_stdout
     sys.argv = old_argv
