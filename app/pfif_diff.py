@@ -36,7 +36,6 @@ __author__ = 'samking@google.com (Sam King)'
 import utils
 import optparse
 
-# TODO(samking): Add --ignore-field flag.  Add --blank-is-nonexistent flag.
 # TODO(samking): Add line numbers and xml lines.
 
 # To allow person_record_ids and note_record_ids (which could be the same) to
@@ -77,7 +76,8 @@ def change_record_ids(reference_map):
 
 
 def objectify_parents(parents, is_person, object_map, tree,
-                      parent_person_record_id=None, ignore_fields=None):
+                      parent_person_record_id=None, ignore_fields=None,
+                      omit_blank_fields=False):
   """Adds the object representation of each parent in parents to object_map.
   If is_person, all parents are assumed to be persons (else, notes).  Tree is
   a PfifXmlTree.  Specifying parent_person_record_id is used for recursive
@@ -111,14 +111,18 @@ def objectify_parents(parents, is_person, object_map, tree,
                                                   'note'):
           # if there is no text in the node, use the empty string, not None
           field_value = child.text or ''
-          record_map[field_name] = field_value
+          # Add the record unless field_value is blank and omit_blank_fields
+          if field_value or not omit_blank_fields:
+            record_map[field_name] = field_value
       if is_person:
         sub_notes = parent.findall(tree.add_namespace_to_tag('note'))
         objectify_parents(sub_notes, False, object_map, tree,
                           parent_person_record_id=record_id,
-                          ignore_fields=ignore_fields)
+                          ignore_fields=ignore_fields,
+                          omit_blank_fields=omit_blank_fields)
 
-def objectify_pfif_xml(file_to_objectify, ignore_fields=None):
+def objectify_pfif_xml(file_to_objectify, ignore_fields=None,
+                       omit_blank_fields=False):
   """Turns a file of PFIF XML into a map."""
   # read the file into an XML tree
   tree = utils.PfifXmlTree(file_to_objectify)
@@ -126,9 +130,11 @@ def objectify_pfif_xml(file_to_objectify, ignore_fields=None):
   # map from record_id to a map from field_name to value
   object_map = {}
   objectify_parents(tree.get_all_persons(), True, object_map, tree,
-                    ignore_fields=ignore_fields)
+                    ignore_fields=ignore_fields,
+                    omit_blank_fields=omit_blank_fields)
   objectify_parents(tree.get_top_level_notes(), False, object_map, tree,
-                    ignore_fields=ignore_fields)
+                    ignore_fields=ignore_fields,
+                    omit_blank_fields=omit_blank_fields)
   return object_map
 
 def make_diff_message(category, record_id, extra_data=None, xml_tag=None):
@@ -184,11 +190,13 @@ def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
   return messages
 
 def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True,
-                   ignore_fields=None):
+                   ignore_fields=None, omit_blank_fields=False):
   """Compares file_a and file_b.  Returns a list of messages as per
   pfif_obj_diff."""
-  records_a = objectify_pfif_xml(file_a, ignore_fields=ignore_fields)
-  records_b = objectify_pfif_xml(file_b, ignore_fields=ignore_fields)
+  records_a = objectify_pfif_xml(file_a, ignore_fields=ignore_fields,
+                                 omit_blank_fields=omit_blank_fields)
+  records_b = objectify_pfif_xml(file_b, ignore_fields=ignore_fields,
+                                 omit_blank_fields=omit_blank_fields)
   return pfif_obj_diff(records_a, records_b, text_is_case_sensitive)
 
 def main():
@@ -208,13 +216,19 @@ def main():
                     'there will be no messages for photo_url fields that are '
                     'added, removed, or changed.  To specify multiple fields '
                     'to ignore, use this flag multiple times.')
+  parser.add_option('--omit-blank-fields', action='store_true', default=False,
+                    help='Normally, a blank field (ie, <foo></foo>) will count '
+                    'as a different against a file that does not have that '
+                    'field at all.  If you pass this flag, a blank field will '
+                    'count as an omitted field.')
   (options, args) = parser.parse_args()
 
   assert len(args) >= 2, 'Must provide two files to diff.'
   messages = pfif_file_diff(
       utils.open_file(args[0]), utils.open_file(args[1]),
       text_is_case_sensitive=options.text_is_case_sensitive,
-      ignore_fields=options.ignore_fields)
+      ignore_fields=options.ignore_fields,
+      omit_blank_fields=options.omit_blank_fields)
   print utils.MessagesOutput.generate_message_summary(messages, is_html=False)
   if options.group_by_record_id:
     print utils.MessagesOutput.messages_to_str_by_id(messages)
