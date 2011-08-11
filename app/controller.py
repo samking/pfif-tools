@@ -102,17 +102,19 @@ class DiffController(PfifController):
     file_1, filename_1 = self.get_file(1, return_filename=True)
     file_2, filename_2 = self.get_file(2, return_filename=True)
     self.write_header('PFIF Diff: Results')
-    # TODO(samking): Add summary-by-record (6 records in A but not B, 11 are
-    # present in both but different...)
     if file_1 is None or file_2 is None:
       self.write_missing_input_file()
     else:
-      messages = pfif_diff.pfif_file_diff(file_1, file_2)
+      options = self.request.get_all('options')
+      messages = pfif_diff.pfif_file_diff(
+          file_1, file_2,
+          text_is_case_sensitive='text_is_case_sensitive' in options)
       self.response.out.write(
           '<h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
+      self.response.out.write(
+          utils.MessagesOutput.generate_message_summary(messages, is_html=True))
       self.write_filenames(filename_1, filename_2)
-      print_options = self.request.get_all('print_options')
-      if 'group_messages_by_record' in print_options:
+      if 'group_messages_by_record' in options:
         self.response.out.write(
             utils.MessagesOutput.messages_to_str_by_id(messages, is_html=True))
       else:
@@ -134,6 +136,8 @@ class ValidatorController(PfifController):
       messages = validator.run_validations()
       self.response.out.write('<h1>Validation: ' +
                               str(len(messages)) + ' Messages</h1>')
+      self.response.out.write(
+          utils.MessagesOutput.generate_message_summary(messages, is_html=True))
       # print_options is a list of all printing options passed in via
       # checkboxes.  It will contain 'show_errors' if the user checked that box,
       # for instance.  Thus, saying show_errors='show_errors' in print_options

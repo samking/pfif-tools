@@ -200,6 +200,7 @@ def main():
   assert len(args) >= 2, 'Must provide two files to diff.'
   messages = pfif_file_diff(utils.open_file(args[0]), utils.open_file(args[1]),
                             options.text_is_case_sensitive)
+  print utils.MessagesOutput.generate_message_summary(messages, is_html=False)
   if options.group_by_record_id:
     print utils.MessagesOutput.messages_to_str_by_id(messages)
   else:

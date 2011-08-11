@@ -144,18 +144,19 @@ class ControllerTests(unittest.TestCase):
     fake_file_1 = FakeFieldStorage('added_deleted_changed_1.xml',
                                    PfifXml.XML_ADDED_DELETED_CHANGED_1)
     utils.set_file_for_test(StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+    request = MultiDict({
+        'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url',
+        'options' : 'text_is_case_sensitive'})
     response = self.make_webapp_request(
-        {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url'},
-        handler_init_method=controller.DiffController)
+        request, handler_init_method=controller.DiffController)
     response_str = response.out.getvalue()
 
     # set the test file again because the first one will be at the end, and the
     # xml parser doesn't have to seek(0) on it.
     utils.set_file_for_test(StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
+    request.add('options', 'group_messages_by_record')
     grouped_response = self.make_webapp_request(
-        {'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url',
-         'print_options' : 'group_messages_by_record'},
-        handler_init_method=controller.DiffController)
+        request, handler_init_method=controller.DiffController)
     grouped_response_str = grouped_response.out.getvalue()
 
     # The header should have 'Diff' and 'Messages' in it along with the filename

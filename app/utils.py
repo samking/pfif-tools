@@ -188,11 +188,11 @@ class MessagesOutput:
   """A container that allows for outputting either a plain string or HTML
   easily"""
 
-  def __init__(self, is_html):
+  def __init__(self, is_html, html_class='all_messages'):
     self.is_html = is_html
     self.output = []
     if is_html:
-      self.output.append('<div class="all_messages">')
+      self.output.append('<div class="' + html_class + '">')
 
   def get_output(self):
     """Turns the stored data into a string.  Call at most once per instance of
@@ -248,6 +248,31 @@ class MessagesOutput:
     """Wrapper for make_message_part that is inline."""
     self.make_message_part(text, html_class, inline=True, data=data)
 
+  def start_table(self, headers):
+    """Adds a table header to the output.  Call before using make_table_row."""
+    if self.is_html:
+      self.output.append('<table>')
+    self.make_table_row(headers, row_tag='th')
+
+  def end_table(self):
+    """Closes a table header.  Call after using make_table_row."""
+    if self.is_html:
+      self.output.append('</table>')
+
+  def make_table_row(self, elements, row_tag='td'):
+    """Makes a table row where every element in elements is in the row."""
+    if self.is_html:
+      self.output.append('<tr>')
+    for element in elements:
+      if self.is_html:
+        self.output.append('<' + row_tag + '>' + element + '</' + row_tag + '>')
+      else:
+        self.output.append(element + '\t')
+    if self.is_html:
+      self.output.append('</tr>')
+    else:
+      self.output.append('\n')
+
   @staticmethod
   def group_messages_by_record(messages):
     """Returns a dict from record_id to a list of messages with that id.
@@ -280,6 +305,17 @@ class MessagesOutput:
       # TODO(samking): is there a better way to dynamically access a field of an
       # object than using the __dict__ object?
       return [message.__dict__[field] for message in messages]
+
+  @staticmethod
+  def generate_message_summary(messages, is_html):
+    """Returns a string with a summary of the categories of each message."""
+    output = MessagesOutput(is_html, html_class="summary")
+    messages_by_category = MessagesOutput.group_messages_by_category(messages)
+    output.start_table(['Category', 'Number of Messages'])
+    for category, messages_list in messages_by_category.items():
+      output.make_table_row([category, str(len(messages_list))])
+    output.end_table()
+    return output.get_output()
 
   @staticmethod
   def messages_to_str_by_id(messages, is_html=False):
