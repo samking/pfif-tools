@@ -77,11 +77,14 @@ def change_record_ids(reference_map):
 
 
 def objectify_parents(parents, is_person, object_map, tree,
-                      parent_person_record_id=None):
+                      parent_person_record_id=None, ignore_fields=None):
   """Adds the object representation of each parent in parents to object_map.
   If is_person, all parents are assumed to be persons (else, notes).  Tree is
   a PfifXmlTree.  Specifying parent_person_record_id is used for recursive
-  calls when a person has a note as a child."""
+  calls when a person has a note as a child.  Any fields in ignore_fields will
+  not be added to object_map."""
+  if ignore_fields is None:
+    ignore_fields = []
   if is_person:
     record_id_tag = 'person_record_id'
   else:
@@ -97,14 +100,15 @@ def objectify_parents(parents, is_person, object_map, tree,
       # If this note is a child of a person, it isn't required to have a
       # person_record_id, but it's easier to deal with notes that have
       # person_record_ids, so we force-add it.
-      if not is_person and parent_person_record_id is not None:
+      if (not is_person and parent_person_record_id is not None and
+          'person_record_id' not in ignore_fields):
         record_map['person_record_id'] = parent_person_record_id
       for child in parent.getchildren():
         field_name = utils.extract_tag(child.tag)
-        # We'll deal with all notes together, so skip them for now.
-        if is_person and field_name == 'note':
-          continue
-        else:
+        # Don't add any ignored fields.  Also, we'll deal with notes together,
+        # so skip them.
+        if (field_name not in ignore_fields) and (not is_person or field_name !=
+                                                  'note'):
           # if there is no text in the node, use the empty string, not None
           field_value = child.text or ''
           record_map[field_name] = field_value
@@ -113,15 +117,17 @@ def objectify_parents(parents, is_person, object_map, tree,
         objectify_parents(sub_notes, False, object_map, tree,
                           parent_person_record_id=record_id)
 
-def objectify_pfif_xml(file_to_objectify):
+def objectify_pfif_xml(file_to_objectify, ignore_fields=None):
   """Turns a file of PFIF XML into a map."""
   # read the file into an XML tree
   tree = utils.PfifXmlTree(file_to_objectify)
   # turn the xml trees into a persons and notes map for each file.  They will
   # map from record_id to a map from field_name to value
   object_map = {}
-  objectify_parents(tree.get_all_persons(), True, object_map, tree)
-  objectify_parents(tree.get_top_level_notes(), False, object_map, tree)
+  objectify_parents(tree.get_all_persons(), True, object_map, tree,
+                    ignore_fields=ignore_fields)
+  objectify_parents(tree.get_top_level_notes(), False, object_map, tree,
+                    ignore_fields=ignore_fields)
   return object_map
 
 def make_diff_message(category, record_id, extra_data=None, xml_tag=None):
@@ -176,11 +182,12 @@ def pfif_obj_diff(records_a, records_b, text_is_case_sensitive):
       messages.append(make_diff_message(utils.Categories.ADDED_RECORD, record))
   return messages
 
-def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True):
+def pfif_file_diff(file_a, file_b, text_is_case_sensitive=True,
+                   ignore_fields=None):
   """Compares file_a and file_b.  Returns a list of messages as per
   pfif_obj_diff."""
-  records_a = objectify_pfif_xml(file_a)
-  records_b = objectify_pfif_xml(file_b)
+  records_a = objectify_pfif_xml(file_a, ignore_fields=ignore_fields)
+  records_b = objectify_pfif_xml(file_b, ignore_fields=ignore_fields)
   return pfif_obj_diff(records_a, records_b, text_is_case_sensitive)
 
 def main():
@@ -195,11 +202,18 @@ def main():
                     help='Rather than grouping all differences pertaining to '
                     'the same record together, every difference will be '
                     'displayed individually.')
+  parser.add_option('--ignore-field', action='append', dest='ignore_fields',
+                    default=[], help='--ignore-field photo_url will mean that '
+                    'there will be no messages for photo_url fields that are '
+                    'added, removed, or changed.  To specify multiple fields '
+                    'to ignore, use this flag multiple times.')
   (options, args) = parser.parse_args()
 
   assert len(args) >= 2, 'Must provide two files to diff.'
-  messages = pfif_file_diff(utils.open_file(args[0]), utils.open_file(args[1]),
-                            options.text_is_case_sensitive)
+  messages = pfif_file_diff(
+      utils.open_file(args[0]), utils.open_file(args[1]),
+      text_is_case_sensitive=options.text_is_case_sensitive,
+      ignore_fields=options.ignore_fields)
   print utils.MessagesOutput.generate_message_summary(messages, is_html=False)
   if options.group_by_record_id:
     print utils.MessagesOutput.messages_to_str_by_id(messages)

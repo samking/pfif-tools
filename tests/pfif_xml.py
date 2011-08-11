@@ -832,6 +832,9 @@ XML_BLANK_FIELDS_MAP =  {
     'example.org/person' : {'person_record_id' : 'example.org/person',
                             'source_date' : ''}}
 
+XML_ONLY_RECORD_MAP =  {
+    'example.org/person' : {'person_record_id' : 'example.org/person'}}
+
 XML_ONE_BLANK_RECORD_ID = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
