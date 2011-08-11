@@ -110,7 +110,8 @@ class DiffController(PfifController):
       messages = pfif_diff.pfif_file_diff(
           file_1, file_2,
           text_is_case_sensitive='text_is_case_sensitive' in options,
-          ignore_fields=ignore_fields)
+          ignore_fields=ignore_fields,
+          omit_blank_fields='omit_blank_fields' in options)
       self.response.out.write(
           '<h1>Diff: ' + str(len(messages)) + ' Messages</h1>')
       self.response.out.write(

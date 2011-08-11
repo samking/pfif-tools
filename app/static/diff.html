@@ -29,8 +29,12 @@
         value="group_messages_by_record" checked>Group Messages by Record</div>
       <div><input type="checkbox" name="options"
         value="text_is_case_sensitive" checked>Case Sensitive Diff?</div>
-      <div><input type="text" name="ignore_fields" />Ignore these fields (they
-          will not count as added, removed, or changed).  Use a space-delimited
+      <div><input type="checkbox" name="options" value="omit_blank_fields">
+        Omit Blank Fields. Normally, a blank field is different from if that
+        field is not present at all.  If you check this box, they will be the
+        same.</div>
+      <div><input type="text" name="ignore_fields" />Ignore these fields. They
+          will not count as added, removed, or changed.  Use a space-delimited
           list of fields (ie, "source_date age photo_url" without the
           quotes).</div>
 
