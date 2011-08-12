@@ -4,9 +4,6 @@
 import datetime
 import pfif
 
-persons = []
-notes = []
-
 COUNTRY_CODES = '''
     zero
     AF AX AL DZ AS AD AO AI AQ AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM
@@ -20,104 +17,113 @@ COUNTRY_CODES = '''
     SX SK SI SB SO ZA GS ES LK SD SR SJ SZ SE CH SY TW TJ TZ TH TL TG TK TO TT
     TN TR TM TC TV UG UA AE GB US UM UY UZ VU VE VN VG VI WF EH YE ZM ZW
 '''.split()
+SOURCE_DATE = datetime.datetime(2011, 1, 1, 1, 1, 1)
+ENTRY_START = datetime.datetime(2011, 2, 3, 4, 5, 6)
+PERSON_INTERVAL = datetime.timedelta(0, 60*60)  # 60 minutes between persons
+NOTE_INTERVAL = datetime.timedelta(0, 30*60)  # 30 minutes between notes
+EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
+EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
+NUM_PERSONS = 1357
 
-def make_test_data(version, file):
-    SOURCE_DATE = datetime.datetime(2011, 1, 1, 1, 1, 1)
-    ENTRY_START = datetime.datetime(2011, 2, 3, 4, 5, 6)
-    PERSON_INTERVAL = datetime.timedelta(0, 60*60)  # 60 minutes between persons
-    NOTE_INTERVAL = datetime.timedelta(0, 30*60)  # 30 minutes between notes
-    EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
-    EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
+def make_test_data(version, output_file):
+  fields = version.fields['person']
+  note_fields = version.fields['note']
+  persons = []
+  entry_date = ENTRY_START
+  expiry_date = EXPIRY_START
 
-    fields = version.fields['person']
-    note_fields = version.fields['note']
-    persons = []
-    entry_date = ENTRY_START
-    expiry_date = EXPIRY_START
-    for p in range(1, 1358):
-        P = '%04d' % p
-        person = dict((field, field + P) for field in fields)
-        person['person_record_id'] = 'example.org/p' + P
-        person['entry_date'] = pfif.format_utc_datetime(entry_date)
-        entry_date += PERSON_INTERVAL
-        person['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
-        if 'expiry_date' in fields:
-            if p < 1000:
-                person['expiry_date'] = pfif.format_utc_datetime(expiry_date)
-            else:
-                del person['expiry_date']
-        expiry_date += EXPIRY_INTERVAL
-        person['author_email'] = P + '@example.com'
-        person['author_phone'] = '0000' + P
-        person['source_url'] = 'http://example.org/' + P
-        person['other'] = 'description: ' + P
-        person['home_country'] = COUNTRY_CODES[(p % 248) or 248]
+  for person_id_num in range(1, NUM_PERSONS + 1):
+    person_id_four_digit = '%04d' % person_id_num
+    person = dict((field, field + person_id_four_digit) for field in fields)
+    person['person_record_id'] = 'example.org/p' + person_id_four_digit
+    person['entry_date'] = pfif.format_utc_datetime(entry_date)
+    entry_date += PERSON_INTERVAL
+    person['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
+    if 'expiry_date' in fields:
+      if person_id_num < 1000:
+        person['expiry_date'] = pfif.format_utc_datetime(expiry_date)
+      else:
+        del person['expiry_date']
+    expiry_date += EXPIRY_INTERVAL
+    person['author_email'] = person_id_four_digit + '@example.com'
+    person['author_phone'] = '0000' + person_id_four_digit
+    person['source_url'] = 'http://example.org/' + person_id_four_digit
+    person['other'] = 'description: ' + person_id_four_digit
+    person['home_country'] = COUNTRY_CODES[(person_id_num % 248) or 248]
 
-        # sex
-        person['sex'] = pfif.PERSON_SEX_VALUES[p % 4]
-        if p % 4 == 0:
-            del person['sex']
+    # sex
+    person['sex'] = pfif.PERSON_SEX_VALUES[person_id_num % 4]
+    if person_id_num % 4 == 0:
+      del person['sex']
 
-        # date_of_birth
-        if p < 90:
-            del person['date_of_birth']
-        elif p == 98:
-            person['date_of_birth'] = '1900'
-        elif p == 99:
-            person['date_of_birth'] = '1900-01'
-        else:
-            dob = datetime.date(1900, 1, 1) + p*datetime.timedelta(30)
-            person['date_of_birth'] = dob.strftime('%Y-%m-%d')
+    # date_of_birth
+    if person_id_num < 90:
+      del person['date_of_birth']
+    elif person_id_num == 98:
+      person['date_of_birth'] = '1900'
+    elif person_id_num == 99:
+      person['date_of_birth'] = '1900-01'
+    else:
+      dob = datetime.date(1900, 1, 1) + person_id_num*datetime.timedelta(30)
+      person['date_of_birth'] = dob.strftime('%Y-%m-%d')
 
-        # age
-        if p == 1:
-            person['age'] = '34-56'
-        elif p < 98:
-            person['age'] = str(p)
-        elif p in [98, 99]:
-            person['age'] = '111'
-        else:
-            del person['age']
+    # age
+    if person_id_num == 1:
+      person['age'] = '34-56'
+    elif person_id_num < 98:
+      person['age'] = str(person_id_num)
+    elif person_id_num in [98, 99]:
+      person['age'] = '111'
+    else:
+      del person['age']
 
-        persons.append(person)
+    persons.append(person)
 
-    notes = {}
-    entry_date = ENTRY_START
-    for p in range(1, 100):
-        P = '%02d' % p
-        person_record_id = 'example.org/p00' + P
-        notes[person_record_id] = []
+  notes = {}
+  entry_date = ENTRY_START
+  for person_id_num in range(1, 100):
+    person_id_two_digit = '%02d' % person_id_num
+    person_record_id = 'example.org/p00' + person_id_two_digit
+    notes[person_record_id] = []
 
-        for n in range(1, p + 1):
-            N = '%02d' % n
-            note = dict((field, field + P + N) for field in note_fields)
-            note['note_record_id'] = 'example.org/n' + P + N
-            note['person_record_id'] = person_record_id
-            note['entry_date'] = pfif.format_utc_datetime(entry_date)
-            entry_date += NOTE_INTERVAL
-            note['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
-            note['author_email'] = P + N + '@example.com'
-            note['author_phone'] = '0000' + P + N
-            note['found'] = ((p + n) % 2) and 'true' or 'false'
-            if note['found']:
-                note['email_of_found_person'] = note['author_email']
-                note['phone_of_found_person'] = note['author_phone']
-            else:
-                del note['email_of_found_person']
-                del note['phone_of_found_person']
-            note['status'] = pfif.NOTE_STATUS_VALUES[n % 6]
+    for note_id in range(1, person_id_num + 1):
+      note_id_two_digit = '%02d' % note_id
+      note = dict((field, field + person_id_two_digit + note_id_two_digit) for
+                  field in note_fields)
+      note['note_record_id'] = ('example.org/n' + person_id_two_digit +
+                                note_id_two_digit)
+      note['person_record_id'] = person_record_id
+      note['entry_date'] = pfif.format_utc_datetime(entry_date)
+      entry_date += NOTE_INTERVAL
+      note['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
+      note['author_email'] = (person_id_two_digit + note_id_two_digit +
+                              '@example.com')
+      note['author_phone'] = '0000' + person_id_two_digit + note_id_two_digit
+      note['found'] = ((person_id_num + note_id) % 2) and 'true' or 'false'
+      if note['found']:
+        note['email_of_found_person'] = note['author_email']
+        note['phone_of_found_person'] = note['author_phone']
+      else:
+        del note['email_of_found_person']
+        del note['phone_of_found_person']
+      note['status'] = pfif.NOTE_STATUS_VALUES[note_id % 6]
 
-            notes[person_record_id].append(note)
+      notes[person_record_id].append(note)
 
-    def get_notes_for_person(person):
-        return notes.get(person['person_record_id'], [])
+  def get_notes_for_person(person):
+    return notes.get(person['person_record_id'], [])
 
-    version.write_file(file, persons, get_notes_for_person)
+  version.write_file(output_file, persons, get_notes_for_person)
 
-file = open('pfif-1.2-test.xml', 'w')
-make_test_data(pfif.PFIF_1_2, file)
-file.close()
+def main():
+  """Creates test data and outputs it to files."""
+  output_file_12 = open('pfif-1.2-test.xml', 'w')
+  make_test_data(pfif.PFIF_1_2, output_file_12)
+  output_file_12.close()
 
-file = open('pfif-1.3-test.xml', 'w')
-make_test_data(pfif.PFIF_1_3, file)
-file.close()
+  output_file_13 = open('pfif-1.3-test.xml', 'w')
+  make_test_data(pfif.PFIF_1_3, output_file_13)
+  output_file_13.close()
+
+if __name__ == '__main__':
+  main()
