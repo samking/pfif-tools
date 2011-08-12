@@ -151,7 +151,10 @@ class PfifValidator:
   CAPS = r'^[A-Z ]+$'
   US_STATE = r'^[A-Z][A-Z]$'
   ISO31661_COUNTRY = US_STATE
-  ISO31662_STATE = r'^[a-zA-Z0-9]{1,3}$'
+  # PFIF specifies an uppercase ISO-3166-2 state (formatted as country-state,
+  # where country is an ISO-3166-1 country and the state can be 1-3 letters or
+  # numbers)
+  ISO31662_STATE = r'^([A-Z][A-Z]-)?[A-Z0-9]{1,3}$'
   INTEGER = r'^\d+$'
   BOOLEAN = r'^(true|false)$'
   STATUS = r'^(information_sought|is_note_author|believed_alive|' \
