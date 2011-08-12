@@ -171,6 +171,7 @@ def make_test_data(version, output_file):
     person['home_country'] = COUNTRY_CODES[(person_id_num % 248) or 248]
     person['home_state'] = STATE_CODES[person_id_num]
     person['photo_url'] = 'http://photo.example.org/' + person_id_four_digit
+    person['home_postal_code'] = '0' + person_id_four_digit
 
     # sex
     person['sex'] = pfif.PERSON_SEX_VALUES[person_id_num % 4]
@@ -206,11 +207,6 @@ def make_test_data(version, output_file):
     person_id_two_digit = '%02d' % person_id_num
     person_record_id = 'example.org/p00' + person_id_two_digit
     notes[person_record_id] = []
-    if person_id_num > 1:
-      if person_id_num % 2:
-        linked_person_record_id = 'example.org/p00%02d' % (person_id_num - 1)
-      else:
-        linked_person_record_id = 'example.org/p00%02d' % (person_id_num + 1)
 
     for note_id in range(1, person_id_num + 1):
       note_id_two_digit = '%02d' % note_id
@@ -233,10 +229,16 @@ def make_test_data(version, output_file):
         del note['email_of_found_person']
         del note['phone_of_found_person']
       note['status'] = pfif.NOTE_STATUS_VALUES[note_id % 6]
-      if person_id_num == 1:
-        del note['linked_person_record_id']
-      else:
+
+      # linked_person_record_id
+      if person_id_num > 1 and note_id == 1:
+        if person_id_num % 2:
+          linked_person_record_id = 'example.org/p00%02d' % (person_id_num - 1)
+        else:
+          linked_person_record_id = 'example.org/p00%02d' % (person_id_num + 1)
         note['linked_person_record_id'] = linked_person_record_id
+      else:
+        del note['linked_person_record_id']
 
       notes[person_record_id].append(note)
 
