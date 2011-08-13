@@ -163,5 +163,14 @@ class UtilTests(unittest.TestCase):
     self.assertEqual(output_str.count('"message"'), 1)
     self.assertEqual(output_str.count('grouped_record_list'), 1)
 
+  def test_truncate(self):
+    """truncate should leave there with the specified number of messages per
+    category (plus one for every category that was truncated)."""
+    messages = [utils.Message('Category') for _ in range(3)]
+
+    truncated_messages = utils.MessagesOutput.truncate(messages, 1)
+    self.assertEqual(len(truncated_messages), 2)
+    self.assertEqual(truncated_messages.count(utils.Message('Category')), 1)
+
 if __name__ == '__main__':
   unittest.main()
