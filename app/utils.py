@@ -174,6 +174,9 @@ class Message: # pylint: disable=R0902
     self.person_record_id = person_record_id
     self.note_record_id  = note_record_id
 
+  def __eq__(self, other):
+    return self.__dict__ == other.__dict__
+
 class Categories: # pylint: disable=W0232
   """Constants representing message categories."""
 
@@ -187,6 +190,13 @@ class Categories: # pylint: disable=W0232
 class MessagesOutput:
   """A container that allows for outputting either a plain string or HTML
   easily"""
+
+  # If truncation is on, only this many messages will be allowed per category
+  TRUNCATE_THRESHOLD = 100
+
+  # When using grouped output (messages_to_str_by_id), it's more compact and
+  # less in need of truncation.
+  GROUPED_TRUNCATE_THRESHOLD = 400
 
   def __init__(self, is_html, html_class='all_messages'):
     self.is_html = is_html
@@ -273,6 +283,24 @@ class MessagesOutput:
     else:
       self.output.append('\n')
 
+  # TODO(samking): add ability to turn off truncate in controller and main
+  @staticmethod
+  def truncate(messages, truncation_threshold):
+    """Only allows truncation_threshold messages per category.  Adds one message
+    for each category that is truncated."""
+    messages_by_category = MessagesOutput.group_messages_by_category(messages)
+    truncated_messages = []
+    for category, message_list in messages_by_category.items():
+      # add at most truncation_threshold messages to truncated_messages
+      truncated_messages.extend(message_list[:truncation_threshold])
+      # add a message saying that truncation happened
+      if len(message_list) > truncation_threshold:
+        truncated_messages.append(Message(
+            'You had too many messages, so some were truncated.',
+            extra_data='You had ' + str(len(message_list)) + ' messages in the '
+            'following category: ' + category + '.'))
+    return truncated_messages
+
   @staticmethod
   def group_messages_by_record(messages):
     """Returns a dict from record_id to a list of messages with that id.
@@ -318,9 +346,12 @@ class MessagesOutput:
     return output.get_output()
 
   @staticmethod
-  def messages_to_str_by_id(messages, is_html=False):
+  def messages_to_str_by_id(messages, is_html=False, truncate=True):
     """Returns a string containing all messages grouped together by record.
     Only works on diff messages."""
+    if truncate:
+      messages = MessagesOutput.truncate(
+          messages, MessagesOutput.GROUPED_TRUNCATE_THRESHOLD)
     output = MessagesOutput(is_html)
     list_records_categories = [Categories.ADDED_RECORD,
                                Categories.DELETED_RECORD]
@@ -375,9 +406,12 @@ class MessagesOutput:
                       show_warnings=True, show_line_numbers=True,
                       show_full_line=True, show_record_ids=True,
                       show_xml_tag=True, show_xml_text=True, is_html=False,
-                      xml_lines=None):
+                      xml_lines=None, truncate=True):
     # pylint: enable=R0912
     """Returns a string containing all messages formatted per the options."""
+    if truncate:
+      messages = MessagesOutput.truncate(
+          messages, MessagesOutput.TRUNCATE_THRESHOLD)
     output = MessagesOutput(is_html)
     for message in messages:
       if (message.is_error and show_errors) or (
