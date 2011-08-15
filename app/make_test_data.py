@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 # Initial version from From Ka-Ping Yee (kpy@google.com)
 
+# pylint: disable=C0301
+"""Makes test PFIF XML files for interoperability tests.
+
+Full details about the test data set is available in the PFIF Conformance Test
+Plan:
+https://docs.google.com/a/google.com/document/d/1HoCtiKjmp6j2d4d2U9QBJtehuVoANcWc6ggxthacPRY/edit?hl=en_US&authkey=CMaK1qsI"""
+# pylint: enable=C0301
+
 import datetime
-import pfif
+import personfinder_pfif
 
 COUNTRY_CODES = '''
     zero
@@ -144,23 +152,25 @@ EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
 EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
 NUM_PERSONS = 1357
 
-def make_test_data(version, output_file):
+def generate_persons(version): # pylint: disable=R0912
+  """Returns a list of NUM_PERSONS persons generated per the conformance test
+  plan."""
   fields = version.fields['person']
-  note_fields = version.fields['note']
-  persons = []
   entry_date = ENTRY_START
   expiry_date = EXPIRY_START
 
+  persons = []
   for person_id_num in range(1, NUM_PERSONS + 1):
     person_id_four_digit = '%04d' % person_id_num
     person = dict((field, field + person_id_four_digit) for field in fields)
     person['person_record_id'] = 'example.org/p' + person_id_four_digit
-    person['entry_date'] = pfif.format_utc_datetime(entry_date)
+    person['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
     entry_date += PERSON_INTERVAL
-    person['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
+    person['source_date'] = personfinder_pfif.format_utc_datetime(SOURCE_DATE)
     if 'expiry_date' in fields:
       if person_id_num < 1000:
-        person['expiry_date'] = pfif.format_utc_datetime(expiry_date)
+        person['expiry_date'] = (
+            personfinder_pfif.format_utc_datetime(expiry_date))
       else:
         del person['expiry_date']
     expiry_date += EXPIRY_INTERVAL
@@ -174,7 +184,7 @@ def make_test_data(version, output_file):
     person['home_postal_code'] = '0' + person_id_four_digit
 
     # sex
-    person['sex'] = pfif.PERSON_SEX_VALUES[person_id_num % 4]
+    person['sex'] = personfinder_pfif.PERSON_SEX_VALUES[person_id_num % 4]
     if person_id_num % 4 == 0:
       del person['sex']
 
@@ -201,6 +211,12 @@ def make_test_data(version, output_file):
 
     persons.append(person)
 
+  return persons
+
+def generate_notes(version):
+  """Generates a map from person_record_id to a list of that person's notes.
+  Each note is generated per the test conformance plan."""
+  note_fields = version.fields['note']
   notes = {}
   entry_date = ENTRY_START
   for person_id_num in range(1, 100):
@@ -215,9 +231,9 @@ def make_test_data(version, output_file):
       note['note_record_id'] = ('example.org/n' + person_id_two_digit +
                                 note_id_two_digit)
       note['person_record_id'] = person_record_id
-      note['entry_date'] = pfif.format_utc_datetime(entry_date)
+      note['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
       entry_date += NOTE_INTERVAL
-      note['source_date'] = pfif.format_utc_datetime(SOURCE_DATE)
+      note['source_date'] = personfinder_pfif.format_utc_datetime(SOURCE_DATE)
       note['author_email'] = (person_id_two_digit + note_id_two_digit +
                               '@example.com')
       note['author_phone'] = '0000' + person_id_two_digit + note_id_two_digit
@@ -228,7 +244,7 @@ def make_test_data(version, output_file):
       else:
         del note['email_of_found_person']
         del note['phone_of_found_person']
-      note['status'] = pfif.NOTE_STATUS_VALUES[note_id % 6]
+      note['status'] = personfinder_pfif.NOTE_STATUS_VALUES[note_id % 6]
 
       # linked_person_record_id
       if person_id_num > 1 and note_id == 1:
@@ -242,7 +258,16 @@ def make_test_data(version, output_file):
 
       notes[person_record_id].append(note)
 
+  return notes
+
+def make_test_data(version, output_file):
+  """Generates a test data file as per the provided version (from
+  personfinder_pfif) and writes it to output_file."""
+  persons = generate_persons(version)
+  notes = generate_notes(version)
+
   def get_notes_for_person(person):
+    """Gets all notes associated with person."""
     return notes.get(person['person_record_id'], [])
 
   version.write_file(output_file, persons, get_notes_for_person)
@@ -250,11 +275,11 @@ def make_test_data(version, output_file):
 def main():
   """Creates test data and outputs it to files."""
   output_file_12 = open('pfif-1.2-test.xml', 'w')
-  make_test_data(pfif.PFIF_1_2, output_file_12)
+  make_test_data(personfinder_pfif.PFIF_1_2, output_file_12)
   output_file_12.close()
 
   output_file_13 = open('pfif-1.3-test.xml', 'w')
-  make_test_data(pfif.PFIF_1_3, output_file_13)
+  make_test_data(personfinder_pfif.PFIF_1_3, output_file_13)
   output_file_13.close()
 
 if __name__ == '__main__':
