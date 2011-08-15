@@ -11,6 +11,7 @@ https://docs.google.com/a/google.com/document/d/1HoCtiKjmp6j2d4d2U9QBJtehuVoANcW
 
 import datetime
 import personfinder_pfif
+import optparse
 
 COUNTRY_CODES = '''
     zero
@@ -152,7 +153,12 @@ EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
 EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
 NUM_PERSONS = 1357
 
-def generate_persons(version): # pylint: disable=R0912
+def delete_omitted_fields(record, omitted_fields):
+  """Removes every field in omitted_fields from record."""
+  for field in omitted_fields:
+    del record[field]
+
+def generate_persons(version, omitted_fields): # pylint: disable=R0912
   """Returns a list of NUM_PERSONS persons generated per the conformance test
   plan."""
   fields = version.fields['person']
@@ -209,11 +215,13 @@ def generate_persons(version): # pylint: disable=R0912
     else:
       del person['age']
 
+    delete_omitted_fields(person, omitted_fields)
+
     persons.append(person)
 
   return persons
 
-def generate_notes(version):
+def generate_notes(version, omitted_fields):
   """Generates a map from person_record_id to a list of that person's notes.
   Each note is generated per the test conformance plan."""
   note_fields = version.fields['note']
@@ -256,15 +264,17 @@ def generate_notes(version):
       else:
         del note['linked_person_record_id']
 
+      delete_omitted_fields(note, omitted_fields)
+
       notes[person_record_id].append(note)
 
   return notes
 
-def make_test_data(version, output_file):
+def make_test_data(version, output_file, omitted_fields):
   """Generates a test data file as per the provided version (from
   personfinder_pfif) and writes it to output_file."""
-  persons = generate_persons(version)
-  notes = generate_notes(version)
+  persons = generate_persons(version, omitted_fields)
+  notes = generate_notes(version, omitted_fields)
 
   def get_notes_for_person(person):
     """Gets all notes associated with person."""
@@ -273,14 +283,37 @@ def make_test_data(version, output_file):
   version.write_file(output_file, persons, get_notes_for_person)
 
 def main():
-  """Creates test data and outputs it to files."""
-  output_file_12 = open('pfif-1.2-test.xml', 'w')
-  make_test_data(personfinder_pfif.PFIF_1_2, output_file_12)
-  output_file_12.close()
+  """Creates test data and outputs it to a file."""
+  parser = optparse.OptionParser()
+  parser.add_option('--pfif-version', action='store', default='1.3',
+                    help='Specify the PFIF version.  Defaults to 1.3.  '
+                    'Currently supported: 1.2, 1.3.')
+  parser.add_option('--omit-field', action='append', default=[],
+                    dest='omitted_fields',
+                    help='If your repository has issues with one field that '
+                    'prevents you from running all of the tests, you can omit '
+                    'that field here.  For instance, if your repo tries to '
+                    'load photos specified by photo_url rather than just '
+                    'storing the link, the repo will timeout on every record, '
+                    'so you should pass --omit-field photo_url.  To omit '
+                    'multiple fields, pass this argument multiple times.')
+  parser.add_option('--output-file', action='store', default=None,
+                    help='Output will be written to this file.  Defaults to '
+                    'pfif-VERSION-test.xml')
+  (options, args) = parser.parse_args() # pylint: disable=W0612
+  if options.output_file is None:
+    options.output_file = 'pfif-' + options.pfif_version + '-test.xml'
+  assert options.pfif_version in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
+                                                  'are supported.')
 
-  output_file_13 = open('pfif-1.3-test.xml', 'w')
-  make_test_data(personfinder_pfif.PFIF_1_3, output_file_13)
-  output_file_13.close()
+  output_file = open(options.output_file, 'w')
+  if options.pfif_version == '1.2':
+    version_map = personfinder_pfif.PFIF_1_2
+  else:
+    version_map = personfinder_pfif.PFIF_1_3
+
+  make_test_data(version_map, output_file, options.omitted_fields)
+  output_file.close()
 
 if __name__ == '__main__':
   main()
