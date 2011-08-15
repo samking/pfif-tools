@@ -50,6 +50,7 @@ def open_file(filename, mode='r'):
   """Opens the file or returns a debug value if set."""
   return _file_for_test or open(filename, mode)
 
+# TODO(samking): do incremental URL reading to support massive files
 def open_url(url):
   """Opens the url or returns a debug value if set."""
   return _file_for_test or urllib.urlopen(url)
