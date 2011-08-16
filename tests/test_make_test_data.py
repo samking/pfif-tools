@@ -182,8 +182,8 @@ class MakeDataTests(unittest.TestCase):
     # person_record_id: example.org/pP.  author_email: P@example.com.
     # author_phone: 0000P.  other: description: P.
     # photo_url: http://photo.example.org/P.  home_postal_code: 0P.
-    # source_date: 2011-01-01T01:01:01Z.  home_country and home_state: present.
-    # TODO(samking): source_url
+    # source_date: 2011-01-01T01:01:01Z.  source_url: http://example.org/P
+    # home_country and home_state: present.
     self.verify_make_record(
         '1234', include=['person_record_id', 'example.org/p1234',
                          'author_email', '1234@example.com',
@@ -191,6 +191,9 @@ class MakeDataTests(unittest.TestCase):
                          'other', 'description: 1234',
                          'photo_url', 'http://photo.example.org/1234',
                          'home_postal_code', '01234',
+                         'source_date', '2011-01-01T01:01:01Z',
+                         'source_url', 'http://example.org/1234',
+                         'entry_date',
                          'home_country',
                          'home_state'])
 
