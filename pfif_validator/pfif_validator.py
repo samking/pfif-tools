@@ -151,7 +151,10 @@ class PfifValidator:
   CAPS = r'^[A-Z ]+$'
   US_STATE = r'^[A-Z][A-Z]$'
   ISO31661_COUNTRY = US_STATE
-  ISO31662_STATE = r'^[a-zA-Z0-9]{1,3}$'
+  # PFIF specifies an uppercase ISO-3166-2 state (formatted as country-state,
+  # where country is an ISO-3166-1 country and the state can be 1-3 letters or
+  # numbers)
+  ISO31662_STATE = r'^([A-Z][A-Z]-)?[A-Z0-9]{1,3}$'
   INTEGER = r'^\d+$'
   BOOLEAN = r'^(true|false)$'
   STATUS = r'^(information_sought|is_note_author|believed_alive|' \
@@ -252,7 +255,11 @@ class PfifValidator:
                                 'home_city' : TEXT,
                                 'home_neighborhood' : TEXT,
                                 'home_state' : ISO31662_STATE,
-                                'home_postal_code' : INTEGER,
+                                # in 1.1 and 1.2 the format of home_zip and
+                                # home_postal_code was an integer.  In 1.3, it
+                                # supports whatever is the local format, which
+                                # can contain arbitrary text.
+                                'home_postal_code' : TEXT,
                                 'home_country' : ISO31661_COUNTRY,
                                 'photo_url' : URL,
                                 'other' : TEXT
