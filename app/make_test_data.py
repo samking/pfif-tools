@@ -12,6 +12,7 @@ https://docs.google.com/a/google.com/document/d/1HoCtiKjmp6j2d4d2U9QBJtehuVoANcW
 import datetime
 import personfinder_pfif
 import optparse
+import utils
 
 COUNTRY_CODES = '''
     zero
@@ -151,22 +152,30 @@ PERSON_INTERVAL = datetime.timedelta(0, 60*60)  # 60 minutes between persons
 NOTE_INTERVAL = datetime.timedelta(0, 30*60)  # 30 minutes between notes
 EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
 EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
-NUM_PERSONS = 1357
+FIRST_PERSON_WITH_NOTES = '1'
+LAST_PERSON_WITH_NOTES = '99'
+FIRST_PERSON = '1'
+LAST_PERSON = '1357'
+FIRST_NOTE = '1'
+LAST_NOTE_PLACEHOLDER = '0'
+LAST_NOTE_PLACEHOLDER_INT = int(LAST_NOTE_PLACEHOLDER)
 
 def delete_omitted_fields(record, omitted_fields):
   """Removes every field in omitted_fields from record."""
   for field in omitted_fields:
-    del record[field]
+    if field in record:
+      del record[field]
 
-def generate_persons(version, omitted_fields): # pylint: disable=R0912
-  """Returns a list of NUM_PERSONS persons generated per the conformance test
-  plan."""
+def generate_persons(version, omitted_fields, # pylint: disable=R0912
+                     first_person, last_person):
+  """Returns a list of (last_person - first_person + 1) persons generated per
+  the conformance test plan."""
   fields = version.fields['person']
   entry_date = ENTRY_START
   expiry_date = EXPIRY_START
 
   persons = []
-  for person_id_num in range(1, NUM_PERSONS + 1):
+  for person_id_num in range(first_person, last_person + 1):
     person_id_four_digit = '%04d' % person_id_num
     person = dict((field, field + person_id_four_digit) for field in fields)
     person['person_record_id'] = 'example.org/p' + person_id_four_digit
@@ -195,7 +204,7 @@ def generate_persons(version, omitted_fields): # pylint: disable=R0912
       del person['sex']
 
     # date_of_birth
-    if person_id_num < 90:
+    if person_id_num < 98:
       del person['date_of_birth']
     elif person_id_num == 98:
       person['date_of_birth'] = '1900'
@@ -221,18 +230,27 @@ def generate_persons(version, omitted_fields): # pylint: disable=R0912
 
   return persons
 
-def generate_notes(version, omitted_fields):
+def generate_notes(version, omitted_fields, # pylint: disable=R0914
+                   first_person_with_notes, last_person_with_notes, first_note,
+                   last_note):
   """Generates a map from person_record_id to a list of that person's notes.
   Each note is generated per the test conformance plan."""
   note_fields = version.fields['note']
   notes = {}
   entry_date = ENTRY_START
-  for person_id_num in range(1, 100):
+  for person_id_num in range(first_person_with_notes, last_person_with_notes +
+                             1):
     person_id_two_digit = '%02d' % person_id_num
     person_record_id = 'example.org/p00' + person_id_two_digit
     notes[person_record_id] = []
 
-    for note_id in range(1, person_id_num + 1):
+    # for unit testing, we want a specific note
+    if last_note == LAST_NOTE_PLACEHOLDER_INT:
+      current_last_note = person_id_num
+    else:
+      current_last_note = last_note
+
+    for note_id in range(first_note, current_last_note + 1):
       note_id_two_digit = '%02d' % note_id
       note = dict((field, field + person_id_two_digit + note_id_two_digit) for
                   field in note_fields)
@@ -246,7 +264,7 @@ def generate_notes(version, omitted_fields):
                               '@example.com')
       note['author_phone'] = '0000' + person_id_two_digit + note_id_two_digit
       note['found'] = ((person_id_num + note_id) % 2) and 'true' or 'false'
-      if note['found']:
+      if note['found'] == 'true':
         note['email_of_found_person'] = note['author_email']
         note['phone_of_found_person'] = note['author_phone']
       else:
@@ -270,11 +288,16 @@ def generate_notes(version, omitted_fields):
 
   return notes
 
-def make_test_data(version, output_file, omitted_fields):
+def make_test_data(version, output_file, omitted_fields=(),
+                   first_person=FIRST_PERSON, last_person=LAST_PERSON,
+                   first_person_with_notes=FIRST_PERSON_WITH_NOTES,
+                   last_person_with_notes=LAST_PERSON_WITH_NOTES,
+                   first_note=FIRST_NOTE, last_note=LAST_NOTE_PLACEHOLDER_INT):
   """Generates a test data file as per the provided version (from
   personfinder_pfif) and writes it to output_file."""
-  persons = generate_persons(version, omitted_fields)
-  notes = generate_notes(version, omitted_fields)
+  persons = generate_persons(version, omitted_fields, first_person, last_person)
+  notes = generate_notes(version, omitted_fields, first_person_with_notes,
+                         last_person_with_notes, first_note, last_note)
 
   def get_notes_for_person(person):
     """Gets all notes associated with person."""
@@ -285,7 +308,7 @@ def make_test_data(version, output_file, omitted_fields):
 def main():
   """Creates test data and outputs it to a file."""
   parser = optparse.OptionParser()
-  parser.add_option('--pfif-version', action='store', default='1.3',
+  parser.add_option('--pfif-version', default='1.3',
                     help='Specify the PFIF version.  Defaults to 1.3.  '
                     'Currently supported: 1.2, 1.3.')
   parser.add_option('--omit-field', action='append', default=[],
@@ -296,23 +319,44 @@ def main():
                     'load photos specified by photo_url rather than just '
                     'storing the link, the repo will timeout on every record, '
                     'so you should pass --omit-field photo_url.  To omit '
-                    'multiple fields, pass this argument multiple times.')
-  parser.add_option('--output-file', action='store', default=None,
+                    'multiple fields, pass this argument multiple times.  This '
+                    'will not omit mandatory fields.')
+  parser.add_option('--output-file', default=None,
                     help='Output will be written to this file.  Defaults to '
                     'pfif-VERSION-test.xml')
+  group = optparse.OptionGroup(
+      parser, 'Unit Testing Options',
+      'These options are used for unit testing different record IDs. The '
+      'default values for these options are what is specified in the Test '
+      'Conformance document, and changing them could generate insufficient '
+      'data to correctly test conformance.  You should not set these options.')
+  group.add_option('--first-person', default=FIRST_PERSON)
+  group.add_option('--last-person', default=LAST_PERSON)
+  group.add_option('--first-person-with-notes', default=FIRST_PERSON_WITH_NOTES)
+  group.add_option('--last-person-with-notes', default=LAST_PERSON_WITH_NOTES)
+  group.add_option('--first-note', default=FIRST_NOTE)
+  group.add_option('--last-note', default=LAST_NOTE_PLACEHOLDER)
+  parser.add_option_group(group)
+
   (options, args) = parser.parse_args() # pylint: disable=W0612
   if options.output_file is None:
     options.output_file = 'pfif-' + options.pfif_version + '-test.xml'
   assert options.pfif_version in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
                                                   'are supported.')
 
-  output_file = open(options.output_file, 'w')
+  output_file = utils.open_file(options.output_file, 'w')
   if options.pfif_version == '1.2':
     version_map = personfinder_pfif.PFIF_1_2
   else:
     version_map = personfinder_pfif.PFIF_1_3
 
-  make_test_data(version_map, output_file, options.omitted_fields)
+  make_test_data(version_map, output_file, options.omitted_fields,
+                 first_person=int(options.first_person),
+                 last_person=int(options.last_person),
+                 first_person_with_notes=int(options.first_person_with_notes),
+                 last_person_with_notes=int(options.last_person_with_notes),
+                 first_note=int(options.first_note),
+                 last_note=int(options.last_note))
   output_file.close()
 
 if __name__ == '__main__':
