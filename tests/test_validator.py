@@ -18,12 +18,14 @@
 
 import unittest
 from StringIO import StringIO
+
 import os
 import sys
-from pfif_validator import PfifValidator, Message
+from pfif_validator import PfifValidator
 import pfif_validator # to test main
 import datetime
 import utils
+from utils import Message
 import tests.pfif_xml as PfifXml
 
 class ValidatorTests(unittest.TestCase):
@@ -43,9 +45,9 @@ class ValidatorTests(unittest.TestCase):
 
   @staticmethod
   def set_up_validator(xml):
-    """Creates a PFIF validator from XML and initializes it"""
+    """Creates a PFIF validator from XML"""
     pfif_file = StringIO(xml)
-    return PfifValidator(pfif_file, initialize=True)
+    return PfifValidator(pfif_file)
 
   # printing
 
@@ -53,28 +55,29 @@ class ValidatorTests(unittest.TestCase):
     """Tests that each of the printing options in set_printing_options changes
     the behavior of print_errors"""
 
-    # set up the messages to be printed
-    validator = PfifValidator('', initialize=False)
+    # set up the messages to be printed; the XML file here will not be used for
+    # any tests.  It's just to get the validator initialized properly.
+    validator = self.set_up_validator(PfifXml.XML_11_SMALL)
     lines = []
     for i in range(1, 12):
       lines.append('ZZZ ' + str(i))
     messages = []
     messages.append(Message("Message 1", is_error=True, xml_line_number=11,
-                            xml_element_text="Text", person_record_id="Person",
+                            xml_text="Text", person_record_id="Person",
                             note_record_id="Note"))
     messages.append(Message("Message 2", is_error=False))
     messages.append(Message("Message 3"))
 
     # With no errors or warnings, nothing should print
-    output = validator.messages_to_str(messages, show_errors=False,
+    output = validator.validator_messages_to_str(messages, show_errors=False,
                                        show_warnings=False)
     self.assertEqual(len(output), 0)
 
     # with only errors on, only errors should print
-    output = validator.messages_to_str(messages, show_warnings=False,
+    output = validator.validator_messages_to_str(messages, show_warnings=False,
                                        show_line_numbers=False,
                                        show_record_ids=False,
-                                       show_xml_element_text=False,
+                                       show_xml_text=False,
                                        show_full_line=False)
     self.assertNotEqual(output.find("Message 1"), -1)
     self.assertEqual(output.find("Message 2"), -1)
@@ -82,101 +85,42 @@ class ValidatorTests(unittest.TestCase):
     self.assertNotEqual(output.find("Message 3"), -1)
 
     # with warnings on, warnings should print
-    output = validator.messages_to_str(messages, show_line_numbers=False,
-                                       show_record_ids=False,
-                                       show_xml_element_text=False,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_line_numbers=False, show_record_ids=False,
+        show_xml_text=False, show_full_line=False)
     self.assertNotEqual(output.find("Message 2"), -1)
 
     # line numbers, xml text, and record IDs should not print with them off and
     # should print with them on
     self.assertEqual(output.find("11"), -1)
-    output = validator.messages_to_str(messages, show_line_numbers=True,
-                                       show_record_ids=False,
-                                       show_xml_element_text=False,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_line_numbers=True, show_record_ids=False,
+        show_xml_text=False, show_full_line=False)
     self.assertNotEqual(output.find("11"), -1)
 
     self.assertEqual(output.find("Text"), -1)
-    output = validator.messages_to_str(messages, show_record_ids=False,
-                                       show_xml_element_text=True,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_record_ids=False, show_xml_text=True,
+        show_full_line=False)
     self.assertNotEqual(output.find("Text"), -1)
 
     self.assertEqual(output.find("Person"), -1)
     self.assertEqual(output.find("Note"), -1)
-    output = validator.messages_to_str(messages, show_record_ids=True,
-                                       show_full_line=False)
+    output = validator.validator_messages_to_str(
+        messages, show_record_ids=True, show_full_line=False)
     self.assertNotEqual(output.find("Person"), -1)
     self.assertNotEqual(output.find("Note"), -1)
 
     self.assertEqual(output.find("ZZZ 11"), -1)
-    output = validator.messages_to_str(messages, show_full_line=True,
-                                       xml_lines=lines)
+    output = validator.validator_messages_to_str(
+        messages, show_full_line=True, xml_lines=lines)
     self.assertNotEqual(output.find("ZZZ 11"), -1)
 
     # is_html should output a div somewhere
     self.assertEqual(output.find("div"), -1)
-    output = validator.messages_to_str(messages, is_html=True, xml_lines=lines)
+    output = validator.validator_messages_to_str(
+        messages, is_html=True, xml_lines=lines)
     self.assertNotEqual(output.find("div"), -1)
-
-  # initialize_xml
-
-  def test_valid_xml(self):
-    """initialize_xml should turn a string of valid XML into an object"""
-    valid_xml_file = StringIO(PfifXml.XML_11_SMALL)
-    validator = PfifValidator(valid_xml_file, initialize=False)
-    self.assertEqual(len(validator.initialize_xml()), 0)
-
-  def test_invalid_xml(self):
-    """initialize_xml should raise an error on a string of invalid XML"""
-    invalid_xml_file = StringIO("""<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2">
-  <pfif:person>""")
-    validator = PfifValidator(invalid_xml_file, initialize=False)
-    self.assertRaises(Exception, validator.initialize_xml)
-
-  # initialize_pfif_version
-
-  def test_root_is_pfif(self):
-    """initialize_pfif_version should return an empty list if the XML
-    root is PFIF"""
-    pfif_11_xml_file = StringIO(PfifXml.XML_11_SMALL)
-    validator = PfifValidator(pfif_11_xml_file, initialize=False)
-    validator.initialize_xml()
-    self.assertEqual(len(validator.initialize_pfif_version()), 0)
-
-  def test_root_is_not_pfif(self):
-    """initialize_pfif_version should raise an exception if the XML root
-    is not PFIF"""
-    random_xml_file = StringIO(PfifXml.XML_NON_PFIF_ROOT)
-    validator = PfifValidator(random_xml_file, initialize=False)
-    validator.initialize_xml()
-    self.assertRaises(Exception, validator.initialize_pfif_version)
-
-  def test_root_lacks_namespace(self):
-    """initialize_pfif_version should raise an exception if the XML root
-    doesn't specify a namespace"""
-    no_namespace_xml_file = StringIO(PfifXml.XML_NO_NAMESPACE)
-    validator = PfifValidator(no_namespace_xml_file, initialize=False)
-    validator.initialize_xml()
-    self.assertRaises(Exception, validator.initialize_pfif_version)
-
-  def test_root_is_bad_pfif_version(self):
-    """initialize_pfif_version should raise an exception if the PFIF
-    version is not supported"""
-    pfif_99_xml_file = StringIO(PfifXml.XML_BAD_PFIF_VERSION)
-    validator = PfifValidator(pfif_99_xml_file, initialize=False)
-    validator.initialize_xml()
-    self.assertRaises(Exception, validator.initialize_pfif_version)
-
-  def test_root_is_bad_pfif_website(self):
-    """initialize_pfif_version should raise an exception if the PFIF
-    website is wrong"""
-    pfif_bad_website_xml_file = StringIO(PfifXml.XML_BAD_PFIF_WEBSITE)
-    validator = PfifValidator(pfif_bad_website_xml_file, initialize=False)
-    validator.initialize_xml()
-    self.assertRaises(Exception, validator.initialize_pfif_version)
 
   # validate_root_has_child
 
@@ -285,7 +229,6 @@ class ValidatorTests(unittest.TestCase):
     validator = self.set_up_validator(PfifXml.XML_INCORRECT_FORMAT_11)
     self.assertEqual(len(validator.validate_fields_have_correct_format()), 23)
 
-  #TODO(samking): test that non-ascii characters are accepted
   def test_all_12_fields_have_correct_format(self):
     """validate_fields_have_correct_format should return an empty list when
     presented with a document where all fields have the correct format.  This
@@ -582,8 +525,7 @@ class ValidatorTests(unittest.TestCase):
 
     utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
     pfif_validator.main()
-    # There should be one newline but no content printed
-    self.assertEqual(len(sys.stdout.getvalue()), 1)
+    self.assertFalse('all_messages' in sys.stdout.getvalue())
 
     sys.stdout = old_stdout
     sys.argv = old_argv
@@ -594,12 +536,12 @@ class ValidatorTests(unittest.TestCase):
     """After initialization, all elements in the tree should have line
     numbers in the map."""
     validator = self.set_up_validator(PfifXml.XML_FULL_12)
-    nodes = validator.get_all_persons()
-    nodes.extend(validator.get_all_notes())
+    nodes = validator.tree.get_all_persons()
+    nodes.extend(validator.tree.get_all_notes())
     for node in nodes:
-      self.assertTrue(node in validator.line_numbers)
+      self.assertTrue(node in validator.tree.line_numbers)
       for child in node.getchildren():
-        self.assertTrue(child in validator.line_numbers)
+        self.assertTrue(child in validator.tree.line_numbers)
 
   # unicode
 
@@ -608,7 +550,7 @@ class ValidatorTests(unittest.TestCase):
     unicode text."""
     validator = self.set_up_validator(PfifXml.XML_UNICODE_12)
     messages = validator.run_validations()
-    validator.messages_to_str(messages)
+    validator.validator_messages_to_str(messages)
     self.assertEqual(len(messages), 0)
 
 if __name__ == '__main__':

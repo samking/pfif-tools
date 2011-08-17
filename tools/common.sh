@@ -7,7 +7,7 @@
 
 export TOOLS_DIR=$(pwd)
 export PROJECT_DIR=$(dirname $TOOLS_DIR)
-export APP_DIR=$PROJECT_DIR/pfif_validator
+export APP_DIR=$PROJECT_DIR/app
 export TESTS_DIR=$PROJECT_DIR/tests
 
 for dir in \

@@ -42,14 +42,22 @@ span.message_line_number {
   font-style:italic;
 }
 
-span.message_text {
+span.message_category {
   font-weight:bold;
 }
 
-span.message_xml_line {
+span.message_data {
+  font-weight:bold;
+}
+
+div.message_xml_full_line {
   color: black;
   background-color: #EAEBEE;
   font-family: monospace;
   white-space: pre;
   display: block;
+}
+
+div.grouped_record_header {
+  font-weight:bold;
 }
