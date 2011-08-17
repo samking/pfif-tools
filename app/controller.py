@@ -34,7 +34,7 @@ class PfifController(webapp.RequestHandler):
     <head>
       <meta charset="utf-8">
       <title>""" + title + """</title>
-      <link rel="stylesheet" type="text/css" href="/static/style.css" />
+      <link rel="stylesheet" type="text/css" href="/static/style.css">
     </head>
     <body>""")
 
