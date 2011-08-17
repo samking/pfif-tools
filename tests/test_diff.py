@@ -109,6 +109,13 @@ class DiffTests(unittest.TestCase):
     messages = self.run_diff(PfifXml.XML_11_FULL, PfifXml.XML_11_FULL)
     self.assertEqual(len(messages), 0)
 
+  def test_diff_no_content_changes(self):
+    """Whether a note is a subnote or a top level note and whether or not a
+    subnote contains a person_record_id should not cause differences."""
+    messages = self.run_diff(PfifXml.XML_MANDATORY_13_SUBNOTE,
+                             PfifXml.XML_MANDATORY_13_NONSUB)
+    self.assertEqual(len(messages), 0)
+
   def test_diff_added_record(self):
     """pfif_obj_diffing a file against a file with one extra record should
     return one message."""
