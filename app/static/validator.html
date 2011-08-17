@@ -5,14 +5,15 @@
     <title>PFIF Validator</title>
   </head>
   <body>
-    <form action="/validate" method="post" enctype="multipart/form-data">
+    <form action="/validate/results" method="post"
+        enctype="multipart/form-data">
       <p>Put PFIF XML here to validate it:</p>
-      <div><textarea name="pfif_xml" rows="3" cols="60"></textarea></div>
-      <div>Or, upload a file: <input name="pfif_xml_file" type="file" />
+      <div><textarea name="pfif_xml_1" rows="3" cols="60"></textarea></div>
+      <div>Or, upload a file: <input name="pfif_xml_file_1" type="file">
             </div>
       <div>Or, choose the URL of a PFIF XML file: <input type="text"
-            name="pfif_xml_url" /> </div>
-      <br />
+            name="pfif_xml_url_1"> </div>
+      <br>
       <div><input type="checkbox" name="print_options"
             value="show_errors" checked>Show Errors</div>
       <div><input type="checkbox" name="print_options"
@@ -22,7 +23,9 @@
       <div><input type="checkbox" name="print_options"
             value="show_record_ids" checked>Show Record IDs</div>
       <div><input type="checkbox" name="print_options"
-            value="show_xml_element_text" checked>Show Inner XML Text</div>
+            value="show_xml_tag" checked>Show XML Tag</div>
+      <div><input type="checkbox" name="print_options"
+            value="show_xml_text" checked>Show Inner XML Text</div>
       <div><input type="checkbox" name="print_options"
             value="show_full_line" checked>Show the Full Line on which the
                                            Error Happened</div>
