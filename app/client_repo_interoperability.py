@@ -13,22 +13,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=c0301
 """Tests client-repo interoperability for a PFIF repository.
 
 Full descriptions of all tests are available at:
 https://docs.google.com/a/google.com/document/d/1HoCtiKjmp6j2d4d2U9QBJtehuVoANcWc6ggxthacPRY/edit?hl=en_US&authkey=CMaK1qsI
 """
+# pylint: enable=c0301
 
 __author__ = 'samking@google.com (Sam King)'
 
 import utils
 import urllib
+import personfinder_pfif
+import make_test_data
+from StringIO import StringIO
+import pfif_diff
 
 class ClientTester():
-  """Contains information about a repository API to run tests."""
+  """Contains information about a repository API to run checks on the
+  repository's client API.  All checks assume that the repository has been set
+  up with a copy of the test data set."""
 
-  def __init__(self, api_key=''):
+  def __init__(self, person_record_url='', api_key='', version_str = '1.3',
+               omitted_fields=(),
+               first_person=make_test_data.FIRST_PERSON,
+               last_person=make_test_data.LAST_PERSON,
+               first_person_with_notes=make_test_data.FIRST_PERSON_WITH_NOTES,
+               last_person_with_notes=make_test_data.LAST_PERSON_WITH_NOTES,
+               first_note=make_test_data.FIRST_NOTE,
+               last_note=make_test_data.LAST_NOTE_PLACEHOLDER,
+               initialize_now=True):
     self.api_key = api_key
+    self.version = personfinder_pfif.PFIF_VERSIONS[version_str]
+    self.person_record_url = person_record_url
+    self.persons = []
+    self.notes = {}
+
+    if initialize_now:
+      self.init_data(omitted_fields, first_person, last_person,
+                     first_person_with_notes, last_person_with_notes,
+                     first_note, last_note)
+
+  def init_data(self, omitted_fields, first_person, last_person,
+                first_person_with_notes, last_person_with_notes, first_note,
+                last_note):
+    """Generates test data."""
+    self.persons = make_test_data.generate_persons(
+        self.version, omitted_fields, first_person, last_person)
+    self.notes = make_test_data.generate_notes(
+        self.version, omitted_fields, first_person_with_notes,
+        last_person_with_notes, first_note, last_note)
+
 
   def expand_url(self, url, person_record_id='', note_record_id=''):
     """Given a URL, replaces symbolic markup with the desired pieces of data.
@@ -53,14 +89,12 @@ class ClientTester():
   def check_retrieve_person_record(self):
     """Test 1.1/3.1.  Requesting person with id "example.org/p0001" should match
     the record from the test data set."""
-    url = self.expand_url(self.person_record_url, person_id='example.org/p0001')
+    url = self.expand_url(self.person_record_url,
+                          person_record_id='example.org/p0001')
     response = utils.open_url(url)
-    # desired_response = write_file(self.persons['example.org/p0001'])
-    # messages = diff(response, desired_response)
-    messages = []
+    desired_response = StringIO('')
+    assert self.persons[0]['person_record_id'] == 'example.org/p0001'
+    make_test_data.write_records(
+        self.version, desired_response, [self.persons[0]], {})
+    messages = pfif_diff.pfif_file_diff(response, desired_response)
     return messages
-
-# def main():
-
-if __name__ == '__main__':
-  main()
