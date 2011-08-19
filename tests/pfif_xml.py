@@ -945,31 +945,3 @@ XML_ADDED_DELETED_CHANGED_2 = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:note_record_id>example.org/person2</pfif:note_record_id>
   </pfif:note>
 </pfif:pfif>"""
-
-XML_TEST_EXAMPLE_PERSON_1 = """<?xml version="1.0" encoding="UTF-8"?>
-<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
-  <pfif:person>
-    <pfif:person_record_id>example.org/p0001</pfif:person_record_id>
-    <pfif:entry_date>2011-02-03T04:05:06Z</pfif:entry_date>
-    <pfif:expiry_date>2011-04-01T00:00:00Z</pfif:expiry_date>
-    <pfif:author_name>author_name0001</pfif:author_name>
-    <pfif:author_email>0001@example.com</pfif:author_email>
-    <pfif:author_phone>00000001</pfif:author_phone>
-    <pfif:source_name>source_name0001</pfif:source_name>
-    <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
-    <pfif:source_url>http://example.org/0001</pfif:source_url>
-    <pfif:full_name>full_name0001</pfif:full_name>
-    <pfif:first_name>first_name0001</pfif:first_name>
-    <pfif:last_name>last_name0001</pfif:last_name>
-    <pfif:sex>female</pfif:sex>
-    <pfif:age>34-56</pfif:age>
-    <pfif:home_street>home_street0001</pfif:home_street>
-    <pfif:home_neighborhood>home_neighborhood0001</pfif:home_neighborhood>
-    <pfif:home_city>home_city0001</pfif:home_city>
-    <pfif:home_state>AE-AJ</pfif:home_state>
-    <pfif:home_postal_code>00001</pfif:home_postal_code>
-    <pfif:home_country>AF</pfif:home_country>
-    <pfif:photo_url>http://photo.example.org/0001</pfif:photo_url>
-    <pfif:other>description: 0001</pfif:other>
-  </pfif:person>
-</pfif:pfif>"""
