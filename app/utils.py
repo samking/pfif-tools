@@ -20,6 +20,8 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 import urllib
 import cgi
+from StringIO import StringIO
+from collections import deque
 
 # XML Parsing Utilities
 
@@ -39,25 +41,52 @@ def set_utcnow_for_test(now):
   _utcnow_for_test = now
 
 # Dependency injection for files
-_file_for_test = None # pylint: disable=c0103
+_files_for_test = None # pylint: disable=c0103
+
+def set_files_for_test(files_for_test):
+  """Set current files or urls for debugging purposes."""
+  global _files_for_test # pylint: disable=w0603
+  _files_for_test = deque(files_for_test)
 
 def set_file_for_test(file_for_test):
   """Set current file or url for debugging purposes."""
-  global _file_for_test # pylint: disable=w0603
-  _file_for_test = file_for_test
+  set_files_for_test([file_for_test])
 
 def open_file(filename, mode='r'):
   """Opens the file or returns a debug value if set."""
-  return _file_for_test or open(filename, mode)
+  if _files_for_test:
+    return _files_for_test.popleft()
+  return open(filename, mode)
 
 # TODO(samking): do incremental URL reading to support massive files
 def open_url(url):
   """Opens the url or returns a debug value if set."""
-  return _file_for_test or urllib.urlopen(url)
+  if _files_for_test:
+    return _files_for_test.popleft()
+  return urllib.urlopen(url)
 
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()
+
+def note_arr_to_map(notes):
+  """Turns an array of note maps to a map of arrays of note maps keyed on
+  person_record_id.  Every note must have a person_record_id."""
+  note_map = {}
+  for note in notes:
+    note_arr = note_map.setdefault(note['person_record_id'], [])
+    note_arr.append(note)
+  return note_map
+
+class NonClosingStringIo(StringIO):
+  """A StringIO that can't be closed.  This is useful for testing because
+  sometimes a mocked file will be written to and we want to test the output
+  (which can't be done for a StringIO after closing), and sometimes a StringIO
+  needs to be 'read' multiple times."""
+
+  def close(self):
+    """Does nothing."""
+    return
 
 class FileWithLines:
   """A file that keeps track of its line number.  From
