@@ -177,7 +177,8 @@ class DiffTests(unittest.TestCase):
     sys.argv = argv
     sys.stdout = StringIO('')
 
-    utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
+    mocked_file = StringIO(PfifXml.XML_11_FULL)
+    utils.set_files_for_test([mocked_file, mocked_file])
     pfif_diff.main()
     self.assertFalse('all_messages' in sys.stdout.getvalue())
 

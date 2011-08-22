@@ -945,3 +945,12 @@ XML_ADDED_DELETED_CHANGED_2 = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:note_record_id>example.org/person2</pfif:note_record_id>
   </pfif:note>
 </pfif:pfif>"""
+
+XML_EMPTY_ATOM = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <id>http://pfif.example.org/atom/empty</id>
+  <title>Example PFIF Atom Feed</title>
+  <subtitle>Produced by Exemplar Examplers</subtitle>
+  <updated>1983-03-07T01:23:45Z</updated>
+  <link rel='self'>http://pfif.example.org/atom/empty</link>
+</feed>"""
