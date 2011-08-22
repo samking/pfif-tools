@@ -172,5 +172,13 @@ class UtilTests(unittest.TestCase):
     self.assertEqual(len(truncated_messages), 2)
     self.assertEqual(truncated_messages.count(utils.Message('Category')), 1)
 
+  # non closing string io
+
+  def test_non_closing_string_io(self):
+    """A NonClosingStingIo should not close when close is called."""
+    stringIo = utils.NonClosingStringIo('hello, world')
+    stringIo.close()
+    self.assertEqual(stringIo.getvalue(), 'hello, world')
+
 if __name__ == '__main__':
   unittest.main()
