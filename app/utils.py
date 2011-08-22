@@ -56,14 +56,14 @@ def open_file(filename, mode='r'):
   """Opens the file or returns a debug value if set."""
   if _files_for_test:
     return _files_for_test.popleft()
-  return open(filename, mode)
+  return open(filename, mode) # pragma: no cover
 
 # TODO(samking): do incremental URL reading to support massive files
 def open_url(url):
   """Opens the url or returns a debug value if set."""
   if _files_for_test:
     return _files_for_test.popleft()
-  return urllib.urlopen(url)
+  return urllib.urlopen(url) # pragma: no cover
 
 def get_utcnow():
   """Return current time in utc, or debug value if set."""

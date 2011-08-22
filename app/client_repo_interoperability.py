@@ -36,7 +36,7 @@ class ClientTester():
   up with a copy of the test data set."""
 
   def __init__(self, retrieve_person_url='', retrieve_note_url='',
-               retrieve_persons_url='', api_key='',
+               retrieve_persons_url='', retrieve_notes_url='', api_key='',
                version_str = '1.3', omitted_fields=(),
                first_person=make_test_data.FIRST_PERSON,
                last_person=make_test_data.LAST_PERSON,
@@ -50,6 +50,7 @@ class ClientTester():
     self.retrieve_person_url = retrieve_person_url
     self.retrieve_note_url = retrieve_note_url
     self.retrieve_persons_url = retrieve_persons_url
+    self.retrieve_notes_url = retrieve_notes_url
     self.persons = []
     self.notes = {}
 
@@ -142,9 +143,6 @@ class ClientTester():
     # TODO(samking): doesn't yet support min_date.  also, needs a parameter to
     # check if it's forward or reverse chronological so that it knows whether or
     # not to keep updating the min_date.
-    # TODO(samking): make unit test on this better.  Create a mock URL such that
-    # open_url will imitate the PF API (maybe it will return 2 entries at a
-    # time and total 6 entries or something.)
     skip = 0
     all_persons = []
     all_notes_arr = []
@@ -196,3 +194,9 @@ class ClientTester():
   # def check_retrieve_all_persons_and_notes(self):
 
   # def check_retrieve_all_changed_persons(self):
+
+  def check_retrieve_all_notes(self):
+    """Test not in the conformance doc.  Requesting all notes should match all
+    notes."""
+    response = self.compile_all_responses(self.retrieve_notes_url, False)[0]
+    return self.run_diff(response, [], self.notes)
