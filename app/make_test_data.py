@@ -152,13 +152,12 @@ PERSON_INTERVAL = datetime.timedelta(0, 60*60)  # 60 minutes between persons
 NOTE_INTERVAL = datetime.timedelta(0, 30*60)  # 30 minutes between notes
 EXPIRY_START = datetime.datetime(2011, 4, 1, 0, 0, 0)
 EXPIRY_INTERVAL = datetime.timedelta(0, 30*60)
-FIRST_PERSON_WITH_NOTES = '1'
-LAST_PERSON_WITH_NOTES = '99'
-FIRST_PERSON = '1'
-LAST_PERSON = '1357'
-FIRST_NOTE = '1'
-LAST_NOTE_PLACEHOLDER = '0'
-LAST_NOTE_PLACEHOLDER_INT = int(LAST_NOTE_PLACEHOLDER)
+FIRST_PERSON_WITH_NOTES = 1
+LAST_PERSON_WITH_NOTES = 99
+FIRST_PERSON = 1
+LAST_PERSON = 1357
+FIRST_NOTE = 1
+LAST_NOTE_PLACEHOLDER = 0
 
 def delete_omitted_fields(record, omitted_fields):
   """Removes every field in omitted_fields from record."""
@@ -166,8 +165,8 @@ def delete_omitted_fields(record, omitted_fields):
     if field in record:
       del record[field]
 
-def generate_persons(version, omitted_fields, # pylint: disable=R0912
-                     first_person, last_person):
+def generate_persons(version, omitted_fields=(), # pylint: disable=R0912
+                     first_person=FIRST_PERSON, last_person=LAST_PERSON):
   """Returns a list of (last_person - first_person + 1) persons generated per
   the conformance test plan."""
   fields = version.fields['person']
@@ -230,9 +229,11 @@ def generate_persons(version, omitted_fields, # pylint: disable=R0912
 
   return persons
 
-def generate_notes(version, omitted_fields, # pylint: disable=R0914
-                   first_person_with_notes, last_person_with_notes, first_note,
-                   last_note):
+def generate_notes(version, omitted_fields=(), # pylint: disable=R0914
+                   first_person_with_notes=FIRST_PERSON_WITH_NOTES,
+                   last_person_with_notes=LAST_PERSON_WITH_NOTES,
+                   first_note=FIRST_NOTE,
+                   last_note=LAST_NOTE_PLACEHOLDER):
   """Generates a map from person_record_id to a list of that person's notes.
   Each note is generated per the test conformance plan."""
   note_fields = version.fields['note']
@@ -245,7 +246,7 @@ def generate_notes(version, omitted_fields, # pylint: disable=R0914
     notes[person_record_id] = []
 
     # for unit testing, we want a specific note
-    if last_note == LAST_NOTE_PLACEHOLDER_INT:
+    if last_note == LAST_NOTE_PLACEHOLDER:
       current_last_note = person_id_num
     else:
       current_last_note = last_note
@@ -292,12 +293,16 @@ def make_test_data(version, output_file, omitted_fields=(),
                    first_person=FIRST_PERSON, last_person=LAST_PERSON,
                    first_person_with_notes=FIRST_PERSON_WITH_NOTES,
                    last_person_with_notes=LAST_PERSON_WITH_NOTES,
-                   first_note=FIRST_NOTE, last_note=LAST_NOTE_PLACEHOLDER_INT):
+                   first_note=FIRST_NOTE, last_note=LAST_NOTE_PLACEHOLDER):
   """Generates a test data file as per the provided version (from
   personfinder_pfif) and writes it to output_file."""
   persons = generate_persons(version, omitted_fields, first_person, last_person)
   notes = generate_notes(version, omitted_fields, first_person_with_notes,
                          last_person_with_notes, first_note, last_note)
+  write_records(version, output_file, persons, notes)
+
+def write_records(version, output_file, persons, notes):
+  """Wrapper for version.write_file."""
 
   def get_notes_for_person(person):
     """Gets all notes associated with person."""
@@ -345,10 +350,7 @@ def main():
                                                   'are supported.')
 
   output_file = utils.open_file(options.output_file, 'w')
-  if options.pfif_version == '1.2':
-    version_map = personfinder_pfif.PFIF_1_2
-  else:
-    version_map = personfinder_pfif.PFIF_1_3
+  version_map = personfinder_pfif.PFIF_VERSIONS[options.pfif_version]
 
   make_test_data(version_map, output_file, options.omitted_fields,
                  first_person=int(options.first_person),
