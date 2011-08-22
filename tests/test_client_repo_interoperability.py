@@ -40,18 +40,22 @@ class ClientRepoTests(unittest.TestCase):
   def retrieve_record(self, tester, persons_list, notes_map, check_method):
     """check_retrieve_[person|note]_record should return messages if and only if
     the repository output differs from the expected output."""
+    # TODO(samking): per lee's advice, hardcode in the XML rather than
+    # generating it.
     # When provided with a record identical to the desired record, there should
     # be no messages
-    correct_xml = StringIO('')
+    correct_xml = utils.NonClosingStringIo('')
     make_test_data.write_records(tester.version, correct_xml,
                                  persons_list, notes_map)
-    utils.set_file_for_test(correct_xml)
+    correct_xml.seek(0)
+    utils.set_files_for_test([correct_xml, StringIO(PfifXml.XML_EMPTY_ATOM)])
     messages = check_method()
     self.assertEqual(len(messages), 0)
 
     # When provided with a record different from to the desired record, there
     # should be some messages
-    utils.set_file_for_test(StringIO(PfifXml.XML_11_FULL))
+    utils.set_files_for_test([StringIO(PfifXml.XML_11_FULL),
+                              StringIO(PfifXml.XML_EMPTY_ATOM)])
     messages = check_method()
     self.assertTrue(len(messages) > 0)
 
@@ -72,6 +76,15 @@ class ClientRepoTests(unittest.TestCase):
                           first_note=1, last_note=1)
     self.retrieve_record(tester, [], tester.notes,
                          tester.check_retrieve_note_record)
+
+  def test_retrieve_all_persons(self):
+    """check_retrieve_all_persons should return messages if and only if the repo
+    output differs from the expected output."""
+    tester = ClientTester(first_person=1, last_person=2,
+                          first_person_with_notes=-1, last_person_with_notes=-2,
+                          first_note=-1, last_note=-2)
+    self.retrieve_record(tester, tester.persons, {},
+                         tester.check_retrieve_all_persons)
 
 if __name__ == '__main__':
   unittest.main()
