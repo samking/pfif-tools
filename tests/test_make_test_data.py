@@ -244,5 +244,54 @@ class MakeDataTests(unittest.TestCase):
         '3', note_id='1', include=['linked_person_record_id',
                                    'example.org/p0002'])
 
+  def test_get_after_record(self):
+    """get_[persons|notes]_after_record should return new persons|notes that
+    have all records up to and including record removed."""
+    persons = make_test_data.generate_persons(first_person=9, last_person=13)
+    notes = make_test_data.generate_notes(first_person_with_notes=9,
+                                          last_person_with_notes=13,
+                                          first_note=2, last_note=5)
+
+    # there should be two persons in existence (12 and 13) and those two persons
+    # should each have notes.
+    excluded_record = make_test_data.make_person_id(11)
+    recent_persons, recent_notes = make_test_data.get_persons_after_record(
+        persons, notes, excluded_record)
+
+    self.assertEqual(len(recent_persons), 2)
+    self.assertEqual(len(recent_notes), 2)
+
+    correct_person_ids = []
+    for person_num in [12, 13]:
+      correct_person_ids.append(make_test_data.make_person_id(person_num))
+
+    for person in recent_persons:
+      self.assertTrue(person['person_record_id'] in correct_person_ids)
+
+    for person_id in correct_person_ids:
+      self.assertTrue(person_id in recent_notes)
+      self.assertEqual(len(recent_notes[person_id]), 4)
+
+    # with persons greater than 99, there should be no notes.
+    persons = make_test_data.generate_persons(first_person=98, last_person=101)
+    excluded_record = make_test_data.make_person_id(99)
+    recent_persons, recent_notes = make_test_data.get_persons_after_record(
+        persons, notes, excluded_record)
+    self.assertEqual(len(recent_persons), 2)
+    self.assertEqual(recent_notes, {})
+
+    # there should be three persons with four notes and one person with one
+    # note.
+    excluded_record = make_test_data.make_note_id(10, 4)
+    recent_notes = make_test_data.get_notes_after_record(notes, excluded_record)
+
+    self.assertEqual(len(recent_notes), 4)
+
+    correct_person_ids = []
+    for person_num, num_notes in [(10, 1), (11, 4), (12, 4), (13, 4)]:
+      person_id = make_test_data.make_person_id(person_num)
+      self.assertTrue(person_id in recent_notes)
+      self.assertEqual(len(recent_notes[person_id]), num_notes)
+
 if __name__ == '__main__':
   unittest.main()

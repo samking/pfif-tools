@@ -158,6 +158,76 @@ FIRST_PERSON = 1
 LAST_PERSON = 1357
 FIRST_NOTE = 1
 LAST_NOTE_PLACEHOLDER = 0
+PERSON_RECORD_ID_BASE = 'example.org/p'
+NOTE_RECORD_ID_BASE = 'example.org/n'
+
+def make_person_id(person_num):
+  """Turns the specified person_num into a person_record_id in the format
+  example.org/p####."""
+  return PERSON_RECORD_ID_BASE + '%04d' % person_num
+
+def make_note_id(person_num, note_num):
+  """Turns the specified person_num and note_num into a note_record_id in the
+  format example.org/nPPNN."""
+  return NOTE_RECORD_ID_BASE + '%02d%02d' % (person_num, note_num)
+
+def get_persons_after_record(persons, notes, record):
+  """Returns persons with all elements before and including record removed.
+  Also, if a removed person had any notes, removes that from notes and returns
+  an updated notes map.  Each person in persons should be a map from field name
+  to field value.  notes should be in the format used by
+  get_notes_after_record."""
+  last_excluded_person_num = int(record[-4:])
+
+  recent_persons = [
+      person for person in persons if int(person['person_record_id'][-4:]) >
+      last_excluded_person_num]
+
+  # Remove all excluded notes
+  if last_excluded_person_num >= LAST_PERSON_WITH_NOTES:
+    recent_notes = {}
+  else:
+    note_id = make_note_id(last_excluded_person_num, last_excluded_person_num)
+    recent_notes = get_notes_after_record(notes, note_id)
+
+  return recent_persons, recent_notes
+
+def get_notes_after_record(notes, record):
+  """Returns notes with all elements before and including record removed.
+  notes is a map from person_record_id to a list of notes.  record is a string
+  of the last record_id to reject (for instance, if record is
+  example.org/n1201, then this method will return records starting with
+  n1202).  notes should be a map from person_record_id to a list of notes
+  associated with that person_record_id."""
+  last_excluded_note_num = int(record[-2:])
+  last_excluded_person_num = int(record[-4:-2])
+  first_person_with_notes = last_excluded_person_num
+  is_partially_included_person = (last_excluded_note_num !=
+                                  last_excluded_person_num)
+
+  # If we delete the last note in a person, delete that person too.
+  if not is_partially_included_person:
+    first_person_with_notes = last_excluded_person_num + 1
+
+  recent_notes = notes.copy()
+
+  # Delete all notes in persons before the person containing record
+  for excluded_person_num in range(1, first_person_with_notes):
+    excluded_person_id = make_person_id(excluded_person_num)
+    if excluded_person_id in recent_notes:
+      del recent_notes[excluded_person_id]
+
+  # 'Delete' (by reassigning) all notes up to and including record in the
+  # person containing record (unless the whole person has no notes and is
+  # already deleted).  Makes no assumptions about sortedness of the note array
+  # or about what the first or last record it includes is.
+  if is_partially_included_person:
+    partially_included_person = make_person_id(first_person_with_notes)
+    recent_notes[partially_included_person] = [
+        note for note in recent_notes[partially_included_person] if
+        int(note['note_record_id'][-2:]) > last_excluded_note_num]
+
+  return recent_notes
 
 def delete_omitted_fields(record, omitted_fields):
   """Removes every field in omitted_fields from record."""
@@ -165,10 +235,12 @@ def delete_omitted_fields(record, omitted_fields):
     if field in record:
       del record[field]
 
-def generate_persons(version, omitted_fields=(), # pylint: disable=R0912
+def generate_persons(version=None, omitted_fields=(), # pylint: disable=R0912
                      first_person=FIRST_PERSON, last_person=LAST_PERSON):
   """Returns a list of (last_person - first_person + 1) persons generated per
   the conformance test plan."""
+  if version == None:
+    version = personfinder_pfif.PFIF_VERSIONS['1.3']
   fields = version.fields['person']
   entry_date = ENTRY_START
   expiry_date = EXPIRY_START
@@ -177,7 +249,7 @@ def generate_persons(version, omitted_fields=(), # pylint: disable=R0912
   for person_id_num in range(first_person, last_person + 1):
     person_id_four_digit = '%04d' % person_id_num
     person = dict((field, field + person_id_four_digit) for field in fields)
-    person['person_record_id'] = 'example.org/p' + person_id_four_digit
+    person['person_record_id'] = make_person_id(person_id_num)
     person['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
     entry_date += PERSON_INTERVAL
     person['source_date'] = personfinder_pfif.format_utc_datetime(SOURCE_DATE)
@@ -229,20 +301,22 @@ def generate_persons(version, omitted_fields=(), # pylint: disable=R0912
 
   return persons
 
-def generate_notes(version, omitted_fields=(), # pylint: disable=R0914
+def generate_notes(version=None, omitted_fields=(), # pylint: disable=R0914
                    first_person_with_notes=FIRST_PERSON_WITH_NOTES,
                    last_person_with_notes=LAST_PERSON_WITH_NOTES,
                    first_note=FIRST_NOTE,
                    last_note=LAST_NOTE_PLACEHOLDER):
   """Generates a map from person_record_id to a list of that person's notes.
   Each note is generated per the test conformance plan."""
+  if version == None:
+    version = personfinder_pfif.PFIF_VERSIONS['1.3']
   note_fields = version.fields['note']
   notes = {}
   entry_date = ENTRY_START
   for person_id_num in range(first_person_with_notes, last_person_with_notes +
                              1):
     person_id_two_digit = '%02d' % person_id_num
-    person_record_id = 'example.org/p00' + person_id_two_digit
+    person_record_id = make_person_id(person_id_num)
     notes[person_record_id] = []
 
     # for unit testing, we want a specific note
@@ -255,8 +329,7 @@ def generate_notes(version, omitted_fields=(), # pylint: disable=R0914
       note_id_two_digit = '%02d' % note_id
       note = dict((field, field + person_id_two_digit + note_id_two_digit) for
                   field in note_fields)
-      note['note_record_id'] = ('example.org/n' + person_id_two_digit +
-                                note_id_two_digit)
+      note['note_record_id'] = make_note_id(person_id_num, note_id)
       note['person_record_id'] = person_record_id
       note['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
       entry_date += NOTE_INTERVAL
@@ -276,9 +349,9 @@ def generate_notes(version, omitted_fields=(), # pylint: disable=R0914
       # linked_person_record_id
       if person_id_num > 1 and note_id == 1:
         if person_id_num % 2:
-          linked_person_record_id = 'example.org/p00%02d' % (person_id_num - 1)
+          linked_person_record_id = make_person_id(person_id_num - 1)
         else:
-          linked_person_record_id = 'example.org/p00%02d' % (person_id_num + 1)
+          linked_person_record_id = make_person_id(person_id_num + 1)
         note['linked_person_record_id'] = linked_person_record_id
       else:
         del note['linked_person_record_id']
@@ -289,7 +362,7 @@ def generate_notes(version, omitted_fields=(), # pylint: disable=R0914
 
   return notes
 
-def make_test_data(version, output_file, omitted_fields=(),
+def make_test_data(output_file, version=None, omitted_fields=(),
                    first_person=FIRST_PERSON, last_person=LAST_PERSON,
                    first_person_with_notes=FIRST_PERSON_WITH_NOTES,
                    last_person_with_notes=LAST_PERSON_WITH_NOTES,
@@ -352,7 +425,8 @@ def main():
   output_file = utils.open_file(options.output_file, 'w')
   version_map = personfinder_pfif.PFIF_VERSIONS[options.pfif_version]
 
-  make_test_data(version_map, output_file, options.omitted_fields,
+  make_test_data(output_file, version=version_map,
+                 omitted_fields=options.omitted_fields,
                  first_person=int(options.first_person),
                  last_person=int(options.last_person),
                  first_person_with_notes=int(options.first_person_with_notes),
