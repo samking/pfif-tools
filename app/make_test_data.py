@@ -242,24 +242,25 @@ def generate_persons(version=None, omitted_fields=(), # pylint: disable=R0912
   if version == None:
     version = personfinder_pfif.PFIF_VERSIONS['1.3']
   fields = version.fields['person']
-  entry_date = ENTRY_START
-  expiry_date = EXPIRY_START
 
   persons = []
   for person_id_num in range(first_person, last_person + 1):
     person_id_four_digit = '%04d' % person_id_num
     person = dict((field, field + person_id_four_digit) for field in fields)
     person['person_record_id'] = make_person_id(person_id_num)
+    entry_date = ENTRY_START + PERSON_INTERVAL * (person_id_num - 1)
     person['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
-    entry_date += PERSON_INTERVAL
     person['source_date'] = personfinder_pfif.format_utc_datetime(SOURCE_DATE)
     if 'expiry_date' in fields:
       if person_id_num < 1000:
+        # Generate the expiry_date directly rather than incrementing it as we go
+        # so that it will work even if we only generate a few persons in the
+        # middle.
+        expiry_date = EXPIRY_START + EXPIRY_INTERVAL * (person_id_num - 1)
         person['expiry_date'] = (
             personfinder_pfif.format_utc_datetime(expiry_date))
       else:
         del person['expiry_date']
-    expiry_date += EXPIRY_INTERVAL
     person['author_email'] = person_id_four_digit + '@example.com'
     person['author_phone'] = '0000' + person_id_four_digit
     person['source_url'] = 'http://example.org/' + person_id_four_digit
@@ -301,6 +302,12 @@ def generate_persons(version=None, omitted_fields=(), # pylint: disable=R0912
 
   return persons
 
+def get_absolute_note_num(person_num, note_num):
+  """Note 0201 (person_num=2, note_num=1) is the second absolute note (0101 was
+  first).  This function converts a person_num and note_num to the absolute
+  number of the note."""
+  return sum(range(person_num)) + note_num
+
 def generate_notes(version=None, omitted_fields=(), # pylint: disable=R0914
                    first_person_with_notes=FIRST_PERSON_WITH_NOTES,
                    last_person_with_notes=LAST_PERSON_WITH_NOTES,
@@ -312,18 +319,17 @@ def generate_notes(version=None, omitted_fields=(), # pylint: disable=R0914
     version = personfinder_pfif.PFIF_VERSIONS['1.3']
   note_fields = version.fields['note']
   notes = {}
-  entry_date = ENTRY_START
   for person_id_num in range(first_person_with_notes, last_person_with_notes +
                              1):
     person_id_two_digit = '%02d' % person_id_num
     person_record_id = make_person_id(person_id_num)
     notes[person_record_id] = []
 
-    # for unit testing, we want a specific note
+    # for unit testing, we may want a specific note
     if last_note == LAST_NOTE_PLACEHOLDER:
       current_last_note = person_id_num
     else:
-      current_last_note = last_note
+      current_last_note = min(last_note, person_id_num)
 
     for note_id in range(first_note, current_last_note + 1):
       note_id_two_digit = '%02d' % note_id
@@ -331,8 +337,9 @@ def generate_notes(version=None, omitted_fields=(), # pylint: disable=R0914
                   field in note_fields)
       note['note_record_id'] = make_note_id(person_id_num, note_id)
       note['person_record_id'] = person_record_id
+      entry_date = (ENTRY_START + NOTE_INTERVAL *
+                    (get_absolute_note_num(person_id_num, note_id) - 1))
       note['entry_date'] = personfinder_pfif.format_utc_datetime(entry_date)
-      entry_date += NOTE_INTERVAL
       note['source_date'] = personfinder_pfif.format_utc_datetime(SOURCE_DATE)
       note['author_email'] = (person_id_two_digit + note_id_two_digit +
                               '@example.com')
@@ -366,22 +373,36 @@ def make_test_data(output_file, version=None, omitted_fields=(),
                    first_person=FIRST_PERSON, last_person=LAST_PERSON,
                    first_person_with_notes=FIRST_PERSON_WITH_NOTES,
                    last_person_with_notes=LAST_PERSON_WITH_NOTES,
-                   first_note=FIRST_NOTE, last_note=LAST_NOTE_PLACEHOLDER):
+                   first_note=FIRST_NOTE, last_note=LAST_NOTE_PLACEHOLDER,
+                   embed_notes_in_persons=True):
   """Generates a test data file as per the provided version (from
   personfinder_pfif) and writes it to output_file."""
   persons = generate_persons(version, omitted_fields, first_person, last_person)
   notes = generate_notes(version, omitted_fields, first_person_with_notes,
                          last_person_with_notes, first_note, last_note)
-  write_records(version, output_file, persons, notes)
+  write_records(version, output_file, persons, notes,
+                embed_notes_in_persons=embed_notes_in_persons)
 
-def write_records(version, output_file, persons, notes):
-  """Wrapper for version.write_file."""
-
-  def get_notes_for_person(person):
-    """Gets all notes associated with person."""
-    return notes.get(person['person_record_id'], [])
-
-  version.write_file(output_file, persons, get_notes_for_person)
+def write_records(version, output_file, persons, notes,
+                  embed_notes_in_persons=True):
+  """Writes all persons and notes to output_file.  Wrapper for
+  version.write_file if embed_notes_in_persons."""
+  if embed_notes_in_persons:
+    def get_notes_for_person(person):
+      """Gets all notes associated with person."""
+      return notes.get(person['person_record_id'], [])
+    version.write_file(output_file, persons, get_notes_for_person)
+  # Doing this work manually is necessary because version.write_file will never
+  # emit a note that is not contained inside of a person.
+  else:
+    output_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    output_file.write('<pfif:pfif xmlns:pfif="%s">\n' % version.ns)
+    for person in persons:
+      version.write_person(output_file, person, indent='  ')
+    for _, notes_arr in notes.items():
+      for note in notes_arr:
+        version.write_note(output_file, note, indent='  ')
+    output_file.write('</pfif:pfif>\n')
 
 def main():
   """Creates test data and outputs it to a file."""
@@ -414,6 +435,8 @@ def main():
   group.add_option('--last-person-with-notes', default=LAST_PERSON_WITH_NOTES)
   group.add_option('--first-note', default=FIRST_NOTE)
   group.add_option('--last-note', default=LAST_NOTE_PLACEHOLDER)
+  group.add_option('--all-notes-are-top-level', dest='embed_notes_in_persons',
+                   action='store_false', default=True)
   parser.add_option_group(group)
 
   (options, args) = parser.parse_args() # pylint: disable=W0612
@@ -432,7 +455,8 @@ def main():
                  first_person_with_notes=int(options.first_person_with_notes),
                  last_person_with_notes=int(options.last_person_with_notes),
                  first_note=int(options.first_note),
-                 last_note=int(options.last_note))
+                 last_note=int(options.last_note),
+                 embed_notes_in_persons=options.embed_notes_in_persons)
   output_file.close()
 
 if __name__ == '__main__':
