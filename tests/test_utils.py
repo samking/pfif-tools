@@ -176,9 +176,9 @@ class UtilTests(unittest.TestCase):
 
   def test_non_closing_string_io(self):
     """A NonClosingStingIo should not close when close is called."""
-    stringIo = utils.NonClosingStringIo('hello, world')
-    stringIo.close()
-    self.assertEqual(stringIo.getvalue(), 'hello, world')
+    string_io = utils.NonClosingStringIo('hello, world')
+    string_io.close()
+    self.assertEqual(string_io.getvalue(), 'hello, world')
 
 if __name__ == '__main__':
   unittest.main()
