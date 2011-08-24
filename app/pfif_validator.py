@@ -488,6 +488,14 @@ class PfifValidator:
     return [utils.Message('Having a person tag (or a note tag in PFIF 1.2+) as '
                           'one of the children of the root node is mandatory.')]
 
+  # TODO(samking): entry_date is sort of mandatory, so we might want to add a
+  # user-settable option to make it mandatory.  According to Ping:
+  # 1. Repositories must store entry_date.
+  # 2. When a repository exports PFIF, it must export entry_date.
+  # 3. PFIF intended for import into a repository doesn't need to contain
+  #    entry_date (the receiving repository ignores entry_date).
+  # #3 is the reason why the spec doesn't say it's mandatory, but we'd rather
+  # not mislead on the first two requirements.
   def validate_has_mandatory_children(self, parents, mandatory_children):
     """Validates that every parent node has all mandatory children .  Returns a
     list with the names of all mandatory children missing from any parent
