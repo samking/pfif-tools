@@ -293,5 +293,15 @@ class MakeDataTests(unittest.TestCase):
       self.assertTrue(person_id in recent_notes)
       self.assertEqual(len(recent_notes[person_id]), num_notes)
 
+  def test_get_absolute_note_num(self):
+    """get_absolute_note_num should return the absolute note number when given a
+    person number and a note number."""
+    current_note = 1
+    for person in range(1, 10):
+      for note in range(1, person + 1):
+        self.assertEqual(make_test_data.get_absolute_note_num(person, note),
+                         current_note)
+        current_note += 1
+
 if __name__ == '__main__':
   unittest.main()
