@@ -30,6 +30,11 @@ import make_test_data
 from StringIO import StringIO
 import pfif_diff
 
+# TODO(samking): something, somewhere is unsorted, and as a result, diff is
+# outputting messages in an unintuitive order.  It doesn't impact correctness,
+# but the output of messages should be in order of the id that is affected
+# (where person id is different from note id)
+
 class ClientTester(): # pylint: disable=r0902
   """Contains information about a repository API to run checks on the
   repository's client API.  All checks assume that the repository has been set
@@ -129,20 +134,31 @@ class ClientTester(): # pylint: disable=r0902
     derised_persons and desired_notes."""
     desired_response = StringIO('')
     make_test_data.write_records(self.version, desired_response,
-                                 desired_persons, desired_notes)
+                                 desired_persons, desired_notes,
+                                 embed_notes_in_persons=False)
     messages = pfif_diff.pfif_file_diff(response, desired_response)
     return messages
 
-  def run_diff_optional_notes(self, response, response_notes, desired_persons,
-                              desired_notes):
+  def run_diff_optional_notes(self, response, desired_persons, desired_notes,
+                              response_notes=None, try_both=False):
     """It is acceptable for the response to include all persons or all persons
     and all notes (see http://zesty.ca/pfif/1.3/#atom-person).  If the response
     includes any notes, ensure that it has all persons and all notes.  If the
-    response does not include any notes, only test it against persons."""
-    if response_notes:
-      return self.run_diff(response, desired_persons, desired_notes)
+    response does not include any notes, only test it against persons.  If
+    try_both is True, ignores response_notes and tries both."""
+    if try_both or response_notes:
+      include_notes = self.run_diff(response, desired_persons, desired_notes)
+    if try_both or not response_notes:
+      exclude_notes = self.run_diff(response, desired_persons, {})
+
+    if try_both:
+      if len(include_notes) < len(exclude_notes):
+        return include_notes
+      return exclude_notes
     else:
-      return self.run_diff(response, desired_persons, {})
+      if response_notes:
+        return include_notes
+      return exclude_notes
 
   def retrieve_record(self, url_template, record_id_tag, desired_record_id):
     """Returns the response from the API when making a request at url_template
@@ -154,19 +170,22 @@ class ClientTester(): # pylint: disable=r0902
 
   def get_field_from_record(self, is_person, record_id, field):
     """Makes an API call to retrieve a record identified by record_id.  Returns
-    field from that record."""
+    field from that record.  If that record or field is not present, returns
+    None."""
     if is_person:
       record_id_tag = 'person_record_id'
       template_url = self.retrieve_person_url
     else:
       record_id_tag = 'note_record_id'
       template_url = self.retrieve_note_url
-    record_xml = self.retrieve_record(template_url, record_id_tag, record_id)
-    record_obj = pfif_diff.objectify_pfif_xml(StringIO(record_xml))
-    record = record_obj[pfif_diff.record_id_to_key(record_id_tag, is_person)]
-    return record[field]
+    record_file = self.retrieve_record(template_url, record_id_tag, record_id)
+    record_obj = pfif_diff.objectify_pfif_xml(record_file)
+    record = record_obj.get(pfif_diff.record_id_to_key(record_id, is_person),
+                            {})
+    return record.get(field, None)
 
-  def compile_all_responses(self, template_url, is_person_feed, min_date=''):
+  def compile_all_responses(self, # pylint: disable=r0914
+                            template_url, is_person_feed, min_date=''):
     """Makes requests on the provided URL until no more responses come.
     Compiles all of these together into one PFIF document.  If min_date is
     specified, then the template_url will be expanded with that min_date."""
@@ -192,7 +211,11 @@ class ClientTester(): # pylint: disable=r0902
       all_notes_arr.extend(notes_arr)
 
       # Update skip and current_min_date so that we only get the responses we
-      # want next time
+      # want next time.  "Global" means that the min date stays the same and the
+      # skip keeps increasing.  "Current" means that the min date keeps going up
+      # and the skip will only be something other than 1 if several records have
+      # the same min date as the most recent record retrieved.  "Current" also
+      # requires the API to return results forward chronologically.
       if is_person_feed:
         if len(persons) > 0:
           global_skip += len(persons)
@@ -211,13 +234,14 @@ class ClientTester(): # pylint: disable=r0902
     # Turn all_persons and all_notes into a file
     all_responses_file = StringIO('')
     make_test_data.write_records(self.version, all_responses_file, all_persons,
-                                 all_notes_map)
+                                 all_notes_map, embed_notes_in_persons=False)
     return all_responses_file, all_persons, all_notes_map
 
   # checks from the test conformance doc
 
   def check_retrieve_record(self, record, record_id_tag, desired_record_id,
-                            url_template, person_list, note_map):
+                            url_template, person_list, note_map,
+                            notes_are_optional=False):
     """Checks the API for retrieving one record for tests 1.1/3.1 and 1.2/3.2.
     record: a person or note in the format used by make_test_data.write_records
     record_id_tag: if record is a person, 'person_record_id'.  If record is a
@@ -229,18 +253,27 @@ class ClientTester(): # pylint: disable=r0902
         is only one record, this should be [] if record is a note and [record]
         if record is a person.  In the format used by write_records.
     note_map: like person_list but for notes.  Should be either an empty map or
-        a map from record's person_record_id to record."""
+        a map from record's person_record_id to record.
+    notes_are_optional: if True, uses run_diff_optional_notes."""
     assert record[record_id_tag] == desired_record_id
     response = self.retrieve_record(url_template, record_id_tag,
                                     desired_record_id)
-    return self.run_diff(response, person_list, note_map)
+    if notes_are_optional:
+      return self.run_diff_optional_notes(response, person_list, note_map,
+                                          try_both=True)
+    else:
+      return self.run_diff(response, person_list, note_map)
 
   def check_retrieve_person_record(self):
     """Test 1.1/3.1.  Requesting person with id "example.org/p0001" should match
     the record from the test data set."""
+    first_person = self.persons[0]
+    first_person_id = 'example.org/p0001'
+    first_note_map = {first_person_id : self.notes.get(first_person_id, [])}
     return self.check_retrieve_record(
-        self.persons[0], 'person_record_id', 'example.org/p0001',
-        self.retrieve_person_url, [self.persons[0]], {})
+        first_person, 'person_record_id', first_person_id,
+        self.retrieve_person_url, [first_person], first_note_map,
+        notes_are_optional=True)
 
   def check_retrieve_note_record(self):
     """Test 1.2/3.2.  Requesting a note with id "example.org/n0101" should match
@@ -255,8 +288,8 @@ class ClientTester(): # pylint: disable=r0902
     persons and all notes."""
     response, _, response_notes = self.compile_all_responses(
         self.retrieve_persons_url, True)
-    return self.run_diff_optional_notes(response, response_notes, self.persons,
-                                        self.notes)
+    return self.run_diff_optional_notes(response, self.persons, self.notes,
+                                        response_notes=response_notes)
 
   def check_retrieve_all_notes(self):
     """Test not in the conformance doc.  Requesting all notes should match all
@@ -269,6 +302,11 @@ class ClientTester(): # pylint: disable=r0902
     only those records."""
     min_date = self.get_field_from_record(
         is_person=True, record_id='example.org/p0621', field='entry_date')
+    if min_date is None:
+      return [utils.Message(
+          'Could not run retrieve_all_persons_since_time test.  Could not '
+          'calibrate min_entry_date for test due to a missing record.',
+          xml_tag='entry_date', person_record_id='example.org/p0621')]
     response = self.compile_all_responses(
         template_url=self.retrieve_persons_after_date_url, is_person_feed=True,
         min_date=min_date)[0]
@@ -283,6 +321,11 @@ class ClientTester(): # pylint: disable=r0902
     only those records."""
     min_date = self.get_field_from_record(
         is_person=False, record_id='example.org/n5016', field='entry_date')
+    if min_date is None:
+      return [utils.Message(
+          'Could not run retrieve_all_notes_since_time test.  Could not '
+          'calibrate min_entry_date for test due to a missing record.',
+          xml_tag='entry_date', person_record_id='example.org/n5016')]
     response = self.compile_all_responses(
         template_url=self.retrieve_notes_after_date_url, is_person_feed=False,
         min_date=min_date)[0]
