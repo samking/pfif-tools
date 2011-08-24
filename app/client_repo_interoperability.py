@@ -43,7 +43,8 @@ class ClientTester(): # pylint: disable=r0902
   def __init__(self, retrieve_person_url='', #pylint: disable=r0914
                retrieve_note_url='', retrieve_persons_url='',
                retrieve_notes_url='', retrieve_persons_after_date_url='',
-               retrieve_notes_after_date_url='', api_key='', version_str =
+               retrieve_notes_after_date_url='',
+               retrieve_notes_from_person_url='', api_key='', version_str =
                '1.3', omitted_fields=(),
                first_person=make_test_data.FIRST_PERSON,
                last_person=make_test_data.LAST_PERSON,
@@ -60,6 +61,7 @@ class ClientTester(): # pylint: disable=r0902
     self.retrieve_notes_url = retrieve_notes_url
     self.retrieve_persons_after_date_url = retrieve_persons_after_date_url
     self.retrieve_notes_after_date_url = retrieve_notes_after_date_url
+    self.retrieve_notes_from_person_url = retrieve_notes_from_person_url
     self.persons = []
     self.notes = {}
 
@@ -185,7 +187,8 @@ class ClientTester(): # pylint: disable=r0902
     return record.get(field, None)
 
   def compile_all_responses(self, # pylint: disable=r0914
-                            template_url, is_person_feed, min_date=''):
+                            template_url, is_person_feed, min_date='',
+                            person_record_id=''):
     """Makes requests on the provided URL until no more responses come.
     Compiles all of these together into one PFIF document.  If min_date is
     specified, then the template_url will be expanded with that min_date."""
@@ -333,8 +336,18 @@ class ClientTester(): # pylint: disable=r0902
         self.notes, 'example.org/n5016')
     return self.run_diff(response, [], recent_notes)
 
-  # def check_retrieve_all_notes_from_person(self):
+  def check_retrieve_all_notes_from_person(self):
+    """Test 1.5/3.5.  Requesting all notes associated with a person should
+    return only those records."""
+    person_with_notes = 'example.org/p0099'
+    response = self.compile_all_responses(
+        template_url=self.retrieve_notes_from_person_url,
+        is_person_feed=False, person_record_id=person_with_notes)[0]
+    notes_from_person = {person_with_notes :
+                         self.notes.get(person_with_notes, [])}
+    return self.run_diff(response, [], notes_from_person)
 
+  # TODO(samking): this is test 1.7/3.7, but I'm not sure what the point is.
   # def check_retrieve_all_persons_and_notes(self):
 
   # def check_retrieve_all_changed_persons(self):
