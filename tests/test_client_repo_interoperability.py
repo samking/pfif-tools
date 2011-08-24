@@ -85,7 +85,7 @@ class ClientRepoTests(unittest.TestCase):
   def test_retrieve_note_record(self):
     """check_retrieve_note_record should return messages if and only if the
     repository output differs from the expected output."""
-    tester = ClientTester(first_person=-1, last_person=-2,
+    tester = ClientTester(first_person=1, last_person=2,
                           first_person_with_notes=1, last_person_with_notes=1,
                           first_note=1, last_note=1)
     self.retrieve_record(PfifXml.XML_TEST_ONE_NOTE,
@@ -95,8 +95,7 @@ class ClientRepoTests(unittest.TestCase):
     """compile_all_responses should continue calling the API until it gets no
     more records in the response."""
     tester = ClientTester(first_person=1, last_person=6,
-                          first_person_with_notes=-1, last_person_with_notes=-2,
-                          first_note=-1, last_note=-2)
+                          first_person_with_notes=1, last_person_with_notes=2)
     # A list of three persons lists
     correct_xml_strings = [PfifXml.XML_TEST_ONE_PERSON,
                            PfifXml.XML_TEST_PERSON_TWO_THREE,
@@ -123,7 +122,7 @@ class ClientRepoTests(unittest.TestCase):
   def test_retrieve_all_notes(self):
     """check_retrieve_all_notes should return messages if and only if the repo
     output differs from the expected output."""
-    tester = ClientTester(first_person=-1, last_person=-2,
+    tester = ClientTester(first_person=1, last_person=2,
                           first_person_with_notes=1, last_person_with_notes=2,
                           first_note=1, last_note=2)
     self.retrieve_record(PfifXml.XML_TEST_TWO_NOTES_FOR_PERSONS_ONE_TWO,
@@ -144,6 +143,15 @@ class ClientRepoTests(unittest.TestCase):
         [PfifXml.XML_TEST_NOTE_5016,
          PfifXml.XML_TEST_NOTES_5017_THROUGH_5118_IN_RANGE_14_18],
         tester.check_retrieve_all_notes_since_time)
+
+  def test_retrieve_all_notes_from_person(self):
+    """check_retrieve_all_notes_from_person should return only notes associated
+    with the specified person."""
+    tester = ClientTester(first_person=98, last_person=100,
+                          first_person_with_notes=98, last_person_with_notes=99,
+                          first_note=11, last_note=16)
+    self.retrieve_record(PfifXml.XML_TEST_NOTES_9911_THROUGH_9916,
+                         tester.check_retrieve_all_notes_from_person)
 
 if __name__ == '__main__':
   unittest.main()
