@@ -30,12 +30,16 @@ class ClientRepoTests(unittest.TestCase):
   def test_expand_url(self):
     """Verifies that expand_url correctly replaces symbols with data."""
     tester = ClientTester(api_key='aoeu', initialize_now=False)
-    response = tester.expand_url(url='example.org/api?k=$k&p=$p&n=$n',
+    response = tester.expand_url(url='example.org/api?k=$k$&p=$p$&n=$n$&'
+                                 'gs=$gs$&cs=$cs$&gm=$gm$&cm=$cm$',
                                  person_record_id='example.com/p1',
-                                 note_record_id='example.net/n1')
+                                 note_record_id='example.net/n1',
+                                 global_skip='abc', current_skip='def',
+                                 global_min_date='ghi', current_min_date='hjk')
     self.assertEqual(
         response,
-        'example.org/api?k=aoeu&p=example.com%2Fp1&n=example.net%2Fn1')
+        'example.org/api?k=aoeu&p=example.com%2Fp1&n=example.net%2Fn1'
+        '&gs=abc&cs=def&gm=ghi&cm=hjk')
 
   def retrieve_record(self, tester, persons_list, notes_map, check_method,
                       persons_list_is_meta=False):
@@ -130,6 +134,18 @@ class ClientRepoTests(unittest.TestCase):
                           first_note=1, last_note=2)
     self.retrieve_record(tester, [], tester.notes,
                          tester.check_retrieve_all_notes)
+
+  def test_retrieve_since_time(self):
+    """check_retrieve_all_[persons|notes]_since_time should return notes after
+    the time of a specified record."""
+    tester = ClientTester(first_person=619, last_person=623,
+                          first_person_with_notes=49, last_person_with_notes=51,
+                          first_note=14, last_note=18)
+    self.assertTrue(False)
+    self.retrieve_record(tester, #[], tester.notes,
+                         tester.check_retrieve_all_persons_since_time)
+    self.retrieve_record(tester, #[], tester.notes,
+                         tester.check_retrieve_all_notes_since_time)
 
 if __name__ == '__main__':
   unittest.main()

@@ -60,6 +60,7 @@ XML_11_FULL = """<?xml version="1.0" encoding="UTF-8"?>
     </pfif:note>
     <pfif:note>
       <pfif:note_record_id>www.example.org/local-id.5</pfif:note_record_id>
+      <pfif:entry_date>1234-56-78T90:12:34Z</pfif:entry_date>
       <pfif:author_name>author name</pfif:author_name>
       <pfif:source_date>1234-56-78T90:12:34Z</pfif:source_date>
       <pfif:found>false</pfif:found>
