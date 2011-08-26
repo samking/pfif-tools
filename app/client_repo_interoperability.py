@@ -29,11 +29,16 @@ import personfinder_pfif
 import make_test_data
 from StringIO import StringIO
 import pfif_diff
+import urllib2
 
 # TODO(samking): something, somewhere is unsorted, and as a result, diff is
 # outputting messages in an unintuitive order.  It doesn't impact correctness,
 # but the output of messages should be in order of the id that is affected
 # (where person id is different from note id)
+
+# TODO(samking): now, the output from each check is just the diff.  There needs
+# to be some way to divide each test's output.  Maybe the controller will run a
+# test and output just that test, then make a division, then do the next one?
 
 class ClientTester(): # pylint: disable=r0902
   """Contains information about a repository API to run checks on the
@@ -44,8 +49,9 @@ class ClientTester(): # pylint: disable=r0902
                retrieve_note_url='', retrieve_persons_url='',
                retrieve_notes_url='', retrieve_persons_after_date_url='',
                retrieve_notes_after_date_url='',
-               retrieve_notes_from_person_url='', api_key='', version_str =
-               '1.3', omitted_fields=(),
+               retrieve_notes_from_person_url='',
+               retrieve_persons_with_notes_url='', write_records_url='',
+               api_key='', version_str = '1.3', omitted_fields=(),
                first_person=make_test_data.FIRST_PERSON,
                last_person=make_test_data.LAST_PERSON,
                first_person_with_notes=make_test_data.FIRST_PERSON_WITH_NOTES,
@@ -62,6 +68,8 @@ class ClientTester(): # pylint: disable=r0902
     self.retrieve_persons_after_date_url = retrieve_persons_after_date_url
     self.retrieve_notes_after_date_url = retrieve_notes_after_date_url
     self.retrieve_notes_from_person_url = retrieve_notes_from_person_url
+    self.retrieve_persons_with_notes_url = retrieve_persons_with_notes_url
+    self.write_records_url = write_records_url
     self.persons = []
     self.notes = {}
 
@@ -99,7 +107,7 @@ class ClientTester(): # pylint: disable=r0902
       will return the following url:
         'example.org/api/person/key=hello&person=example.org%2Fperson1'
     Assumes that the key, url, and skip are properly URL encoded and that any
-      record_id needs to be URL encoded.
+      record_id or date needs to be URL encoded.
     Global versus Current skip and min_date:
       If I want to get all records, I will use only the global skip.  To do
       this, I will keep making requests to the URL.  If I get back 10 records, I
@@ -122,13 +130,15 @@ class ClientTester(): # pylint: disable=r0902
       thus, you have a reason to keep skip small."""
     encoded_person = urllib.quote_plus(person_record_id)
     encoded_note = urllib.quote_plus(note_record_id)
+    encoded_global_min_date = urllib.quote_plus(global_min_date)
+    encoded_current_min_date = urllib.quote_plus(current_min_date)
     output_url = url.replace('$k$', self.api_key)
     output_url = output_url.replace('$p$', encoded_person)
     output_url = output_url.replace('$n$', encoded_note)
     output_url = output_url.replace('$gs$', global_skip)
-    output_url = output_url.replace('$gm$', global_min_date)
+    output_url = output_url.replace('$gm$', encoded_global_min_date)
     output_url = output_url.replace('$cs$', current_skip)
-    output_url = output_url.replace('$cm$', current_min_date)
+    output_url = output_url.replace('$cm$', encoded_current_min_date)
     return output_url
 
   def run_diff(self, response, desired_persons, desired_notes):
@@ -204,9 +214,9 @@ class ClientTester(): # pylint: disable=r0902
         not is_person_feed and len(notes_arr) > 0):
       # Get the response
       response = utils.open_url(self.expand_url(
-          template_url, global_min_date=min_date,
-          current_min_date=current_min_date, global_skip=str(global_skip),
-          current_skip=str(current_skip)))
+          template_url, person_record_id=person_record_id,
+          global_min_date=min_date, current_min_date=current_min_date,
+          global_skip=str(global_skip), current_skip=str(current_skip)))
       persons, notes_arr = personfinder_pfif.parse_file(response)
 
       # Add the response to our list
@@ -239,6 +249,18 @@ class ClientTester(): # pylint: disable=r0902
     make_test_data.write_records(self.version, all_responses_file, all_persons,
                                  all_notes_map, embed_notes_in_persons=False)
     return all_responses_file, all_persons, all_notes_map
+
+  def api_write_records(self, persons, notes):
+    """Calls the API to write records to the remote database."""
+    url = self.expand_url(self.write_records_url)
+    pfif_to_write = StringIO('')
+    make_test_data.write_records(self.version, pfif_to_write, persons, notes,
+                                 embed_notes_in_persons=False)
+    request = urllib2.Request(url, pfif_to_write.getvalue(),
+                              {'Content-type' : 'application/xml'})
+    urllib2.urlopen(request)
+    # TODO(samking): if we cared, we could verify stuff about the response and
+    # return true if it indicates success and false otherwise.
 
   # checks from the test conformance doc
 
@@ -300,41 +322,60 @@ class ClientTester(): # pylint: disable=r0902
     response = self.compile_all_responses(self.retrieve_notes_url, False)[0]
     return self.run_diff(response, [], self.notes)
 
+  def check_retrieve_all_records_after_record(self, is_person, record_id,
+                                              correct_persons, correct_notes):
+    """Retrieves all records entered after record_id.  Will retrieve person
+    records if is_person or note records if not is_person.  correct_persons and
+    correct_notes are all records that should have been entered after
+    record_id."""
+    # Get the time that we must be after
+    min_date = self.get_field_from_record(
+        is_person=is_person, record_id=record_id, field='entry_date')
+    if min_date is None:
+      failure_message = utils.Message(
+          'Could not run a time dependent test.  Could not calibrate '
+          'min_entry_date for test due to a missing record.',
+          xml_tag='entry_date')
+      if is_person:
+        failure_message.person_record_id = record_id
+      else:
+        failure_message.note_record_id = record_id
+      return [failure_message]
+
+    # Get the list of records after min_date
+    if is_person:
+      template_url = self.retrieve_persons_after_date_url
+    else:
+      template_url = self.retrieve_notes_after_date_url
+    response = self.compile_all_responses(template_url=template_url,
+                                          is_person_feed=is_person,
+                                          min_date=min_date)[0]
+
+    # Diff it
+    return self.run_diff(response, correct_persons, correct_notes)
+
   def check_retrieve_all_persons_since_time(self):
     """Test 1.4/3.4.  Requesting all persons since a given time should return
     only those records."""
-    min_date = self.get_field_from_record(
-        is_person=True, record_id='example.org/p0621', field='entry_date')
-    if min_date is None:
-      return [utils.Message(
-          'Could not run retrieve_all_persons_since_time test.  Could not '
-          'calibrate min_entry_date for test due to a missing record.',
-          xml_tag='entry_date', person_record_id='example.org/p0621')]
-    response = self.compile_all_responses(
-        template_url=self.retrieve_persons_after_date_url, is_person_feed=True,
-        min_date=min_date)[0]
+    last_excluded_person = 'example.org/p0621'
     recent_persons = make_test_data.get_persons_after_record(
-        self.persons, self.notes, 'example.org/p0621')[0]
+        self.persons, self.notes, last_excluded_person)[0]
     # It would be acceptable to have notes associated with any returned persons,
-    # but there should be no notes for any persons after 99
-    return self.run_diff(response, recent_persons, {})
+    # but there should be no notes for any persons after 99, so we provide no
+    # notes.
+    return self.check_retrieve_all_records_after_record(
+        is_person=True, record_id=last_excluded_person,
+        correct_persons=recent_persons, correct_notes={})
 
   def check_retrieve_all_notes_since_time(self):
     """Test 1.6/3.6.  Requesting all notes since a given time should return
     only those records."""
-    min_date = self.get_field_from_record(
-        is_person=False, record_id='example.org/n5016', field='entry_date')
-    if min_date is None:
-      return [utils.Message(
-          'Could not run retrieve_all_notes_since_time test.  Could not '
-          'calibrate min_entry_date for test due to a missing record.',
-          xml_tag='entry_date', person_record_id='example.org/n5016')]
-    response = self.compile_all_responses(
-        template_url=self.retrieve_notes_after_date_url, is_person_feed=False,
-        min_date=min_date)[0]
+    last_excluded_note = 'example.org/n5016'
     recent_notes = make_test_data.get_notes_after_record(
-        self.notes, 'example.org/n5016')
-    return self.run_diff(response, [], recent_notes)
+        self.notes, last_excluded_note)
+    return self.check_retrieve_all_records_after_record(
+        is_person=False, record_id=last_excluded_note, correct_persons=[],
+        correct_notes=recent_notes)
 
   def check_retrieve_all_notes_from_person(self):
     """Test 1.5/3.5.  Requesting all notes associated with a person should
@@ -347,7 +388,32 @@ class ClientTester(): # pylint: disable=r0902
                          self.notes.get(person_with_notes, [])}
     return self.run_diff(response, [], notes_from_person)
 
-  # TODO(samking): this is test 1.7/3.7, but I'm not sure what the point is.
-  # def check_retrieve_all_persons_and_notes(self):
+  def check_retrieve_all_persons_with_notes(self):
+    """Test 1.7/3.7.  Retrieve all persons.  These persons must have their
+    associated notes."""
+    response = self.compile_all_responses(self.retrieve_persons_with_notes_url,
+                                          True)[0]
+    return self.run_diff(response, self.persons, self.notes)
 
-  # def check_retrieve_all_changed_persons(self):
+  def check_retrieve_all_changed_persons(self):
+    """Test 3.8.  It should be possible to change a record, which causes its
+    entry_date to be higher than the previous entry_date."""
+    # Modify the first record to get a baseline time.  No records should be more
+    # recent than the just-modified record.
+    first_modified_record = 'example.org/p0001'
+    assert self.persons[0]['person_record_id'] == first_modified_record
+    self.api_write_records([self.persons[0]], {})
+    messages = self.check_retrieve_all_records_after_record(
+        is_person=True, record_id=first_modified_record, correct_persons=[],
+        correct_notes={})
+
+    # Modify the second record.  This should be the only record more recent than
+    # the first modified record.
+    second_modified_record = 'example.org/p0002'
+    assert self.persons[1]['person_record_id'] == second_modified_record
+    self.api_write_records([self.persons[1]], {})
+    messages.extend(self.check_retrieve_all_records_after_record(
+        is_person=True, record_id=first_modified_record,
+        correct_persons=[self.persons[1]], correct_notes={}))
+
+    return messages
