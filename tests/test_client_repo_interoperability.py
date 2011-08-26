@@ -153,5 +153,13 @@ class ClientRepoTests(unittest.TestCase):
     self.retrieve_record(PfifXml.XML_TEST_NOTES_9911_THROUGH_9916,
                          tester.check_retrieve_all_notes_from_person)
 
+  def test_retrieve_all_persons_with_notes(self):
+    #TODO(samking): write
+    self.assertTrue(False)
+
+  def test_retrieve_changed_record(self):
+    #TODO(samking): write
+    self.assertTrue(False)
+
 if __name__ == '__main__':
   unittest.main()
