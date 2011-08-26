@@ -161,5 +161,9 @@ class ClientRepoTests(unittest.TestCase):
     #TODO(samking): write
     self.assertTrue(False)
 
+  def test_write_record(self):
+    #TODO(samking): write
+    self.assertTrue(False)
+
 if __name__ == '__main__':
   unittest.main()
