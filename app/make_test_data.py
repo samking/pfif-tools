@@ -404,25 +404,9 @@ def write_records(version, output_file, persons, notes,
         version.write_note(output_file, note, indent='  ')
     output_file.write('</pfif:pfif>\n')
 
-def main():
-  """Creates test data and outputs it to a file."""
-  parser = optparse.OptionParser()
-  parser.add_option('--pfif-version', default='1.3',
-                    help='Specify the PFIF version.  Defaults to 1.3.  '
-                    'Currently supported: 1.2, 1.3.')
-  parser.add_option('--omit-field', action='append', default=[],
-                    dest='omitted_fields',
-                    help='If your repository has issues with one field that '
-                    'prevents you from running all of the tests, you can omit '
-                    'that field here.  For instance, if your repo tries to '
-                    'load photos specified by photo_url rather than just '
-                    'storing the link, the repo will timeout on every record, '
-                    'so you should pass --omit-field photo_url.  To omit '
-                    'multiple fields, pass this argument multiple times.  This '
-                    'will not omit mandatory fields.')
-  parser.add_option('--output-file', default=None,
-                    help='Output will be written to this file.  Defaults to '
-                    'pfif-VERSION-test.xml')
+def add_debug_options(parser):
+  """Adds debugging options to the provided parser to allow specification of
+  first and last persons and notes."""
   group = optparse.OptionGroup(
       parser, 'Unit Testing Options',
       'These options are used for unit testing different record IDs. The '
@@ -439,7 +423,32 @@ def main():
                    action='store_false', default=True)
   parser.add_option_group(group)
 
-  (options, args) = parser.parse_args() # pylint: disable=W0612
+def add_version_and_omit_field(parser):
+  """Adds pfif_version and omit_field to the option parser."""
+  parser.add_option('--pfif-version', default='1.3',
+                    help='Specify the PFIF version.  Defaults to 1.3.  '
+                    'Currently supported: 1.2, 1.3.')
+  parser.add_option('--omit-field', action='append', default=[],
+                    dest='omitted_fields',
+                    help='If your repository has issues with one field that '
+                    'prevents you from running all of the tests, you can omit '
+                    'that field here.  For instance, if your repo tries to '
+                    'load photos specified by photo_url rather than just '
+                    'storing the link, the repo will timeout on every record, '
+                    'so you should pass --omit-field photo_url.  To omit '
+                    'multiple fields, pass this argument multiple times.  This '
+                    'will not omit mandatory fields.')
+
+def main():
+  """Creates test data and outputs it to a file."""
+  parser = optparse.OptionParser()
+  add_version_and_omit_field(parser)
+  parser.add_option('--output-file', default=None,
+                    help='Output will be written to this file.  Defaults to '
+                    'pfif-VERSION-test.xml')
+  add_debug_options(parser)
+
+  options = parser.parse_args()[0]
   if options.output_file is None:
     options.output_file = 'pfif-' + options.pfif_version + '-test.xml'
   assert options.pfif_version in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
