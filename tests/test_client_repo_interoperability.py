@@ -57,9 +57,6 @@ class ClientRepoTests(unittest.TestCase):
     # be no messages
     utils.set_files_for_test(correct_response_files)
     messages = check_method()
-    if len(messages) > 0:
-      import sys
-      print >>sys.stderr, utils.MessagesOutput.messages_to_str(messages)
     self.assertEqual(len(messages), 0)
 
     # When provided with a record different from to the desired record, there
