@@ -249,7 +249,7 @@ class MessagesOutput:
     MessagesOutput."""
     if self.is_html:
       # closes all_messages div
-      self.output.append('</div>')
+      self.output.append('</div>\n')
     return ''.join(self.output)
 
   def start_new_message(self):
@@ -266,20 +266,24 @@ class MessagesOutput:
       self.output.append('</div>')
     self.output.append('\n')
 
-  def make_message_part(self, text, html_class, inline, data=None):
+  def make_message_part(self, text, html_class, inline, data=None, escape=True):
     """Call once for each different part of the message (ie, the main text, the
     line number).  text is the body of the message.  html_class is the class of
     the span or div that will contain the text.  inline should be True if spans
     are desired and False if divs are desired.  data will be enclosed in a
     message_data span regardless of whethether the message part as a whole is
-    inline or not."""
+    inline or not.  escape should be true unless the text should not be
+    escaped."""
     if self.is_html:
       if inline:
         tag_type = 'span'
       else:
         tag_type = 'div'
       self.output.append('<' + tag_type + ' class="' + html_class + '">')
-      self.output.append(cgi.escape(text))
+      if escape:
+        self.output.append(cgi.escape(text))
+      else:
+        self.output.append(text)
       if data != None:
         self.output.append('<span class="message_data">' + data + '</span>')
       self.output.append('</' + tag_type + '>')
@@ -290,24 +294,28 @@ class MessagesOutput:
       if data != None:
         self.output.append(data)
 
-  def make_message_part_division(self, text, html_class, data=None):
+  def make_message_part_division(self, text, html_class, data=None,
+                                 escape=True):
     """Wrapper for make_message_part that is not inline."""
-    self.make_message_part(text, html_class, inline=False, data=data)
+    self.make_message_part(text, html_class, inline=False, data=data,
+                           escape=escape)
 
-  def make_message_part_inline(self, text, html_class, data=None):
+  def make_message_part_inline(self, text, html_class, data=None, escape=True):
     """Wrapper for make_message_part that is inline."""
-    self.make_message_part(text, html_class, inline=True, data=data)
+    self.make_message_part(text, html_class, inline=True, data=data,
+                           escape=escape)
 
   def start_table(self, headers):
     """Adds a table header to the output.  Call before using make_table_row."""
     if self.is_html:
-      self.output.append('<table>')
+      self.output.append('<table>\n')
     self.make_table_row(headers, row_tag='th')
 
   def end_table(self):
     """Closes a table header.  Call after using make_table_row."""
     if self.is_html:
       self.output.append('</table>')
+    self.make_new_line()
 
   def make_table_row(self, elements, row_tag='td'):
     """Makes a table row where every element in elements is in the row."""
@@ -320,8 +328,13 @@ class MessagesOutput:
         self.output.append(element + '\t')
     if self.is_html:
       self.output.append('</tr>')
-    else:
-      self.output.append('\n')
+    self.output.append('\n')
+
+  def make_new_line(self):
+    """Makes a newline."""
+    if self.is_html:
+      self.output.append('<br>')
+    self.output.append('\n')
 
   # TODO(samking): add ability to turn off truncate in controller and main
   @staticmethod
