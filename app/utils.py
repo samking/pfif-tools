@@ -65,6 +65,15 @@ def open_url(url):
     return _files_for_test.popleft()
   return urllib.urlopen(url) # pragma: no cover
 
+def post_xml_to_url(url, data):
+  """Posts to the URL and returns the response or returns a debug value if
+  set."""
+  if _files_for_test:
+    return _files_for_test.popleft()
+  else: # pragma: no cover
+    request = urllib2.Request(url, data, {'Content-type' : 'application/xml'})
+    return urllib2.urlopen(request)
+
 def get_utcnow():
   """Return current time in utc, or debug value if set."""
   return _utcnow_for_test or datetime.utcnow()

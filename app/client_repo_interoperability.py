@@ -256,9 +256,7 @@ class ClientTester(): # pylint: disable=r0902
     pfif_to_write = StringIO('')
     make_test_data.write_records(self.version, pfif_to_write, persons, notes,
                                  embed_notes_in_persons=False)
-    request = urllib2.Request(url, pfif_to_write.getvalue(),
-                              {'Content-type' : 'application/xml'})
-    urllib2.urlopen(request)
+    utils.post_xml_to_url(url, pfif_to_write.getvalue())
     # TODO(samking): if we cared, we could verify stuff about the response and
     # return true if it indicates success and false otherwise.
 
