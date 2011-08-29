@@ -19,6 +19,7 @@ import re
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import urllib
+import urllib2
 import cgi
 from StringIO import StringIO
 from collections import deque

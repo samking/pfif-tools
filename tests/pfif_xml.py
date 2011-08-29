@@ -990,7 +990,7 @@ XML_TEST_ONE_PERSON = """<?xml version="1.0" encoding="UTF-8"?>
   </pfif:person>
 </pfif:pfif>"""
 
-XML_TEST_PERSON_TWO= """<?xml version="1.0" encoding="UTF-8"?>
+XML_TEST_PERSON_TWO = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
     <pfif:person_record_id>example.org/p0002</pfif:person_record_id>
