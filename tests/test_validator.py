@@ -133,7 +133,7 @@ class ValidatorTests(unittest.TestCase):
   def test_root_lacks_child(self):
     """validate_root_has_child should return a list with a message if the root
     node does not have at least one child"""
-    validator = self.set_up_validator(PfifXml.XML_ROOT_LACKS_CHILD)
+    validator = self.set_up_validator(PfifXml.XML_EMPTY_PFIF)
     self.assertNotEqual(len(validator.validate_root_has_child()), 0)
 
   # validate_root_has_mandatory_children

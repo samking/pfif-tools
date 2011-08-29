@@ -93,7 +93,7 @@ XML_BAD_PFIF_WEBSITE = """<?xml version="1.0" encoding="UTF-8"?>
   <pfif:person />
 </pfif:pfif>"""
 
-XML_ROOT_LACKS_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
+XML_EMPTY_PFIF = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.2" />"""
 
 XML_ROOT_HAS_BAD_CHILD = """<?xml version="1.0" encoding="UTF-8"?>
@@ -990,6 +990,34 @@ XML_TEST_ONE_PERSON = """<?xml version="1.0" encoding="UTF-8"?>
   </pfif:person>
 </pfif:pfif>"""
 
+XML_TEST_PERSON_TWO= """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p0002</pfif:person_record_id>
+    <pfif:entry_date>2011-02-03T05:05:06Z</pfif:entry_date>
+    <pfif:expiry_date>2011-04-01T00:30:00Z</pfif:expiry_date>
+    <pfif:author_name>author_name0002</pfif:author_name>
+    <pfif:author_email>0002@example.com</pfif:author_email>
+    <pfif:author_phone>00000002</pfif:author_phone>
+    <pfif:source_name>source_name0002</pfif:source_name>
+    <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
+    <pfif:source_url>http://example.org/0002</pfif:source_url>
+    <pfif:full_name>full_name0002</pfif:full_name>
+    <pfif:first_name>first_name0002</pfif:first_name>
+    <pfif:last_name>last_name0002</pfif:last_name>
+    <pfif:sex>male</pfif:sex>
+    <pfif:age>2</pfif:age>
+    <pfif:home_street>home_street0002</pfif:home_street>
+    <pfif:home_neighborhood>home_neighborhood0002</pfif:home_neighborhood>
+    <pfif:home_city>home_city0002</pfif:home_city>
+    <pfif:home_state>AE-AZ</pfif:home_state>
+    <pfif:home_postal_code>00002</pfif:home_postal_code>
+    <pfif:home_country>AX</pfif:home_country>
+    <pfif:photo_url>http://photo.example.org/0002</pfif:photo_url>
+    <pfif:other>description: 0002</pfif:other>
+  </pfif:person>
+</pfif:pfif>"""
+
 XML_TEST_ONE_PERSON_ONE_NOTE = """<?xml version="1.0" encoding="UTF-8"?>
 <pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
   <pfif:person>
@@ -1600,6 +1628,86 @@ XML_TEST_NOTES_9911_THROUGH_9916 = """<?xml version="1.0" encoding="UTF-8"?>
     <pfif:last_known_location>last_known_location9916</pfif:last_known_location>
     <pfif:text>text9916</pfif:text>
   </pfif:note>
+</pfif:pfif>"""
+
+XML_TEST_PERSON_99_100_NOTE_98_99  = """<?xml version="1.0" encoding="UTF-8"?>
+<pfif:pfif xmlns:pfif="http://zesty.ca/pfif/1.3">
+  <pfif:person>
+    <pfif:person_record_id>example.org/p0099</pfif:person_record_id>
+    <pfif:entry_date>2011-02-07T06:05:06Z</pfif:entry_date>
+    <pfif:expiry_date>2011-04-03T01:00:00Z</pfif:expiry_date>
+    <pfif:author_name>author_name0099</pfif:author_name>
+    <pfif:author_email>0099@example.com</pfif:author_email>
+    <pfif:author_phone>00000099</pfif:author_phone>
+    <pfif:source_name>source_name0099</pfif:source_name>
+    <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
+    <pfif:source_url>http://example.org/0099</pfif:source_url>
+    <pfif:full_name>full_name0099</pfif:full_name>
+    <pfif:first_name>first_name0099</pfif:first_name>
+    <pfif:last_name>last_name0099</pfif:last_name>
+    <pfif:sex>other</pfif:sex>
+    <pfif:date_of_birth>1900-01</pfif:date_of_birth>
+    <pfif:age>111</pfif:age>
+    <pfif:home_street>home_street0099</pfif:home_street>
+    <pfif:home_neighborhood>home_neighborhood0099</pfif:home_neighborhood>
+    <pfif:home_city>home_city0099</pfif:home_city>
+    <pfif:home_state>AO-MAL</pfif:home_state>
+    <pfif:home_postal_code>00099</pfif:home_postal_code>
+    <pfif:home_country>HN</pfif:home_country>
+    <pfif:photo_url>http://photo.example.org/0099</pfif:photo_url>
+    <pfif:other>description: 0099</pfif:other>
+    <pfif:note>
+      <pfif:note_record_id>example.org/n9998</pfif:note_record_id>
+      <pfif:person_record_id>example.org/p0099</pfif:person_record_id>
+      <pfif:entry_date>2011-05-17T06:05:06Z</pfif:entry_date>
+      <pfif:author_name>author_name9998</pfif:author_name>
+      <pfif:author_email>9998@example.com</pfif:author_email>
+      <pfif:author_phone>00009998</pfif:author_phone>
+      <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
+      <pfif:found>true</pfif:found>
+      <pfif:status>is_note_author</pfif:status>
+      <pfif:email_of_found_person>9998@example.com</pfif:email_of_found_person>
+      <pfif:phone_of_found_person>00009998</pfif:phone_of_found_person>
+      <pfif:last_known_location>last_known_location9998</pfif:last_known_location>
+      <pfif:text>text9998</pfif:text>
+    </pfif:note>
+    <pfif:note>
+      <pfif:note_record_id>example.org/n9999</pfif:note_record_id>
+      <pfif:person_record_id>example.org/p0099</pfif:person_record_id>
+      <pfif:entry_date>2011-05-17T06:35:06Z</pfif:entry_date>
+      <pfif:author_name>author_name9999</pfif:author_name>
+      <pfif:author_email>9999@example.com</pfif:author_email>
+      <pfif:author_phone>00009999</pfif:author_phone>
+      <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
+      <pfif:found>false</pfif:found>
+      <pfif:status>believed_alive</pfif:status>
+      <pfif:last_known_location>last_known_location9999</pfif:last_known_location>
+      <pfif:text>text9999</pfif:text>
+    </pfif:note>
+  </pfif:person>
+  <pfif:person>
+    <pfif:person_record_id>example.org/p0100</pfif:person_record_id>
+    <pfif:entry_date>2011-02-07T07:05:06Z</pfif:entry_date>
+    <pfif:expiry_date>2011-04-03T01:30:00Z</pfif:expiry_date>
+    <pfif:author_name>author_name0100</pfif:author_name>
+    <pfif:author_email>0100@example.com</pfif:author_email>
+    <pfif:author_phone>00000100</pfif:author_phone>
+    <pfif:source_name>source_name0100</pfif:source_name>
+    <pfif:source_date>2011-01-01T01:01:01Z</pfif:source_date>
+    <pfif:source_url>http://example.org/0100</pfif:source_url>
+    <pfif:full_name>full_name0100</pfif:full_name>
+    <pfif:first_name>first_name0100</pfif:first_name>
+    <pfif:last_name>last_name0100</pfif:last_name>
+    <pfif:date_of_birth>1908-03-20</pfif:date_of_birth>
+    <pfif:home_street>home_street0100</pfif:home_street>
+    <pfif:home_neighborhood>home_neighborhood0100</pfif:home_neighborhood>
+    <pfif:home_city>home_city0100</pfif:home_city>
+    <pfif:home_state>AO-MOX</pfif:home_state>
+    <pfif:home_postal_code>00100</pfif:home_postal_code>
+    <pfif:home_country>HK</pfif:home_country>
+    <pfif:photo_url>http://photo.example.org/0100</pfif:photo_url>
+    <pfif:other>description: 0100</pfif:other>
+  </pfif:person>
 </pfif:pfif>"""
 
 # pylint: enable=c0301
