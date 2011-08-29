@@ -19,9 +19,11 @@ __author__ = 'samking@google.com (Sam King)'
 
 import utils
 from client_repo_interoperability import ClientTester
+import client_repo_interoperability
 import unittest
 from StringIO import StringIO
 import tests.pfif_xml as PfifXml
+import sys
 
 class ClientRepoTests(unittest.TestCase):
   """Tests each test function in client_repo_interoperability.py"""
@@ -185,6 +187,16 @@ class ClientRepoTests(unittest.TestCase):
     utils.set_files_for_test([StringIO('First'), StringIO('Second')])
     tester.api_write_records(tester.persons, tester.notes)
     self.assertEqual(utils.open_file('test').getvalue(), 'Second')
+
+  # main
+
+  @staticmethod
+  def test_verbose_help():
+    """The verbose help text generators should not crash."""
+    old_argv = sys.argv
+    sys.argv = ['client_repo_interoperability.py', '--verbose-help']
+    client_repo_interoperability.main()
+    sys.argv = old_argv
 
 if __name__ == '__main__':
   unittest.main()
