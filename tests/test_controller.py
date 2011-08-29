@@ -194,6 +194,20 @@ class ControllerTests(unittest.TestCase):
     response_str = response.out.getvalue()
     self.assertTrue('pasted in' in response_str)
 
+  # client repo interoperability
+
+  def test_client_repo_interoperability_input(self):
+    """The client repo interoperability input page should work."""
+    handler = controller.ClientInput()
+    request = webapp.Request({'wsgi.input' : StringIO(),
+                              'PATH_INFO' : '/client_test'})
+    response = webapp.Response()
+    handler.initialize(request, response)
+    handler.get()
+    response_str = response.out.getvalue()
+    for html_str in ['html', 'table', 'API Key', 'min_date', 'URL']:
+      self.assertTrue(html_str in response_str)
+
   @staticmethod
   def test_main():
     """main should not crash."""
