@@ -47,7 +47,7 @@ class ControllerTests(unittest.TestCase):
     """Makes a webapp request for the validator with content as the HTTP POST
     content.  Returns the response."""
     if handler_init_method is None:
-      handler_init_method = controller.ValidatorController
+      handler_init_method = controller.Validator
     request = webapp.Request({'wsgi.input' : StringIO(),
                               'REQUEST_METHOD' : 'POST',
                               'PATH_INFO' : '/validator'})
@@ -64,8 +64,8 @@ class ControllerTests(unittest.TestCase):
   def test_no_xml_fails_gracefully(self):
     """If the user tries to validate with no input, there should not be an
     exception."""
-    for handler_method in [controller.ValidatorController,
-                           controller.DiffController]:
+    for handler_method in [controller.Validator,
+                           controller.Diff]:
       response = self.make_webapp_request(
           {}, handler_init_method=handler_method)
       self.assertTrue("html" in response.out.getvalue())
@@ -148,7 +148,7 @@ class ControllerTests(unittest.TestCase):
         'pfif_xml_file_1' : fake_file_1, 'pfif_xml_url_2' : 'fake_url',
         'options' : 'text_is_case_sensitive'})
     response = self.make_webapp_request(
-        request, handler_init_method=controller.DiffController)
+        request, handler_init_method=controller.Diff)
     response_str = response.out.getvalue()
 
     # set the test file again because the first one will be at the end, and the
@@ -156,7 +156,7 @@ class ControllerTests(unittest.TestCase):
     utils.set_file_for_test(StringIO(PfifXml.XML_ADDED_DELETED_CHANGED_2))
     request.add('options', 'group_messages_by_record')
     grouped_response = self.make_webapp_request(
-        request, handler_init_method=controller.DiffController)
+        request, handler_init_method=controller.Diff)
     grouped_response_str = grouped_response.out.getvalue()
 
     # The header should have 'Diff' and 'Messages' in it along with the filename
@@ -178,7 +178,7 @@ class ControllerTests(unittest.TestCase):
                'options' : 'text_is_case_sensitive',
                'ignore_fields' : 'foo bar source_date'}
     response = self.make_webapp_request(
-        request, handler_init_method=controller.DiffController)
+        request, handler_init_method=controller.Diff)
     response_str = response.out.getvalue()
     for field in ['foo', 'bar', 'source_date']:
       self.assertFalse(field in response_str, field + ' is ignored and should '
@@ -190,7 +190,7 @@ class ControllerTests(unittest.TestCase):
     response = self.make_webapp_request(
         {'pfif_xml_1' : PfifXml.XML_ADDED_DELETED_CHANGED_1,
          'pfif_xml_2' : PfifXml.XML_ADDED_DELETED_CHANGED_2},
-        handler_init_method=controller.DiffController)
+        handler_init_method=controller.Diff)
     response_str = response.out.getvalue()
     self.assertTrue('pasted in' in response_str)
 
