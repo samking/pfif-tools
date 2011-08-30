@@ -44,11 +44,11 @@ class Check():
   """The check method, requirements for that method, and human readable output
   for that method."""
 
-  def __init__(self, method, required_urls, name, test_conformance_reference):
+  def __init__(self, method, required_urls, name, test_number):
     self.method = method
     self.required_urls = required_urls
     self.name = name
-    self.test_conformance_reference = test_conformance_reference
+    self.test_number = test_number
 
 class HelpText(): # pylint: disable=w0232
   """Makes help text for Client Repo Interoperability Tests."""
@@ -316,6 +316,10 @@ class ClientTester(): # pylint: disable=r0902
     make_test_data.write_records(self.version, desired_response,
                                  desired_persons, desired_notes,
                                  embed_notes_in_persons=False)
+    # TODO(samking): When one of the files is not PFIF XML (ie, it's a 404 or an
+    # HTML error page), the diff tool will error out, which could mess up the
+    # test suite.  We could try/catch, or we could make the XML parser used in
+    # PfifXmlTree or objectifying PFIF XML more robust.
     messages = pfif_diff.pfif_file_diff(response, desired_response)
     return messages
 
@@ -346,7 +350,7 @@ class ClientTester(): # pylint: disable=r0902
     descriptions."""
     url = self.expand_url( # pylint: disable=w0142
         url_template, **{record_id_tag : desired_record_id})
-    return utils.open_url(url)
+    return StringIO(utils.open_url(url).read())
 
   def get_field_from_record(self, is_person, record_id, field):
     """Makes an API call to retrieve a record identified by record_id.  Returns
@@ -614,16 +618,16 @@ class ClientTester(): # pylint: disable=r0902
 def add_api_test_fields(parser):
   """Adds required API test fields to the command line options."""
   group = optparse.OptionGroup( parser, 'Required API Test Fields')
-  group.add_option('--retrieve_person_url')
-  group.add_option('--retrieve-note-url')
-  group.add_option('--retrieve-persons-url')
-  group.add_option('--retrieve-notes-url')
-  group.add_option('--retrieve-persons-after-date-url')
-  group.add_option('--retrieve-notes-after-date-url')
-  group.add_option('--retrieve-notes-from-person-url')
-  group.add_option('--retrieve-persons-with-notes-url')
-  group.add_option('--write-records-url')
-  group.add_option('--api-key')
+  group.add_option('--retrieve-person-url', default='')
+  group.add_option('--retrieve-note-url', default='')
+  group.add_option('--retrieve-persons-url', default='')
+  group.add_option('--retrieve-notes-url', default='')
+  group.add_option('--retrieve-persons-after-date-url', default='')
+  group.add_option('--retrieve-notes-after-date-url', default='')
+  group.add_option('--retrieve-notes-from-person-url', default='')
+  group.add_option('--retrieve-persons-with-notes-url', default='')
+  group.add_option('--write-records-url', default='')
+  group.add_option('--api-key', default='')
   parser.add_option_group(group)
 
 def main():
