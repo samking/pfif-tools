@@ -128,6 +128,7 @@ class PfifXmlTree():
     self.initialize_pfif_version()
 
 
+  # TODO(samking): add ATOM support here and everywhere
   def initialize_tree(self, xml_file):
     """Reads in the XML tree from the XML file.  If the XML file is invalid,
     the XML library will raise an exception."""
@@ -415,7 +416,7 @@ class MessagesOutput:
     if truncate:
       messages = MessagesOutput.truncate(
           messages, MessagesOutput.GROUPED_TRUNCATE_THRESHOLD)
-    output = MessagesOutput(is_html, title)
+    output = MessagesOutput(is_html, title=title)
     list_records_categories = [Categories.ADDED_RECORD,
                                Categories.DELETED_RECORD]
     list_fields_categories =  [Categories.ADDED_FIELD,
