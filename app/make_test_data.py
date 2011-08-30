@@ -413,12 +413,14 @@ def add_debug_options(parser):
       'default values for these options are what is specified in the Test '
       'Conformance document, and changing them could generate insufficient '
       'data to correctly test conformance.  You should not set these options.')
-  group.add_option('--first-person', default=FIRST_PERSON)
-  group.add_option('--last-person', default=LAST_PERSON)
-  group.add_option('--first-person-with-notes', default=FIRST_PERSON_WITH_NOTES)
-  group.add_option('--last-person-with-notes', default=LAST_PERSON_WITH_NOTES)
-  group.add_option('--first-note', default=FIRST_NOTE)
-  group.add_option('--last-note', default=LAST_NOTE_PLACEHOLDER)
+  group.add_option('--first-person', type='int', default=FIRST_PERSON)
+  group.add_option('--last-person', type='int', default=LAST_PERSON)
+  group.add_option('--first-person-with-notes', type='int',
+                   default=FIRST_PERSON_WITH_NOTES)
+  group.add_option('--last-person-with-notes', type='int',
+                   default=LAST_PERSON_WITH_NOTES)
+  group.add_option('--first-note', type='int', default=FIRST_NOTE)
+  group.add_option('--last-note', type='int', default=LAST_NOTE_PLACEHOLDER)
   group.add_option('--all-notes-are-top-level', dest='embed_notes_in_persons',
                    action='store_false', default=True)
   parser.add_option_group(group)
@@ -457,15 +459,12 @@ def main():
   output_file = utils.open_file(options.output_file, 'w')
   version_map = personfinder_pfif.PFIF_VERSIONS[options.version_str]
 
-  make_test_data(output_file, version=version_map,
-                 omitted_fields=options.omitted_fields,
-                 first_person=int(options.first_person),
-                 last_person=int(options.last_person),
-                 first_person_with_notes=int(options.first_person_with_notes),
-                 last_person_with_notes=int(options.last_person_with_notes),
-                 first_note=int(options.first_note),
-                 last_note=int(options.last_note),
-                 embed_notes_in_persons=options.embed_notes_in_persons)
+  options_map = vars(options)
+  del options_map['version_str']
+  del options_map['output_file']
+  make_test_data(output_file, version=version_map, # pylint: disable=w0142
+                 **options_map)
+
   output_file.close()
 
 if __name__ == '__main__':
