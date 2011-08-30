@@ -425,7 +425,7 @@ def add_debug_options(parser):
 
 def add_version_and_omit_field(parser):
   """Adds pfif_version and omit_field to the option parser."""
-  parser.add_option('--pfif-version', default='1.3',
+  parser.add_option('--pfif-version', default='1.3', dest='version_str',
                     help='Specify the PFIF version.  Defaults to 1.3.  '
                     'Currently supported: 1.2, 1.3.')
   parser.add_option('--omit-field', action='append', default=[],
@@ -450,12 +450,12 @@ def main():
 
   options = parser.parse_args()[0]
   if options.output_file is None:
-    options.output_file = 'pfif-' + options.pfif_version + '-test.xml'
-  assert options.pfif_version in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
+    options.output_file = 'pfif-' + options.version_str + '-test.xml'
+  assert options.version_str in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
                                                   'are supported.')
 
   output_file = utils.open_file(options.output_file, 'w')
-  version_map = personfinder_pfif.PFIF_VERSIONS[options.pfif_version]
+  version_map = personfinder_pfif.PFIF_VERSIONS[options.version_str]
 
   make_test_data(output_file, version=version_map,
                  omitted_fields=options.omitted_fields,
