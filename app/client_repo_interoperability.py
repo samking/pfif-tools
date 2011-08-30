@@ -40,6 +40,158 @@ import optparse
 # to be some way to divide each test's output.  Maybe the controller will run a
 # test and output just that test, then make a division, then do the next one?
 
+class Check():
+  """The check method, requirements for that method, and human readable output
+  for that method."""
+
+  def __init__(self, method, required_urls, name, test_conformance_reference):
+    self.method = method
+    self.required_urls = required_urls
+    self.name = name
+    self.test_conformance_reference = test_conformance_reference
+
+class HelpText(): # pylint: disable=w0232
+  """Makes help text for Client Repo Interoperability Tests."""
+
+  API_HELP_INFO = [('API Key', 'api_key',
+                    'If an API key is needed, put it here'),
+                   ('PFIF Version', 'version_str',
+                    'Should be 1.1, 1.2, or 1.3'),
+                   ('Ignore These Fields', 'omitted_fields',
+                    'Space delimited list (ie, "source_date age photo_url")'),
+                   ('Write Records URL', 'write_records_url',
+                    'A URL to POST a PFIF file to to add records to the repo'),
+                   ('Retrieve Person URL', 'retrieve_person_url',
+                    'The URL to retrieve one person by record id'),
+                   ('Retrieve Note URL', 'retrieve_note_url',
+                    'The URL to retrieve one note by record id'),
+                   ('Retrieve Persons URL', 'retrieve_persons_url',
+                    'The URL to retrieve all persons'),
+                   # ('Retrieve Notes URL', 'retrieve_notes_url',
+                   #  'The URL to retrieve all notes'),
+                   ('Retrieve Persons After Date URL',
+                    'retrieve_persons_after_date_url',
+                    'The URL to retrieve all persons entered after a min_date'),
+                   ('Retrieve Notes After Date URL',
+                    'retrieve_notes_after_date_url',
+                    'The URL to retrieve all notes entered after a min_date'),
+                   ('Retrieve Notes from Person URL',
+                    'retrieve_notes_from_person_url',
+                    'The URL to retrieve all notes associated with a person '
+                    '(specified by record id)'),
+                   ('Retrieve Person with Notes URL',
+                    'retrieve_persons_with_notes_url',
+                    'The URL to retrieve all persons where notes associated '
+                    'with these persons must be included')]
+
+  URL_SUBSTITUTIONS = [
+      ('$k$', 'API key', 'The key, if needed, should be used on every URL'),
+      ('$p$', 'person_record_id', 'A person_record_id should be used on every '
+       'URL that needs to specify a person'),
+      ('$n$', 'note_record_id', 'A note_record_id should be used on every URL '
+       'that needs to specify a note'),
+      ('$gs$', 'global skip', 'This should be used if multiple repeated '
+       'queries are needed to get a large set of records.'),
+      ('$gm$', 'global min_date', 'This should be used for all URLs that need '
+       'to specify a date.'),
+      ('$cs$', 'current skip', 'See note.'),
+      ('$cm$', 'current min_date', 'See note.')]
+
+  GLOBAL_CURRENT_HELP = [
+      """Global and Current skip and min_date probably shouldn't be used with
+each other. There are two algorithms implemented to retrieve records since a
+given date.""",
+      """Put in the (global) min_date for the first query and keep it the same
+for all successive queries, monotonically increasing the (global) skip.  This
+strategy should work as long as the API implements a skip and min_date feature,
+but it might be less efficient if your repository implements skip by generating
+all results and excluding skipped results from the output.""",
+      """Put in (current) min_date for the first query.  For each successive
+query, update the (current) min_date to the most recent record.  The (current)
+skip is equal to the number of received records that have the same min_date as
+the most recent record (this should always be 1 unless two records have the same
+entry_date, which violates the PFIF spec), which can be more efficient.  This
+strategy requires all URLs that use current_min_date to return results forward
+chronologically rather than reverse chronologically (the norm for ATOM
+feeds)."""]
+
+  # pylint: disable=c0301
+  GLOBAL_CURRENT_EXAMPLE_TEXT = (
+      """For example, with Person Finder's API
+(http://code.google.com/p/googlepersonfinder/wiki/DataAPI), we could use
+https://subdomain.googlepersonfinder.appspot.com/feeds/person?key=$k$&skip=$cs$&min_entry_date=$cm$
+for the Retrieve Persons After Date URL or
+https://subdomain.googlepersonfinder.appspot.com/feeds/notes?key=$k$&skip=$gs$&person_record_id=$p$
+for the Retrieve Notes from Person URL.""")
+
+  GLOBAL_CURRENT_EXAMPLE_HTML = (
+      """For example, with
+<a href="http://code.google.com/p/googlepersonfinder/wiki/DataAPI">Person
+Finder's API</a>, we could use
+<pre>https://subdomain.googlepersonfinder.appspot.com/feeds/person?key=$k$&amp;skip=$cs$&amp;min_entry_date=$cm$</pre>
+for the Retrieve Persons After Date URL or
+<pre>https://subdomain.googlepersonfinder.appspot.com/feeds/notes?key=$k$&amp;skip=$gs$&amp;person_record_id=$p$</pre>
+for the Retrieve Notes from Person URL.""")
+  # pylint: enable=c0301
+
+  TEST_INTRO = (
+      """Each URL provided will be used, primarily, for one test.  None of these
+tests should have any side effects on your database, except for the test of
+changing records (which should be the only test that uses the API url to write
+records).  The write URL will also be used to add test data to the repository
+before running any test.  Thus, before running these tests, you should create a
+new repository with no records in it.  All URLs should follow the templating
+guidelines described here.""")
+
+  @staticmethod
+  def make_intro_text(is_html):
+    """Describes the tests."""
+    output = utils.MessagesOutput(is_html=is_html, html_class='intro')
+    output.make_message_part_division(HelpText.TEST_INTRO, 'intro_text')
+    output.make_new_line()
+    return output.get_output()
+
+  @staticmethod
+  def make_url_template_help(is_html):
+    """Generates a help text string for URL template expansion rules."""
+    output = utils.MessagesOutput(is_html=is_html,
+                                  html_class='url_substitution_help')
+    output.start_table(['Symbol to Substitute', 'Element Substituted', 'Help'])
+    for substitution_info in HelpText.URL_SUBSTITUTIONS:
+      output.make_table_row(substitution_info)
+    output.end_table()
+    return output.get_output()
+
+  @staticmethod
+  def make_api_help(is_html):
+    """Generates a help text string for API URLs.  If is_html, also generates
+    form elements (which require a form to already have been started)."""
+    output = utils.MessagesOutput(is_html=is_html, html_class='api_help')
+    output.start_table(['Name', 'Field', 'Help'])
+    for name, form, help_text in HelpText.API_HELP_INFO:
+      if is_html:
+        form = '<input type="text" name="' + form + '">'
+      output.make_table_row([name, form, help_text])
+    output.end_table()
+    return output.get_output()
+
+  @staticmethod
+  def make_global_current_help(is_html):
+    """Generates a help text string for the difference between global and
+    current min_date and skip."""
+    output = utils.MessagesOutput(is_html=is_html,
+                                  html_class='global_current_help')
+    for text in HelpText.GLOBAL_CURRENT_HELP:
+      output.make_message_part_division(text, 'global_current_help_text')
+    if is_html:
+      output.make_message_part_division(HelpText.GLOBAL_CURRENT_EXAMPLE_HTML,
+                                        'global_current_help_text',
+                                        escape=False)
+    else:
+      output.make_message_part_division(HelpText.GLOBAL_CURRENT_EXAMPLE_TEXT,
+                                        'global_current_help_text')
+    return output.get_output()
+
 class ClientTester(): # pylint: disable=r0902
   """Contains information about a repository API to run checks on the
   repository's client API.  All checks assume that the repository has been set
@@ -72,6 +224,9 @@ class ClientTester(): # pylint: disable=r0902
     self.write_records_url = write_records_url
     self.persons = []
     self.notes = {}
+    self.checks = []
+
+    self.init_checks()
 
     if initialize_now:
       self.init_data(omitted_fields, first_person, last_person,
@@ -88,6 +243,43 @@ class ClientTester(): # pylint: disable=r0902
         self.version, omitted_fields, first_person_with_notes,
         last_person_with_notes, first_note, last_note)
 
+  @staticmethod
+  def method_to_check_name(method):
+    """Turns a method into the name of the check that uses that method."""
+    full_name = method.__name__
+    words = full_name.split('_')
+    check_removed = words[1:]
+    capitalized_words = [word.title() for word in check_removed]
+    return ' '.join(capitalized_words)
+
+  def init_checks(self):
+    """Generates a list of checks as an instance variable so that it is possible
+    to automatically run all check methods."""
+    checks_tuple = (
+        (self.check_retrieve_person_record, '1.1/3.1',
+         (self.retrieve_person_url, )),
+        (self.check_retrieve_note_record, '1.2/3.2',
+         (self.retrieve_note_url, )),
+        (self.check_retrieve_all_persons, '1.3/3.3',
+         (self.retrieve_persons_url, )),
+        (self.check_retrieve_all_persons_since_time, '1.4/3.4',
+         (self.retrieve_persons_after_date_url, self.retrieve_person_url)),
+        (self.check_retrieve_all_notes_from_person, '1.5/3.5',
+         (self.retrieve_notes_from_person_url, )),
+        (self.check_retrieve_all_notes_since_time, '1.6/3.6',
+         (self.retrieve_notes_after_date_url, self.retrieve_note_url)),
+        (self.check_retrieve_all_persons_with_notes, '1.7/3.7',
+         (self.retrieve_persons_with_notes_url, )),
+        (self.check_retrieve_all_changed_persons, '3.8',
+         (self.write_records_url, self.retrieve_persons_after_date_url)))
+    # TODO(samking): currently, check_retrieve_all_notes is not here because it
+    # is not in the test conformance doc.  If there is a desire to test that
+    # functionality, adding it to the checks_tuple would cause the test to be
+    # run.
+    for method, test_number, required_urls in checks_tuple:
+      name = self.method_to_check_name(method)
+      check = Check(method, required_urls, name, test_number)
+      self.checks.append(check)
 
   def expand_url(self, url, person_record_id='', note_record_id='',
                  global_skip='', global_min_date='', current_skip='',
@@ -392,147 +584,32 @@ class ClientTester(): # pylint: disable=r0902
 
     return messages
 
-class HelpText(): # pylint: disable=w0232
-  """Makes help text for Client Repo Interoperability Tests."""
-
-  API_HELP_INFO = [('API Key', 'api_key',
-                    'If an API key is needed, put it here'),
-                   ('PFIF Version', 'version_str',
-                    'Should be 1.1, 1.2, or 1.3'),
-                   ('Ignore These Fields', 'omitted_fields',
-                    'Space delimited list (ie, "source_date age photo_url")'),
-                   ('Write Records URL', 'write_records_url',
-                    'A URL to POST a PFIF file to to add records to the repo'),
-                   ('Retrieve Person URL', 'retrieve_person_url',
-                    'The URL to retrieve one person by record id'),
-                   ('Retrieve Note URL', 'retrieve_note_url',
-                    'The URL to retrieve one note by record id'),
-                   ('Retrieve Persons URL', 'retrieve_persons_url',
-                    'The URL to retrieve all persons'),
-                   # ('Retrieve Notes URL', 'retrieve_notes_url',
-                   #  'The URL to retrieve all notes'),
-                   ('Retrieve Persons After Date URL',
-                    'retrieve_persons_after_date_url',
-                    'The URL to retrieve all persons entered after a min_date'),
-                   ('Retrieve Notes After Date URL',
-                    'retrieve_notes_after_date_url',
-                    'The URL to retrieve all notes entered after a min_date'),
-                   ('Retrieve Notes from Person URL',
-                    'retrieve_notes_from_person_url',
-                    'The URL to retrieve all notes associated with a person '
-                    '(specified by record id)'),
-                   ('Retrieve Person with Notes URL',
-                    'retrieve_person_with_notes_url',
-                    'The URL to retrieve all persons where notes associated '
-                    'with these persons must be included')]
-
-  URL_SUBSTITUTIONS = [
-      ('$k$', 'API key', 'The key, if needed, should be used on every URL'),
-      ('$p$', 'person_record_id', 'A person_record_id should be used on every '
-       'URL that needs to specify a person'),
-      ('$n$', 'note_record_id', 'A note_record_id should be used on every URL '
-       'that needs to specify a note'),
-      ('$gs$', 'global skip', 'This should be used if multiple repeated '
-       'queries are needed to get a large set of records.'),
-      ('$gm$', 'global min_date', 'This should be used for all URLs that need '
-       'to specify a date.'),
-      ('$cs$', 'current skip', 'See note.'),
-      ('$cm$', 'current min_date', 'See note.')]
-
-  GLOBAL_CURRENT_HELP = [
-      """Global and Current skip and min_date probably shouldn't be used with
-each other. There are two algorithms implemented to retrieve records since a
-given date.""",
-      """Put in the (global) min_date for the first query and keep it the same
-for all successive queries, monotonically increasing the (global) skip.  This
-strategy should work as long as the API implements a skip and min_date feature,
-but it might be less efficient if your repository implements skip by generating
-all results and excluding skipped results from the output.""",
-      """Put in (current) min_date for the first query.  For each successive
-query, update the (current) min_date to the most recent record.  The (current)
-skip is equal to the number of received records that have the same min_date as
-the most recent record (this should always be 1 unless two records have the same
-entry_date, which violates the PFIF spec), which can be more efficient.  This
-strategy requires all URLs that use current_min_date to return results forward
-chronologically rather than reverse chronologically (the norm for ATOM
-feeds)."""]
-
-  # pylint: disable=c0301
-  GLOBAL_CURRENT_EXAMPLE_TEXT = (
-      """For example, with Person Finder's API
-(http://code.google.com/p/googlepersonfinder/wiki/DataAPI), we could use
-https://subdomain.googlepersonfinder.appspot.com/feeds/person?key=$k$&skip=$cs$&min_entry_date=$cm$
-for the Retrieve Persons After Date URL or
-https://subdomain.googlepersonfinder.appspot.com/feeds/notes?key=$k$&skip=$gs$&person_record_id=$p$
-for the Retrieve Notes from Person URL.""")
-
-  GLOBAL_CURRENT_EXAMPLE_HTML = (
-      """For example, with
-<a href="http://code.google.com/p/googlepersonfinder/wiki/DataAPI">Person
-Finder's API</a>, we could use
-<pre>https://subdomain.googlepersonfinder.appspot.com/feeds/person?key=$k$&amp;skip=$cs$&amp;min_entry_date=$cm$</pre>
-for the Retrieve Persons After Date URL or
-<pre>https://subdomain.googlepersonfinder.appspot.com/feeds/notes?key=$k$&amp;skip=$gs$&amp;person_record_id=$p$</pre>
-for the Retrieve Notes from Person URL.""")
-  # pylint: enable=c0301
-
-  TEST_INTRO = (
-      """Each URL provided will be used, primarily, for one test.  None of these
-tests should have any side effects on your database, except for the test of
-changing records (which should be the only test that uses the API url to write
-records).  The write URL will also be used to add test data to the repository
-before running any test.  Thus, before running these tests, you should create a
-new repository with no records in it.  All URLs should follow the templating
-guidelines described here.""")
-
-  @staticmethod
-  def make_intro_text(is_html):
-    """Describes the tests."""
-    output = utils.MessagesOutput(is_html=is_html, html_class='intro')
-    output.make_message_part_division(HelpText.TEST_INTRO, 'intro_text')
-    output.make_new_line()
-    return output.get_output()
-
-  @staticmethod
-  def make_url_template_help(is_html):
-    """Generates a help text string for URL template expansion rules."""
-    output = utils.MessagesOutput(is_html=is_html,
-                                  html_class='url_substitution_help')
-    output.start_table(['Symbol to Substitute', 'Element Substituted', 'Help'])
-    for substitution_info in HelpText.URL_SUBSTITUTIONS:
-      output.make_table_row(substitution_info)
-    output.end_table()
-    return output.get_output()
-
-  @staticmethod
-  def make_api_help(is_html):
-    """Generates a help text string for API URLs.  If is_html, also generates
-    form elements (which require a form to already have been started)."""
-    output = utils.MessagesOutput(is_html=is_html, html_class='api_help')
-    output.start_table(['Name', 'Field', 'Help'])
-    for name, form, help_text in HelpText.API_HELP_INFO:
-      if is_html:
-        form = '<input type="text" name="' + form + '">'
-      output.make_table_row([name, form, help_text])
-    output.end_table()
-    return output.get_output()
-
-  @staticmethod
-  def make_global_current_help(is_html):
-    """Generates a help text string for the difference between global and
-    current min_date and skip."""
-    output = utils.MessagesOutput(is_html=is_html,
-                                  html_class='global_current_help')
-    for text in HelpText.GLOBAL_CURRENT_HELP:
-      output.make_message_part_division(text, 'global_current_help_text')
-    if is_html:
-      output.make_message_part_division(HelpText.GLOBAL_CURRENT_EXAMPLE_HTML,
-                                        'global_current_help_text',
-                                        escape=False)
-    else:
-      output.make_message_part_division(HelpText.GLOBAL_CURRENT_EXAMPLE_TEXT,
-                                        'global_current_help_text')
-    return output.get_output()
+  def run_all_checks(self, is_html):
+    """Runs all check methods that don't take any arguments.  Will pass any
+    messages from each test to messages_to_str_by_id.  Will pass messages
+    created because of tests being unable to run to messages_to_str.  Returns
+    the string generated from running those methods."""
+    tests_not_run = []
+    check_strings = []
+    for check in self.checks:
+      can_run_test = True
+      for url in check.required_urls:
+        if not url:
+          can_run_test = False
+          tests_not_run.append(utils.Message(
+              'One of the tests did not run because it was missing a required '
+              'URL.', extra_data='Test Name: ' + check.name))
+      if can_run_test:
+        messages = check.method()
+        title = check.name + '(Test ' + check.test_number + ')'
+        check_strings.append(
+            utils.MessagesOutput.messages_to_str_by_id(
+                messages=messages, title=title, is_html=is_html))
+    check_strings.append(
+        utils.MessagesOutput.messages_to_str(
+            messages=tests_not_run, title='Some Tests Could Not Run',
+            is_html=is_html))
+    return ''.join(check_strings)
 
 def add_api_test_fields(parser):
   """Adds required API test fields to the command line options."""
@@ -567,6 +644,12 @@ def main():
            HelpText.make_url_template_help(False) +
            HelpText.make_api_help(False) +
            HelpText.make_global_current_help(False))
+  else:
+    client_tester_options = vars(options)
+    del client_tester_options['verbose_help']
+    del client_tester_options['embed_notes_in_persons']
+    tester = ClientTester(**client_tester_options) # pylint: disable=w0142
+    print tester.run_all_checks(False)
 
 if __name__ == '__main__':
   main()
