@@ -72,6 +72,20 @@ class ClientRepoTests(unittest.TestCase):
     messages = check_method()
     self.assertTrue(len(messages) > 0)
 
+  @staticmethod
+  def test_retrieve_record():
+    """retrieve_record should return an object that can be used to initialize a
+    PFIF XML Tree."""
+    tester = ClientTester(initialize_now=False)
+    file_for_test = StringIO(PfifXml.XML_11_SMALL)
+    def seek(_):
+      """URLs can't seek, so neither can this StringIO."""
+      assert False
+    file_for_test.seek = seek
+    utils.set_file_for_test(file_for_test)
+    file_obj = tester.retrieve_record('url_template', 'person_record_id', 'id')
+    utils.PfifXmlTree(file_obj)
+
   def test_retrieve_person_record(self):
     """check_retrieve_person_record should return messages if and only if the
     repository output differs from the expected output."""
@@ -197,6 +211,39 @@ class ClientRepoTests(unittest.TestCase):
     sys.argv = ['client_repo_interoperability.py', '--verbose-help']
     client_repo_interoperability.main()
     sys.argv = old_argv
+
+  @staticmethod
+  def test_normal_main():
+    """Main, run without asking for help, should not crash."""
+    old_argv = sys.argv
+    sys.argv = ['client_repo_interoperability.py', '--last-person=1',
+                '--last-person-with-notes=1']
+    client_repo_interoperability.main()
+    sys.argv = old_argv
+
+  def test_run_all_checks(self):
+    """Run all checks should run checks when provided with URLs and generate
+    messages when not provided with URLs."""
+    tester = ClientTester(last_person=1, last_person_with_notes=1,
+                          retrieve_person_url='example.org')
+
+    utils.set_file_for_test(StringIO(PfifXml.XML_11_SMALL))
+    output = tester.run_all_checks(False)
+
+    # 7 tests, all except for retrieve_person, should be missing a required URL.
+    # Some of them might have multiple missing URLs.
+    self.assertTrue(output.count('missing a required URL') >= 7)
+
+    # When the API doesn't work, there should be a message saying that person
+    # p0001 is missing.
+    self.assertTrue('p0001' in output)
+
+    utils.set_file_for_test(StringIO(PfifXml.XML_TEST_ONE_PERSON))
+    output = tester.run_all_checks(True)
+
+    # When the API does work, there should not be a message saying that person
+    # p0001 is missing
+    self.assertFalse('p0001' in output)
 
 if __name__ == '__main__':
   unittest.main()
