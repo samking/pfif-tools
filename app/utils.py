@@ -238,9 +238,11 @@ class MessagesOutput:
   # less in need of truncation.
   GROUPED_TRUNCATE_THRESHOLD = 400
 
-  def __init__(self, is_html, html_class='all_messages'):
+  def __init__(self, is_html, html_class='all_messages', title=''):
     self.is_html = is_html
     self.output = []
+    if title:
+      self.make_title(title)
     if is_html:
       self.output.append('<div class="' + html_class + '">')
 
@@ -251,6 +253,13 @@ class MessagesOutput:
       # closes all_messages div
       self.output.append('</div>\n')
     return ''.join(self.output)
+
+  def make_title(self, title):
+    """Creates a title for a group of messages."""
+    if self.is_html:
+      self.output.append('<h2>' + title + '</h2>\n')
+    else:
+      self.output.append('***' + title + '***\n')
 
   def start_new_message(self):
     """Call once at the start of each message before calling
@@ -399,13 +408,14 @@ class MessagesOutput:
     return output.get_output()
 
   @staticmethod
-  def messages_to_str_by_id(messages, is_html=False, truncate=True):
+  def messages_to_str_by_id(messages, is_html=False, # pylint: disable=r0914
+                            truncate=True, title=''):
     """Returns a string containing all messages grouped together by record.
     Only works on diff messages."""
     if truncate:
       messages = MessagesOutput.truncate(
           messages, MessagesOutput.GROUPED_TRUNCATE_THRESHOLD)
-    output = MessagesOutput(is_html)
+    output = MessagesOutput(is_html, title)
     list_records_categories = [Categories.ADDED_RECORD,
                                Categories.DELETED_RECORD]
     list_fields_categories =  [Categories.ADDED_FIELD,
@@ -454,18 +464,17 @@ class MessagesOutput:
     return output.get_output()
 
   @staticmethod
-  # pylint: disable=R0912
-  def messages_to_str(messages, show_error_type=True, show_errors=True,
-                      show_warnings=True, show_line_numbers=True,
-                      show_full_line=True, show_record_ids=True,
-                      show_xml_tag=True, show_xml_text=True, is_html=False,
-                      xml_lines=None, truncate=True):
-    # pylint: enable=R0912
+  def messages_to_str(messages, show_error_type=True, # pylint: disable=r0912
+                      show_errors=True, show_warnings=True,
+                      show_line_numbers=True, show_full_line=True,
+                      show_record_ids=True, show_xml_tag=True,
+                      show_xml_text=True, is_html=False, xml_lines=None,
+                      truncate=True, title=''):
     """Returns a string containing all messages formatted per the options."""
     if truncate:
       messages = MessagesOutput.truncate(
           messages, MessagesOutput.TRUNCATE_THRESHOLD)
-    output = MessagesOutput(is_html)
+    output = MessagesOutput(is_html, title=title)
     for message in messages:
       if (message.is_error and show_errors) or (
           not message.is_error and show_warnings):
