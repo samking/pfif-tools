@@ -208,6 +208,18 @@ class ControllerTests(unittest.TestCase):
     for html_str in ['html', 'table', 'API Key', 'min_date', 'URL']:
       self.assertTrue(html_str in response_str)
 
+  def test_client_repo_interoperability_results(self):
+    """The client repo interoperability results page should pass POST variables
+    to the tester."""
+    request = {'retrieve_person_url' : 'example.org/person',
+               'last_person' : '1',
+               'last_person_with_notes' : '1'}
+    utils.set_file_for_test(StringIO(PfifXml.XML_TEST_ONE_PERSON))
+    response_str = self.make_webapp_request(
+        request, handler_init_method=controller.ClientResults).out.getvalue()
+    self.assertTrue('Retrieve All Persons' in response_str)
+    self.assertTrue('Could Not Run' in response_str)
+
   @staticmethod
   def test_main():
     """main should not crash."""

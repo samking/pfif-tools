@@ -21,7 +21,8 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from StringIO import StringIO
 import pfif_validator
 import pfif_diff
-import client_repo_interoperability
+from client_repo_interoperability import ClientTester, HelpText
+
 import utils
 
 class PfifController(webapp.RequestHandler):
@@ -142,16 +143,41 @@ class ClientInput(PfifController):
   def get(self):
     self.write_header(ClientInput.TITLE)
     self.response.out.write('<h1>' + ClientInput.TITLE + '</h1>\n')
-    self.response.out.write(
-        client_repo_interoperability.HelpText.make_intro_text(True))
-    self.response.out.write(
-        client_repo_interoperability.HelpText.make_url_template_help(True))
+    self.response.out.write(HelpText.make_intro_text(True))
+    self.response.out.write(HelpText.make_url_template_help(True))
     self.response.out.write(ClientInput.FORM_START)
-    self.response.out.write(
-        client_repo_interoperability.HelpText.make_api_help(True))
+    self.response.out.write(HelpText.make_api_help(True))
+    self.response.out.write(HelpText.make_debug_help(True))
     self.response.out.write(ClientInput.FORM_END)
-    self.response.out.write(
-        client_repo_interoperability.HelpText.make_global_current_help(True))
+    self.response.out.write(HelpText.make_global_current_help(True))
+    self.write_footer()
+
+class ClientResults(PfifController):
+  """Displays the results page for the client repo interoperability tests."""
+
+  def post(self):
+    self.write_header('Client Repository Interoperability Results')
+
+    # Get all of the args to create a ClientTester
+    tester_init_args = [(name[1], self.request.get(name[1])) for name in
+                        HelpText.API_HELP_INFO]
+    tester_init_map = dict(tester_init_args)
+    tester_init_map['omitted_fields'] = (
+        tester_init_map['omitted_fields'].split())
+    for key, val in tester_init_map.items():
+      if not val:
+        del tester_init_map[key]
+    # Debug args need to be converted to ints, so we deal with them separately
+    tester_debug_args = [(name[1], self.request.get(name[1])) for name in
+                         HelpText.DEBUG_HELP_INFO]
+    for name, arg in tester_debug_args:
+      if arg:
+        tester_init_map[name] = int(arg)
+
+    # Run the tester
+    tester = ClientTester(**tester_init_map) # pylint: disable=w0142
+    self.response.out.write(tester.run_all_checks(True))
+
     self.write_footer()
 
 class Validator(PfifController):
@@ -192,7 +218,7 @@ class Validator(PfifController):
 APPLICATION = webapp.WSGIApplication(
     [('/validate/results', Validator),
      ('/diff/results', Diff),
-     #('/client_test/results', ClientResults),
+     ('/client_test/results', ClientResults),
      ('/client_test', ClientInput)],
     debug=True)
 
