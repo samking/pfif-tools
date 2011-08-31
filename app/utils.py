@@ -70,7 +70,10 @@ def post_xml_to_url(url, data):
   """Posts to the URL and returns the response or returns a debug value if
   set."""
   if _files_for_test:
-    return _files_for_test.popleft()
+    saved_file = _files_for_test.popleft()
+    if saved_file.getvalue() == 'HTTP Error':
+      raise urllib2.HTTPError('', '', '', '', StringIO())
+    return saved_file
   else: # pragma: no cover
     request = urllib2.Request(url, data, {'Content-type' : 'application/xml'})
     return urllib2.urlopen(request)

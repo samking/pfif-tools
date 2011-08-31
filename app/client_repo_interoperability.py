@@ -30,6 +30,8 @@ import make_test_data
 from StringIO import StringIO
 import pfif_diff
 import optparse
+from xml.parsers.expat import ExpatError
+from urllib2 import HTTPError
 
 # TODO(samking): something, somewhere is unsorted, and as a result, diff is
 # outputting messages in an unintuitive order.  It doesn't impact correctness,
@@ -83,6 +85,19 @@ class HelpText(): # pylint: disable=w0232
                     'retrieve_persons_with_notes_url',
                     'The URL to retrieve all persons where notes associated '
                     'with these persons must be included')]
+
+  DEBUG_HELP_INFO = [('First Person', 'first_person',
+                      'The first test person to create.'),
+                     ('Last Person', 'last_person',
+                      'The last test person to create.'),
+                     ('First Person With Notes', 'first_person_with_notes',
+                      'The first test person to create that has notes.'),
+                     ('Last Person With Notes', 'last_person_with_notes',
+                      'The last test person to create that has notes.'),
+                     ('First Note', 'first_note',
+                      'The first test note to create.'),
+                     ('Last Note', 'last_note',
+                      'The last test note to create.')]
 
   URL_SUBSTITUTIONS = [
       ('$k$', 'API key', 'The key, if needed, should be used on every URL'),
@@ -141,7 +156,8 @@ changing records (which should be the only test that uses the API url to write
 records).  The write URL will also be used to add test data to the repository
 before running any test.  Thus, before running these tests, you should create a
 new repository with no records in it.  All URLs should follow the templating
-guidelines described here.""")
+guidelines described here.  You can use the debug values to create a smaller
+test set, but if you do so, you will NOT be fully testing your conformance.""")
 
   @staticmethod
   def make_intro_text(is_html):
@@ -163,17 +179,39 @@ guidelines described here.""")
     return output.get_output()
 
   @staticmethod
-  def make_api_help(is_html):
-    """Generates a help text string for API URLs.  If is_html, also generates
-    form elements (which require a form to already have been started)."""
-    output = utils.MessagesOutput(is_html=is_html, html_class='api_help')
-    output.start_table(['Name', 'Field', 'Help'])
-    for name, form, help_text in HelpText.API_HELP_INFO:
+  def make_tabular_form(is_html, html_class, headers, help_data):
+    """Generates help text over the provided help_data.
+    is_html: True if you want a form.  If so, you must already have an opening
+      form tag.
+    html_class: the html_class to be provided to utils.MessagesOutput
+    headers: the table headers, provided to MessagesOutput.start_table
+    help_data: An iterable of 3-tuples where each tuple should have Name, Form,
+      Help Text."""
+    output = utils.MessagesOutput(is_html=is_html, html_class=html_class)
+    output.start_table(headers)
+    for name, form, help_text in help_data:
       if is_html:
         form = '<input type="text" name="' + form + '">'
       output.make_table_row([name, form, help_text])
     output.end_table()
     return output.get_output()
+
+
+  @staticmethod
+  def make_api_help(is_html):
+    """Generates a help text string for API URLs.  If is_html, also generates
+    form elements (which require a form to already have been started)."""
+    return HelpText.make_tabular_form(is_html=is_html, html_class='api_help',
+                                      headers=('Name', 'Field', 'Help'),
+                                      help_data=HelpText.API_HELP_INFO)
+
+  @staticmethod
+  def make_debug_help(is_html):
+    """Generates a help text string for debug parameters.  If is_html, also
+    generates form elements."""
+    return HelpText.make_tabular_form(is_html=is_html, html_class='debug_help',
+                                      headers=('Debug Value', 'Field', 'Help'),
+                                      help_data=HelpText.DEBUG_HELP_INFO)
 
   @staticmethod
   def make_global_current_help(is_html):
@@ -271,7 +309,8 @@ class ClientTester(): # pylint: disable=r0902
         (self.check_retrieve_all_persons_with_notes, '1.7/3.7',
          (self.retrieve_persons_with_notes_url, )),
         (self.check_retrieve_all_changed_persons, '3.8',
-         (self.write_records_url, self.retrieve_persons_after_date_url)))
+         (self.write_records_url, self.retrieve_persons_after_date_url,
+          self.retrieve_person_url)))
     # TODO(samking): currently, check_retrieve_all_notes is not here because it
     # is not in the test conformance doc.  If there is a desire to test that
     # functionality, adding it to the checks_tuple would cause the test to be
@@ -350,7 +389,8 @@ class ClientTester(): # pylint: disable=r0902
     descriptions."""
     url = self.expand_url( # pylint: disable=w0142
         url_template, **{record_id_tag : desired_record_id})
-    return StringIO(utils.open_url(url).read())
+    opened_url = utils.open_url(url)
+    return StringIO(opened_url.read())
 
   def get_field_from_record(self, is_person, record_id, field):
     """Makes an API call to retrieve a record identified by record_id.  Returns
@@ -595,6 +635,10 @@ class ClientTester(): # pylint: disable=r0902
     the string generated from running those methods."""
     tests_not_run = []
     check_strings = []
+    # TODO(samking): this doesn't work yet because test_data is really big.
+    # Need to do multiple posts using a max_records_to_post parameter
+    # if self.write_records_url:
+    #   self.api_write_records(self.persons, self.notes)
     for check in self.checks:
       can_run_test = True
       for url in check.required_urls:
@@ -604,11 +648,22 @@ class ClientTester(): # pylint: disable=r0902
               'One of the tests did not run because it was missing a required '
               'URL.', extra_data='Test Name: ' + check.name))
       if can_run_test:
-        messages = check.method()
+        messages = []
+        try:
+          messages = check.method()
+        except ExpatError:
+          tests_not_run.append(utils.Message(
+              'Error when parsing XML generated by your API on this request.',
+              extra_data='Test Name: ' + check.name))
+        except HTTPError:
+          tests_not_run.append(utils.Message(
+              'HTTP Error when trying to access one of your URLs.',
+              extra_data='Test Name: ' + check.name))
         title = check.name + '(Test ' + check.test_number + ')'
-        check_strings.append(
-            utils.MessagesOutput.messages_to_str_by_id(
-                messages=messages, title=title, is_html=is_html))
+        if messages:
+          check_strings.append(
+              utils.MessagesOutput.messages_to_str_by_id(
+                  messages=messages, title=title, is_html=is_html))
     check_strings.append(
         utils.MessagesOutput.messages_to_str(
             messages=tests_not_run, title='Some Tests Could Not Run',

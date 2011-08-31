@@ -230,9 +230,11 @@ class ClientRepoTests(unittest.TestCase):
     utils.set_file_for_test(StringIO(PfifXml.XML_11_SMALL))
     output = tester.run_all_checks(False)
 
+    missing_url_text = 'missing a required URL'
+
     # 7 tests, all except for retrieve_person, should be missing a required URL.
     # Some of them might have multiple missing URLs.
-    self.assertTrue(output.count('missing a required URL') >= 7)
+    self.assertTrue(output.count(missing_url_text) >= 7)
 
     # When the API doesn't work, there should be a message saying that person
     # p0001 is missing.
@@ -244,6 +246,25 @@ class ClientRepoTests(unittest.TestCase):
     # When the API does work, there should not be a message saying that person
     # p0001 is missing
     self.assertFalse('p0001' in output)
+
+    # When the API gives broken XML, it should still work
+    utils.set_file_for_test(StringIO(PfifXml.XML_INVALID))
+    output = tester.run_all_checks(False)
+    self.assertTrue('Error when parsing XML' in output)
+    self.assertTrue(output.count(missing_url_text) >= 7)
+
+    # When the API gives an HTTP error, it should still work
+    # Create multiple files because other tests cas run.
+    files = [StringIO('HTTP Error') for _ in range(10)]
+    utils.set_files_for_test(files)
+    tester = ClientTester(
+        last_person=1, last_person_with_notes=1,
+        retrieve_person_url='example.org/person',
+        retrieve_persons_after_date_url='example.org/date',
+        write_records_url='example.org/write')
+    output = tester.run_all_checks(False)
+    self.assertTrue('HTTP Error when trying to access' in output)
+    self.assertTrue(output.count(missing_url_text) >= 5)
 
 if __name__ == '__main__':
   unittest.main()
