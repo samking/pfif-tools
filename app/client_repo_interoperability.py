@@ -497,11 +497,11 @@ class ClientTester(): # pylint: disable=r0902
       pfif_to_write = StringIO('')
       make_test_data.write_records(self.version, pfif_to_write, person_batch,
                                    note_batch, embed_notes_in_persons=False)
+      # TODO(samking): if we cared, we could verify stuff about the response and
+      # return true if it indicates success and false otherwise.
       utils.post_xml_to_url(url, pfif_to_write.getvalue())
       person_batch, remaining_persons, note_batch, remaining_notes = (
           self.truncate_records(remaining_persons, remaining_notes))
-    # TODO(samking): if we cared, we could verify stuff about the response and
-    # return true if it indicates success and false otherwise.
 
   # checks from the test conformance doc
 

@@ -81,8 +81,6 @@ class DiffTests(unittest.TestCase):
     xml_object = self.xml_to_object(PfifXml.XML_DUPLICATE_PERSON_AND_NOTE_ID)
     self.assertEqual(len(xml_object), 2)
 
-  # TODO(samking): what should we do here?  Silently ignore, print a
-  # warning, or assert?
   def test_objectify_fails_gracefully_without_record_id(self):
     """objectify_pfif_xml should fail gracefully when presented with a record
     that has no record_id.  This test will pass if the record is included
