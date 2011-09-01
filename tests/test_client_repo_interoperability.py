@@ -24,6 +24,7 @@ import unittest
 from StringIO import StringIO
 import tests.pfif_xml as PfifXml
 import sys
+from urllib2 import HTTPError
 
 class ClientRepoTests(unittest.TestCase):
   """Tests each test function in client_repo_interoperability.py"""
@@ -190,17 +191,46 @@ class ClientRepoTests(unittest.TestCase):
     # person 1 when person 1 is most recent,
     # write response, person 1 for min_date calibration, notes updated after
     # person 1 when person 2 is most recent.
-    responses = ['First Write Response', PfifXml.XML_TEST_ONE_PERSON,
-                 PfifXml.XML_EMPTY_PFIF, 'Second Write Response',
+    utils.set_post_xml_responses_for_test([StringIO('Response')])
+    responses = [PfifXml.XML_TEST_ONE_PERSON, PfifXml.XML_EMPTY_PFIF,
                  PfifXml.XML_TEST_ONE_PERSON, PfifXml.XML_TEST_PERSON_TWO]
     self.run_test(responses, tester.check_retrieve_all_changed_persons)
 
   def test_api_write_records(self):
-    """api_write_records should post xml to a url."""
+    """api_write_records should post xml to a url and raise an HTTP Error if the
+    response is HTTP Error."""
     tester = ClientTester(last_person=1, last_person_with_notes=1)
-    utils.set_files_for_test([StringIO('First'), StringIO('Second')])
+    utils.set_post_xml_responses_for_test([StringIO('Response')])
     tester.api_write_records(tester.persons, tester.notes)
-    self.assertEqual(utils.open_file('test').getvalue(), 'Second')
+
+    utils.set_post_xml_responses_for_test([StringIO('HTTP Error')])
+    self.assertRaises(HTTPError, tester.api_write_records, tester.persons,
+                      tester.notes)
+
+  def test_truncate_records(self):
+    """truncate_records should never return a batch of more than the specified
+    number of records at a time, and repeatedly querying it should return all
+    records."""
+    max_records_to_post = 3
+    tester = ClientTester(last_person=10, last_person_with_notes=10,
+                          max_records_to_post=str(max_records_to_post))
+    all_persons = []
+    all_notes = {}
+
+    batch_persons, remaining_persons, batch_notes, remaining_notes = (
+        tester.truncate_records(tester.persons, tester.notes))
+    while batch_persons or batch_notes:
+      total_records = len(batch_persons)
+      all_persons.extend(batch_persons)
+      for person_record_id, notes_arr in batch_notes.items():
+        total_records += len(notes_arr)
+        person_notes = all_notes.setdefault(person_record_id, [])
+        person_notes.extend(notes_arr)
+      self.assertTrue(total_records <= max_records_to_post)
+      batch_persons, remaining_persons, batch_notes, remaining_notes = (
+          tester.truncate_records(remaining_persons, remaining_notes))
+    self.assertEqual(all_persons, tester.persons)
+    self.assertEqual(all_notes, tester.notes)
 
   # main
 
@@ -224,6 +254,7 @@ class ClientRepoTests(unittest.TestCase):
   def test_run_all_checks(self):
     """Run all checks should run checks when provided with URLs and generate
     messages when not provided with URLs."""
+    utils.set_post_xml_responses_for_test([StringIO('Response')])
     tester = ClientTester(last_person=1, last_person_with_notes=1,
                           retrieve_person_url='example.org')
 
@@ -254,9 +285,8 @@ class ClientRepoTests(unittest.TestCase):
     self.assertTrue(output.count(missing_url_text) >= 7)
 
     # When the API gives an HTTP error, it should still work
-    # Create multiple files because other tests cas run.
-    files = [StringIO('HTTP Error') for _ in range(10)]
-    utils.set_files_for_test(files)
+    utils.set_post_xml_responses_for_test([StringIO('HTTP Error')])
+    utils.set_files_for_test([StringIO(PfifXml.XML_TEST_ONE_PERSON)] * 5)
     tester = ClientTester(
         last_person=1, last_person_with_notes=1,
         retrieve_person_url='example.org/person',
