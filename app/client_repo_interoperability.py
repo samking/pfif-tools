@@ -38,10 +38,6 @@ from urllib2 import HTTPError
 # but the output of messages should be in order of the id that is affected
 # (where person id is different from note id)
 
-# TODO(samking): now, the output from each check is just the diff.  There needs
-# to be some way to divide each test's output.  Maybe the controller will run a
-# test and output just that test, then make a division, then do the next one?
-
 class Check():
   """The check method, requirements for that method, and human readable output
   for that method."""
@@ -61,6 +57,10 @@ class HelpText(): # pylint: disable=w0232
                     'Should be 1.1, 1.2, or 1.3'),
                    ('Ignore These Fields', 'omitted_fields',
                     'Space delimited list (ie, "source_date age photo_url")'),
+                   ('Max Records to Post', 'max_records_to_post',
+                    'When writing the test records to your database (using '
+                    'the Write Records URL), we will only send this many '
+                    'records at a time.'),
                    ('Write Records URL', 'write_records_url',
                     'A URL to POST a PFIF file to to add records to the repo'),
                    ('Retrieve Person URL', 'retrieve_person_url',
@@ -242,6 +242,7 @@ class ClientTester(): # pylint: disable=r0902
                retrieve_notes_from_person_url='',
                retrieve_persons_with_notes_url='', write_records_url='',
                api_key='', version_str='1.3', omitted_fields=(),
+               max_records_to_post='50',
                first_person=make_test_data.FIRST_PERSON,
                last_person=make_test_data.LAST_PERSON,
                first_person_with_notes=make_test_data.FIRST_PERSON_WITH_NOTES,
@@ -251,6 +252,7 @@ class ClientTester(): # pylint: disable=r0902
                initialize_now=True):
     self.api_key = api_key
     self.version = personfinder_pfif.PFIF_VERSIONS[version_str]
+    self.max_records_to_post = int(max_records_to_post)
     self.retrieve_person_url = retrieve_person_url
     self.retrieve_note_url = retrieve_note_url
     self.retrieve_persons_url = retrieve_persons_url
@@ -355,10 +357,6 @@ class ClientTester(): # pylint: disable=r0902
     make_test_data.write_records(self.version, desired_response,
                                  desired_persons, desired_notes,
                                  embed_notes_in_persons=False)
-    # TODO(samking): When one of the files is not PFIF XML (ie, it's a 404 or an
-    # HTML error page), the diff tool will error out, which could mess up the
-    # test suite.  We could try/catch, or we could make the XML parser used in
-    # PfifXmlTree or objectifying PFIF XML more robust.
     messages = pfif_diff.pfif_file_diff(response, desired_response)
     return messages
 
@@ -462,13 +460,43 @@ class ClientTester(): # pylint: disable=r0902
                                  all_notes_map, embed_notes_in_persons=False)
     return all_responses_file, all_persons, all_notes_map
 
+  def truncate_records(self, persons, notes):
+    """Returns person_batch, remaining_persons, note_batch, remaining_notes.
+    person_batch and remaining_persons, when added together, will be the same as
+    persons (the same is true for notes).  There will be at most
+    max_records_to_post records between person_batch and note_batch.  Even when
+    records remain, there is not guaranteed to be exactly max_records_to_post in
+    a batch."""
+    if persons:
+      batch_persons = persons[:self.max_records_to_post]
+      remaining_persons = persons[self.max_records_to_post:]
+      return batch_persons, remaining_persons, {}, notes
+    if notes:
+      new_notes = notes.copy()
+      person_record_id, person_notes = new_notes.items()[0]
+      batch_notes_arr = person_notes[:self.max_records_to_post]
+      remaining_notes_in_arr = person_notes[self.max_records_to_post:]
+      if remaining_notes_in_arr:
+        new_notes[person_record_id] = remaining_notes_in_arr
+      else:
+        del new_notes[person_record_id]
+      batch_notes_map = {person_record_id : batch_notes_arr}
+      return [], [], batch_notes_map, new_notes
+    return [], [], {}, {}
+
   def api_write_records(self, persons, notes):
     """Calls the API to write records to the remote database."""
     url = self.expand_url(self.write_records_url)
-    pfif_to_write = StringIO('')
-    make_test_data.write_records(self.version, pfif_to_write, persons, notes,
-                                 embed_notes_in_persons=False)
-    utils.post_xml_to_url(url, pfif_to_write.getvalue())
+
+    person_batch, remaining_persons, note_batch, remaining_notes = (
+        self.truncate_records(persons, notes))
+    while person_batch or note_batch:
+      pfif_to_write = StringIO('')
+      make_test_data.write_records(self.version, pfif_to_write, person_batch,
+                                   note_batch, embed_notes_in_persons=False)
+      utils.post_xml_to_url(url, pfif_to_write.getvalue())
+      person_batch, remaining_persons, note_batch, remaining_notes = (
+          self.truncate_records(remaining_persons, remaining_notes))
     # TODO(samking): if we cared, we could verify stuff about the response and
     # return true if it indicates success and false otherwise.
 
@@ -635,10 +663,6 @@ class ClientTester(): # pylint: disable=r0902
     the string generated from running those methods."""
     tests_not_run = []
     check_strings = []
-    # TODO(samking): this doesn't work yet because test_data is really big.
-    # Need to do multiple posts using a max_records_to_post parameter
-    # if self.write_records_url:
-    #   self.api_write_records(self.persons, self.notes)
     for check in self.checks:
       can_run_test = True
       for url in check.required_urls:
@@ -651,10 +675,17 @@ class ClientTester(): # pylint: disable=r0902
         messages = []
         try:
           messages = check.method()
+        # The diff tool will error out when one of the files is not PFIF XML
+        # (ie, it's a 404 or an HTML error page.  Since this is not an
+        # acceptable result of any test, outputting a failure message works.  It
+        # might be better to make the XML parser used in PfifXmlTree or the
+        # objectification of PFIF XML more robust, though.
         except ExpatError:
           tests_not_run.append(utils.Message(
               'Error when parsing XML generated by your API on this request.',
               extra_data='Test Name: ' + check.name))
+        # Some possible causes of this issue: the auth key wasn't provided,
+        # something was too big, or the URL is bad.
         except HTTPError:
           tests_not_run.append(utils.Message(
               'HTTP Error when trying to access one of your URLs.',

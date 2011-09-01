@@ -66,11 +66,24 @@ def open_url(url):
     return _files_for_test.popleft()
   return urllib.urlopen(url) # pragma: no cover
 
+_post_xml_responses_for_test = None # pylint: disable=c0103
+_post_xml_index = None # pylint: disable=c0103
+
+def set_post_xml_responses_for_test(post_xml_responses):
+  """Sets the current files or urls for debugging purposes."""
+  global _post_xml_index # pylint: disable=w0603
+  global _post_xml_responses_for_test # pylint: disable=w0603
+  _post_xml_index = 0
+  _post_xml_responses_for_test = post_xml_responses
+
 def post_xml_to_url(url, data):
   """Posts to the URL and returns the response or returns a debug value if
-  set."""
-  if _files_for_test:
-    saved_file = _files_for_test.popleft()
+  set.  Unlike open_file and open_url, this will cycle through the debug values
+  if not enough were provided."""
+  if _post_xml_responses_for_test:
+    global _post_xml_index # pylint: disable=w0603
+    saved_file = _post_xml_responses_for_test[_post_xml_index]
+    _post_xml_index = (_post_xml_index + 1) % len(_post_xml_responses_for_test)
     if saved_file.getvalue() == 'HTTP Error':
       raise urllib2.HTTPError('', '', '', '', StringIO())
     return saved_file
