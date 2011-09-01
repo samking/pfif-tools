@@ -420,6 +420,9 @@ class ClientTester(): # pylint: disable=r0902
     all_notes_arr = []
     persons = ['emulate do while loop!']
     notes_arr = ['emulate do while loop!']
+    # TODO(samking): This can be an infinite loop with a broken API.  For
+    # instance, if a repo will always return some records, regardless of how
+    # high skip is, this will never stop.
     while (is_person_feed and len(persons) > 0) or (
         not is_person_feed and len(notes_arr) > 0):
       # Get the response
