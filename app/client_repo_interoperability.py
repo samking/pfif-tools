@@ -158,9 +158,10 @@ before running any test.  Thus, before running these tests, you should create a
 new repository with no records in it.  All URLs should follow the templating
 guidelines described here.  You can use the debug values to create a smaller
 test set, but if you do so, you will NOT be fully testing your conformance.
-In the output, "B" is the correct output and "A" is your output.  "B is
-missing..." means that your output has something extra.  "B has extra..." means
-that your output is missing something.""")
+In the output, "A" is the correct output and "B" is your output.  "B is
+missing..." means that your output is missing something that the correct output
+has.  "B has extra..." means that your output has something that the correct
+output doesn't.""")
 
   @staticmethod
   def make_intro_text(is_html):
@@ -370,7 +371,8 @@ class ClientTester(): # pylint: disable=r0902
     make_test_data.write_records(self.version, desired_response,
                                  desired_persons, desired_notes,
                                  embed_notes_in_persons=False)
-    messages = pfif_diff.pfif_file_diff(response, desired_response)
+    messages = pfif_diff.pfif_file_diff(desired_response, response,
+                                        ignore_fields=('entry_date', ))
     return messages
 
   def run_diff_optional_notes(self, response, desired_persons, desired_notes,
