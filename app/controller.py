@@ -137,7 +137,10 @@ class ClientInput(PfifController):
                    enctype="multipart/form-data">"""
 
   FORM_END = """<div><input type="checkbox" name="add_data_to_repo"
-                      value="True" checked>Add Test Data to Your Repo</div>
+                      value="True" checked>Add Test Data to Your Repo (Note:
+                      set Max Records to Post lower if you're getting
+                      DeadlineExceededErrors.  You can use the Debug Values to
+                      only add some records)</div>
                 <div><input type="submit"
                       value="Test Client-Repository Intepoperability"></div>
                 </form>"""
