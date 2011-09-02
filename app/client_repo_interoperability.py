@@ -462,7 +462,7 @@ class ClientTester(): # pylint: disable=r0902
         if len(persons) > 0:
           global_skip += len(persons)
           current_min_date = max(person['entry_date'] for person in persons)
-          current_skip = len([person for person in persons if
+          current_skip = len([person for person in all_persons if
                               person['entry_date'] == current_min_date])
       else:
         if len(notes_arr) > 0:
