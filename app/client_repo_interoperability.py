@@ -490,7 +490,9 @@ class ClientTester(): # pylint: disable=r0902
       return batch_persons, remaining_persons, {}, notes
     if notes:
       new_notes = notes.copy()
-      person_record_id, person_notes = new_notes.items()[0]
+      # Sort it because we need to post the notes in sorted order for the
+      # entry_dates to be in order by record_id.
+      person_record_id, person_notes = sorted(new_notes.items())[0]
       batch_notes_arr = person_notes[:self.max_records_to_post]
       remaining_notes_in_arr = person_notes[self.max_records_to_post:]
       if remaining_notes_in_arr:
