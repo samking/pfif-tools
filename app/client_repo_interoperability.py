@@ -157,7 +157,10 @@ records).  The write URL will also be used to add test data to the repository
 before running any test.  Thus, before running these tests, you should create a
 new repository with no records in it.  All URLs should follow the templating
 guidelines described here.  You can use the debug values to create a smaller
-test set, but if you do so, you will NOT be fully testing your conformance.""")
+test set, but if you do so, you will NOT be fully testing your conformance.
+In the output, "B" is the correct output and "A" is your output.  "B is
+missing..." means that your output has something extra.  "B has extra..." means
+that your output is missing something.""")
 
   @staticmethod
   def make_intro_text(is_html):
