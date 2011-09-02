@@ -122,6 +122,14 @@ class ClientRepoTests(unittest.TestCase):
                            PfifXml.XML_TEST_PERSON_FOUR_THROUGH_SIX]
     self.run_test(correct_xml_strings, tester.check_retrieve_all_persons)
 
+    # It should timeout after MAX_API_CALLS responses
+    self.assertTrue(tester.MAX_API_CALLS < 200)
+    tester.MAX_API_CALLS = 10
+    looping_xml_strings = [PfifXml.XML_TEST_ONE_PERSON] * (
+        tester.MAX_API_CALLS + 1)
+    self.assertRaises(ClientTester.ApiLoopError, self.run_test,
+                      looping_xml_strings, tester.check_retrieve_all_persons)
+
   def test_retrieve_all_persons(self):
     """check_retrieve_all_persons should return messages if and only if the repo
     output differs from the expected output.  The expected output should accept
@@ -295,6 +303,17 @@ class ClientRepoTests(unittest.TestCase):
     output = tester.run_all_checks(False)
     self.assertTrue('HTTP Error when trying to access' in output)
     self.assertTrue(output.count(missing_url_text) >= 5)
+
+    # When the API gives an ApiLoopError, it should still work
+    tester = ClientTester(last_person=1, last_person_with_notes=1,
+                          retrieve_persons_url='example.org/persons')
+    tester.MAX_API_CALLS = 10
+    strings = [PfifXml.XML_TEST_ONE_PERSON] * (tester.MAX_API_CALLS + 1)
+    files = [StringIO(string) for string in strings]
+    utils.set_files_for_test(files)
+    output = tester.run_all_checks(False)
+    self.assertTrue('too many loops' in output)
+    self.assertTrue(output.count(missing_url_text) >= 6)
 
 if __name__ == '__main__':
   unittest.main()

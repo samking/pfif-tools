@@ -235,6 +235,16 @@ class ClientTester(): # pylint: disable=r0902
   repository's client API.  All checks assume that the repository has been set
   up with a copy of the test data set."""
 
+  class ApiLoopError(Exception):
+    """An exception that will be raised when the API loops too many times."""
+    pass
+
+  # If we have to send more than this many API calls to complete a request, the
+  # API is probably bugged.  The test data set contains 1357 persons and 4950
+  # notes, which is 6307 records.  MAX_API_CALLS at 130 should be okay even if
+  # the API only returns 50 records at a time.
+  MAX_API_CALLS = 130
+
   def __init__(self, retrieve_person_url='', #pylint: disable=r0914
                retrieve_note_url='', retrieve_persons_url='',
                retrieve_notes_url='', retrieve_persons_after_date_url='',
@@ -420,9 +430,10 @@ class ClientTester(): # pylint: disable=r0902
     all_notes_arr = []
     persons = ['emulate do while loop!']
     notes_arr = ['emulate do while loop!']
-    # TODO(samking): This can be an infinite loop with a broken API.  For
-    # instance, if a repo will always return some records, regardless of how
-    # high skip is, this will never stop.
+    num_api_calls = 0
+    # TODO(samking): Right now, this can loop for a long time if the API is
+    # broken and keeps returning the same records.  We should make sure that any
+    # records returned are new records.
     while (is_person_feed and len(persons) > 0) or (
         not is_person_feed and len(notes_arr) > 0):
       # Get the response
@@ -454,6 +465,9 @@ class ClientTester(): # pylint: disable=r0902
           current_min_date = max(note['entry_date'] for note in notes_arr)
           current_skip = len([note for note in notes_arr if note['entry_date']
                               == current_min_date])
+      if num_api_calls == self.MAX_API_CALLS:
+        raise self.ApiLoopError()
+      num_api_calls += 1
 
     all_notes_map = utils.note_arr_to_map(all_notes_arr)
 
@@ -678,6 +692,7 @@ class ClientTester(): # pylint: disable=r0902
         messages = []
         try:
           messages = check.method()
+          title = check.name + '(Test ' + check.test_number + ')'
         # The diff tool will error out when one of the files is not PFIF XML
         # (ie, it's a 404 or an HTML error page.  Since this is not an
         # acceptable result of any test, outputting a failure message works.  It
@@ -693,7 +708,10 @@ class ClientTester(): # pylint: disable=r0902
           tests_not_run.append(utils.Message(
               'HTTP Error when trying to access one of your URLs.',
               extra_data='Test Name: ' + check.name))
-        title = check.name + '(Test ' + check.test_number + ')'
+        except self.ApiLoopError:
+          tests_not_run.append(utils.Message(
+              'One of your tests took too many loops of API calls to complete.',
+              extra_data='Test Name: ' + check.name))
         if messages:
           check_strings.append(
               utils.MessagesOutput.messages_to_str_by_id(
