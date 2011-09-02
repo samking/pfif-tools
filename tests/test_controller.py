@@ -212,8 +212,11 @@ class ControllerTests(unittest.TestCase):
     """The client repo interoperability results page should pass POST variables
     to the tester."""
     request = {'retrieve_person_url' : 'example.org/person',
+               'write_records_url' : 'example.org/write',
                'last_person' : '1',
-               'last_person_with_notes' : '1'}
+               'last_person_with_notes' : '1',
+               'add_data_to_repo' : 'True'}
+    utils.set_post_xml_responses_for_test([StringIO('Response')])
     utils.set_file_for_test(StringIO(PfifXml.XML_TEST_ONE_PERSON))
     response_str = self.make_webapp_request(
         request, handler_init_method=controller.ClientResults).out.getvalue()

@@ -673,6 +673,11 @@ class ClientTester(): # pylint: disable=r0902
 
     return messages
 
+  def add_data_to_repo(self):
+    """Adds test data to the remote repository using api_write_records."""
+    if self.write_records_url:
+      self.api_write_records(self.persons, self.notes)
+
   def run_all_checks(self, is_html):
     """Runs all check methods that don't take any arguments.  Will pass any
     messages from each test to messages_to_str_by_id.  Will pass messages
