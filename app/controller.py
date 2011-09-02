@@ -136,7 +136,9 @@ class ClientInput(PfifController):
   FORM_START = """<form action="/client_test/results" method="post"
                    enctype="multipart/form-data">"""
 
-  FORM_END = """<div><input type="submit"
+  FORM_END = """<div><input type="checkbox" name="add_data_to_repo"
+                      value="True" checked>Add Test Data to Your Repo</div>
+                <div><input type="submit"
                       value="Test Client-Repository Intepoperability"></div>
                 </form>"""
 
@@ -176,6 +178,8 @@ class ClientResults(PfifController):
 
     # Run the tester
     tester = ClientTester(**tester_init_map) # pylint: disable=w0142
+    if self.request.get('add_data_to_repo') == 'True':
+      tester.add_data_to_repo()
     self.response.out.write(tester.run_all_checks(True))
 
     self.write_footer()
