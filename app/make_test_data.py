@@ -219,13 +219,15 @@ def get_notes_after_record(notes, record):
 
   # 'Delete' (by reassigning) all notes up to and including record in the
   # person containing record (unless the whole person has no notes and is
-  # already deleted).  Makes no assumptions about sortedness of the note array
-  # or about what the first or last record it includes is.
+  # already deleted).  The note array must be sorted.  Makes no assumptions
+  # about what the first or last record it includes is.
   if is_partially_included_person:
     partially_included_person = make_person_id(first_person_with_notes)
-    recent_notes[partially_included_person] = [
-        note for note in recent_notes[partially_included_person] if
-        int(note['note_record_id'][-2:]) > last_excluded_note_num]
+    first_note_num = int(
+        recent_notes[partially_included_person][0]['note_record_id'][-2:])
+    notes_to_skip = last_excluded_note_num - first_note_num + 1
+    recent_notes[partially_included_person] = (
+        recent_notes[partially_included_person][notes_to_skip:])
 
   return recent_notes
 
@@ -453,8 +455,8 @@ def main():
   options = parser.parse_args()[0]
   if options.output_file is None:
     options.output_file = 'pfif-' + options.version_str + '-test.xml'
-  assert options.version_str in ['1.2', '1.3'], ('Only versions 1.2 and 1.3 '
-                                                  'are supported.')
+  assert options.version_str in ['1.2', '1.3'], (
+      'Only versions 1.2 and 1.3 are supported.')
 
   output_file = utils.open_file(options.output_file, 'w')
   version_map = personfinder_pfif.PFIF_VERSIONS[options.version_str]
