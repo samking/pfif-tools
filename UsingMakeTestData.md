@@ -1,0 +1,5 @@
+Make Test Data allows you to create the test data set identified here: https://docs.google.com/a/google.com/document/d/1HoCtiKjmp6j2d4d2U9QBJtehuVoANcWc6ggxthacPRY/edit?hl=en_US&authkey=CMaK1qsI
+
+It is mainly used within the interoperability tests to add data to the repository and to generate reference data to test your repository against, so there is no web frontend.
+
+Options to specify are described with make-test\_data.py -h, but there are also debug options that let you create a smaller data set.  If you want to create only record 50, you could pass --first-person=50 --last-person=50.  If you only want to create notes n3005 to n3010, you can pass --first-person-with-notes=30 --last-person-with-notes=30 --first-note=5 --last-note=10.  --all-notes-are-top-level is used to prevent embedding notes within persons, which will cause notes that are not embedded within a person to be lost.
